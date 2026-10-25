@@ -283,22 +283,21 @@ class PdfService {
     final double amountWidth = is58mm ? 30 : 46;
     final double fontSize = is58mm ? 6.5 : 8;
     final subtotal = sale.items.fold(0.0, (sum, item) => sum + item.subtotal);
+    final settings = Hive.box<dynamic>('app_settings');
+    final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
+    final businessAddress = settings.get('business_address', defaultValue: '').toString();
+    final businessPhone = settings.get('business_phone', defaultValue: '').toString();
+    final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
 
     return [
       if (includeHeader) ...[
-        pw.Text('Royal Garden',
+        pw.Text(businessName,
             style: pw.TextStyle(
                 fontSize: fontSize + 4, fontWeight: pw.FontWeight.bold),
             textAlign: pw.TextAlign.center),
-        pw.Text('FourLane Byepass,Mangattukavala',
-            style: pw.TextStyle(fontSize: fontSize),
-            textAlign: pw.TextAlign.center),
-        pw.Text('Thodupuzha, 685585',
-            style: pw.TextStyle(fontSize: fontSize),
-            textAlign: pw.TextAlign.center),
-        pw.Text('9562291843, 9446932750',
-            style: pw.TextStyle(fontSize: fontSize),
-            textAlign: pw.TextAlign.center),
+        if (businessAddress.isNotEmpty) pw.Text(businessAddress, style: pw.TextStyle(fontSize: fontSize), textAlign: pw.TextAlign.center),
+        if (businessPhone.isNotEmpty) pw.Text(businessPhone, style: pw.TextStyle(fontSize: fontSize), textAlign: pw.TextAlign.center),
+        if (businessGstin.isNotEmpty) pw.Text('GSTIN: $businessGstin', style: pw.TextStyle(fontSize: fontSize), textAlign: pw.TextAlign.center),
         pw.Text('INVOICE',
             style: pw.TextStyle(
                 fontSize: fontSize + 1, fontWeight: pw.FontWeight.bold),
