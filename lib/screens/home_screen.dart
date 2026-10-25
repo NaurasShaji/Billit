@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'tabs/billing_tab.dart';
+import 'tabs/dashboard_tab.dart';
 import 'tabs/products_tab.dart';
 import 'tabs/reports_tab.dart';
 import 'tabs/archive_tab.dart';
@@ -351,17 +352,26 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final bool isAdmin = _authService.isAdmin;
 
-    final List<Widget> tabs = isAdmin
-        ? const [BillingTab(), ProductsTab(), ReportsTab(), ArchiveTab()]
-        : const [BillingTab(), ProductsTab(), ReportsTab()];
-
     final List<String> labels = isAdmin
-        ? ['Billing', 'Products', 'Reports', 'Archive']
-        : ['Billing', 'Products', 'Reports'];
+        ? ['Overview', 'Billing', 'Products', 'Reports', 'Archive']
+        : ['Overview', 'Billing', 'Products', 'Reports'];
 
     final List<IconData> icons = isAdmin
-        ? [Icons.receipt_long, Icons.local_florist, Icons.bar_chart, Icons.archive]
-        : [Icons.receipt_long, Icons.local_florist, Icons.bar_chart];
+        ? [Icons.dashboard_outlined, Icons.receipt_long, Icons.local_florist, Icons.bar_chart, Icons.archive]
+        : [Icons.dashboard_outlined, Icons.receipt_long, Icons.local_florist, Icons.bar_chart];
+
+    final List<Widget> tabs = [
+      DashboardTab(
+        showFinancials: isAdmin,
+        onOpenBilling: () => setState(() => _index = 1),
+        onOpenProducts: () => setState(() => _index = 2),
+        onOpenReports: () => setState(() => _index = 3),
+      ),
+      const BillingTab(),
+      const ProductsTab(),
+      const ReportsTab(),
+      if (isAdmin) const ArchiveTab(),
+    ];
 
     // Ensure _index is within bounds for worker
     if (!isAdmin && _index >= tabs.length) {
