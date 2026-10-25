@@ -5,12 +5,14 @@ import '../../models/models.dart';
 import '../../services/boxes.dart';
 
 class DashboardTab extends StatelessWidget {
+  final bool showFinancials;
   final VoidCallback onOpenBilling;
   final VoidCallback onOpenProducts;
   final VoidCallback onOpenReports;
 
   const DashboardTab({
     super.key,
+    this.showFinancials = true,
     required this.onOpenBilling,
     required this.onOpenProducts,
     required this.onOpenReports,
@@ -88,10 +90,15 @@ class DashboardTab extends StatelessWidget {
                       final columns = constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 620 ? 2 : 1;
                       final cardWidth = (constraints.maxWidth - (columns - 1) * 12) / columns;
                       final metrics = <Widget>[
-                        _MetricCard(title: "Today's sales", value: currency.format(todayRevenue), subtitle: '${todaySales.length} bills', icon: Icons.point_of_sale_outlined, color: theme.colorScheme.primary),
-                        _MetricCard(title: 'Estimated profit', value: currency.format(todayProfit), subtitle: 'Before expenses', icon: Icons.trending_up_rounded, color: Colors.green.shade700),
-                        _MetricCard(title: "Today's expenses", value: currency.format(todayExpenses), subtitle: 'Recorded expenses', icon: Icons.account_balance_wallet_outlined, color: Colors.deepOrange.shade600),
+                        if (showFinancials)
+                          _MetricCard(title: "Today's sales", value: currency.format(todayRevenue), subtitle: '${todaySales.length} bills', icon: Icons.point_of_sale_outlined, color: theme.colorScheme.primary),
+                        if (showFinancials)
+                          _MetricCard(title: 'Estimated profit', value: currency.format(todayProfit), subtitle: 'Before expenses', icon: Icons.trending_up_rounded, color: Colors.green.shade700),
+                        if (showFinancials)
+                          _MetricCard(title: "Today's expenses", value: currency.format(todayExpenses), subtitle: 'Recorded expenses', icon: Icons.account_balance_wallet_outlined, color: Colors.deepOrange.shade600),
                         _MetricCard(title: 'Active products', value: activeProducts.length.toString(), subtitle: '${lowStock.length} low in stock', icon: Icons.inventory_2_outlined, color: Colors.indigo.shade600),
+                        if (!showFinancials)
+                          _MetricCard(title: "Today's bills", value: todaySales.length.toString(), subtitle: 'Saved transactions', icon: Icons.receipt_long_outlined, color: theme.colorScheme.primary),
                       ];
                       return Wrap(
                         spacing: 12,
