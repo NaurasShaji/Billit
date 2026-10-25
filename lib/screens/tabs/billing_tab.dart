@@ -12,6 +12,7 @@ import '../../services/invoice_service.dart'; // Import for generateInvoice func
 import '../edit_invoice_screen.dart'; // Added import for EditInvoiceScreen
 import '../../widgets/shopping_cart_section.dart';
 import '../../widgets/print_option_dialog.dart';
+import '../barcode_scanner_screen.dart';
 
 const _primaryColor = Color(0xFF1565C0); // Blue 800
 const _errorColor = Color(0xFFD32F2F); // Red 700
@@ -33,6 +34,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   final TextEditingController _customerName = TextEditingController();
   final TextEditingController _customerPhone = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
+  final TextEditingController _barcodeInputController = TextEditingController();
   AnimationController? _animationController;
   Animation<double>? _fadeAnimation;
 
@@ -74,6 +76,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     _customerName.dispose();
     _customerPhone.dispose();
     _discountController.dispose();
+    _barcodeInputController.dispose();
     super.dispose();
   }
 
@@ -223,6 +226,57 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _handleScannedBarcode(String rawValue) async {
+    final barcode = rawValue.trim();
+    if (barcode.isEmpty) return;
+    final products = Hive.box<Product>(Boxes.products).values.where((p) => p.active);
+    Product? match;
+    for (final product in products) {
+      if (product.barcode?.trim() == barcode) {
+        match = product;
+        break;
+      }
+    }
+    _barcodeInputController.clear();
+    if (match == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('No product is assigned to barcode "$barcode". Add it in Product Management first.'),
+        backgroundColor: _warningColor,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    final product = match;
+    final increment = (product.unit == UnitType.kg || product.unit == UnitType.sqft) ? 0.5 : 1.0;
+    if (!_canAddToCart(product, increment)) {
+      _showStockLimitMessage(product.name, _getAvailableStock(product));
+      return;
+    }
+    final item = SaleItem()
+      ..productId = product.id
+      ..qty = increment
+      ..sellingPrice = product.sellingPrice
+      ..costPrice = product.costPrice
+      ..subtotal = product.sellingPrice * increment
+      ..unitLabel = product.unit.name;
+    _cartService.addItem(item);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Added ${product.name} to the bill'),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  Future<void> _openCameraBarcodeScanner() async {
+    final value = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (value != null && mounted) await _handleScannedBarcode(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     final products = Hive.box<Product>(Boxes.products).values.where((p) => p.active).toList();
@@ -322,6 +376,54 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                     ),
                   ),
 
+                  const SizedBox(height: 16),
+
+                  // Barcode input: camera or external scanner in keyboard-wedge mode.
+                  Card(
+                    elevation: 0,
+                    color: _cardColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader('Barcode Scanner', Icons.qr_code_scanner),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _barcodeInputController,
+                                  textInputAction: TextInputAction.done,
+                                  onSubmitted: _handleScannedBarcode,
+                                  decoration: _getInputDecoration(
+                                    label: 'Scan or enter barcode',
+                                    icon: Icons.qr_code_2,
+                                    hint: 'External scanner works like a keyboard',
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton.filled(
+                                tooltip: 'Scan with camera',
+                                onPressed: _openCameraBarcodeScanner,
+                                icon: const Icon(Icons.camera_alt),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'For USB/Bluetooth scanners, focus this field and scan. Most scanners submit the code with Enter.',
+                            style: TextStyle(fontSize: 12, color: _textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Add Product and Shopping Cart Section
