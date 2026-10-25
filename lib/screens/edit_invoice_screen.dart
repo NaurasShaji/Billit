@@ -165,6 +165,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
         final tax = _taxForItem(item);
         item
           ..hsnCode = product?.hsnCode ?? item.hsnCode
+          ..gstRate = widget.sale.gstEnabled ? _rateForItem(item) : 0.0
           ..taxableAmount = taxable
           ..cgstAmount = widget.sale.gstEnabled && !widget.sale.interstateSale ? tax / 2 : 0.0
           ..sgstAmount = widget.sale.gstEnabled && !widget.sale.interstateSale ? tax / 2 : 0.0
