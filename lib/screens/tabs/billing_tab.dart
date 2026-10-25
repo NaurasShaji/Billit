@@ -327,6 +327,11 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final products = Hive.box<Product>(Boxes.products).values.where((p) => p.active).toList();
     final cur = NumberFormat.simpleCurrency(locale: 'en_IN');
+    final invoiceSettings = Hive.box<dynamic>('app_settings');
+    final savedPrefix = invoiceSettings.get('invoice_prefix', defaultValue: 'INV').toString().trim().toUpperCase();
+    final invoicePrefix = savedPrefix.isEmpty ? 'INV' : savedPrefix;
+    final nextInvoiceNumber = (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num).toInt();
+    final invoiceIdPreview = '$invoicePrefix-${DateFormat('yyyyMM').format(DateTime.now())}-${nextInvoiceNumber.toString().padLeft(5, "0")}';
 
       // Get last 5 invoices, sorted by date and time (newest first)
       final salesBox = Hive.box<Sale>(Boxes.sales);
@@ -605,7 +610,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                         style: TextStyle(fontSize: 14, color: _textSecondary),
                                       ),
                                       Text(
-                                        DateFormat('yyMMdd-HHmm').format(DateTime.now()),
+                                        invoiceIdPreview,
                                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                       ),
                                     ],
