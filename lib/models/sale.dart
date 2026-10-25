@@ -20,7 +20,7 @@ class SaleItem extends HiveObject {
   @HiveField(4) double subtotal = 0;
   @HiveField(5) String unitLabel = 'pcs';
   @HiveField(6) String hsnCode = '';
-  @HiveField(7) double gstRate = 0.0;
+  @HiveField(7) double? gstRate;
   @HiveField(8) double taxableAmount = 0.0;
   @HiveField(9) double cgstAmount = 0.0;
   @HiveField(10) double sgstAmount = 0.0;
@@ -71,7 +71,7 @@ class SaleItem extends HiveObject {
       ..subtotal = (json['subtotal'] as num).toDouble()
       ..unitLabel = json['unitLabel'] as String
       ..hsnCode = json['hsnCode'] as String? ?? ''
-      ..gstRate = (json['gstRate'] as num?)?.toDouble() ?? 0.0
+      ..gstRate = (json['gstRate'] as num?)?.toDouble()
       ..taxableAmount = (json['taxableAmount'] as num?)?.toDouble() ?? 0.0
       ..cgstAmount = (json['cgstAmount'] as num?)?.toDouble() ?? 0.0
       ..sgstAmount = (json['sgstAmount'] as num?)?.toDouble() ?? 0.0
