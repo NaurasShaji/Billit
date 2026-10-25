@@ -28,7 +28,7 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..active = fields[8] as bool? ?? true
       ..barcode = fields[9] as String?
       ..hsnCode = fields[10] as String? ?? ''
-      ..gstRate = fields[11] as double? ?? 0.0;
+      ..gstRate = fields[11] as double?;
   }
 
   @override
