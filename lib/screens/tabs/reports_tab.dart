@@ -150,6 +150,34 @@ class _ReportsTabState extends State<ReportsTab>
     await _shareCsv('floralbill_gst_sales_register.csv', rows);
   }
 
+  Future<void> _exportGstItemRegister() async {
+    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final products = Hive.box<Product>(Boxes.products);
+    final rows = <List<Object?>>[
+      ['Invoice No', 'Date', 'Customer', 'Customer GSTIN', 'Product', 'HSN/SAC', 'Quantity', 'Unit Rate', 'Taxable Value', 'GST Rate %', 'CGST', 'SGST', 'IGST', 'Line Total'],
+      for (final sale in sales)
+        for (final item in sale.items)
+          [
+            sale.id,
+            DateFormat('yyyy-MM-dd').format(sale.date.toLocal()),
+            sale.customerName,
+            sale.customerGstin,
+            products.get(item.productId)?.name ?? 'Unknown Product',
+            item.hsnCode.isNotEmpty ? item.hsnCode : (products.get(item.productId)?.hsnCode ?? ''),
+            item.qty,
+            item.sellingPrice.toStringAsFixed(2),
+            (sale.gstEnabled ? item.taxableAmount : item.subtotal).toStringAsFixed(2),
+            sale.gstEnabled ? item.gstRate.toStringAsFixed(2) : '0.00',
+            item.cgstAmount.toStringAsFixed(2),
+            item.sgstAmount.toStringAsFixed(2),
+            item.igstAmount.toStringAsFixed(2),
+            ((sale.gstEnabled ? item.taxableAmount : item.subtotal) + item.cgstAmount + item.sgstAmount + item.igstAmount).toStringAsFixed(2),
+          ],
+    ];
+    await _shareCsv('floralbill_gst_item_register.csv', rows);
+  }
+
   Future<void> _exportExpensesRegister() async {
     final expenses = Hive.box<Expense>(Boxes.expenses).values.toList()
       ..sort((a, b) => a.date.compareTo(b.date));
@@ -303,6 +331,11 @@ class _ReportsTabState extends State<ReportsTab>
                         onPressed: _exportGstSalesRegister,
                         icon: const Icon(Icons.receipt_long),
                         label: const Text('Export GST Sales Register'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _exportGstItemRegister,
+                        icon: const Icon(Icons.table_chart_outlined),
+                        label: const Text('Export GST Item Register'),
                       ),
                       OutlinedButton.icon(
                         onPressed: _exportExpensesRegister,
