@@ -32,17 +32,17 @@ class _ProductsTabState extends State<ProductsTab> {
     final subcats = ['All', ...{for (final p in all) p.subCategory}];
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           // Header Section
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.08),
                   spreadRadius: 1,
                   blurRadius: 3,
                   offset: const Offset(0, 2),
@@ -54,16 +54,16 @@ class _ProductsTabState extends State<ProductsTab> {
                 // Search Bar
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: TextField(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search, color: Colors.grey),
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       hintText: 'Search products...',
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     onChanged: (v) => setState(() => query = v),
                   ),
@@ -122,7 +122,7 @@ class _ProductsTabState extends State<ProductsTab> {
                 Text(
                   '${filtered.length} products found',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -142,8 +142,8 @@ class _ProductsTabState extends State<ProductsTab> {
         onPressed: () => _openEditor(),
         icon: const Icon(Icons.add),
         label: const Text('Add Product'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
     );
   }
@@ -158,9 +158,9 @@ class _ProductsTabState extends State<ProductsTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
@@ -190,7 +190,7 @@ class _ProductsTabState extends State<ProductsTab> {
           Icon(
             Icons.inventory_2_outlined,
             size: 80,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
           Text(
@@ -198,14 +198,14 @@ class _ProductsTabState extends State<ProductsTab> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters',
             style: TextStyle(
-              color: Colors.grey[500],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -237,11 +237,11 @@ class _ProductsTabState extends State<ProductsTab> {
       onTap: () => _showProductDetails(product),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.08),
               spreadRadius: 1,
               blurRadius: 8,
               offset: const Offset(0, 2),
@@ -280,7 +280,7 @@ class _ProductsTabState extends State<ProductsTab> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: Colors.green,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const Spacer(),
@@ -310,7 +310,7 @@ class _ProductsTabState extends State<ProductsTab> {
               children: [
                 IconButton(
                   onPressed: () => _openEditor(product: product),
-                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
                 ),
                 IconButton(
                   onPressed: () async {
@@ -456,7 +456,7 @@ class _ProductsTabState extends State<ProductsTab> {
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -465,7 +465,7 @@ class _ProductsTabState extends State<ProductsTab> {
               Text(
                 value,
                 style: TextStyle(
-                  color: valueColor ?? Colors.black87,
+                  color: valueColor ?? Theme.of(context).colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
