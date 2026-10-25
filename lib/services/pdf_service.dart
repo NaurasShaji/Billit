@@ -89,7 +89,7 @@ class PdfService {
         ? sale.taxableAmount
         : (subtotal - sale.discount).clamp(0.0, double.infinity).toDouble();
     final taxTotal = sale.cgstAmount + sale.sgstAmount + sale.igstAmount;
-    final displayGst = includeGST && sale.gstEnabled;
+    final displayGst = sale.gstEnabled;
     final productsBox = Hive.box<Product>(Boxes.products);
     final itemRows = <List<String>>[
       ['#', 'Description', 'HSN/SAC', 'Qty', 'Rate', 'Taxable', 'GST %', 'Tax', 'Line total'],
