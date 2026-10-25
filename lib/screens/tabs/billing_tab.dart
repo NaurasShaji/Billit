@@ -515,6 +515,38 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                 _cartService.updateDiscount(clampedDiscount);
                               },
                             ),
+                            const SizedBox(height: 12),
+                            if (_gstAvailable) ...[
+                              SwitchListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text('Apply GST (${_gstRate.toStringAsFixed(2)}%)'),
+                                subtitle: const Text('Tax is calculated after discount.'),
+                                value: _applyGst,
+                                onChanged: (value) => setState(() => _applyGst = value),
+                              ),
+                              if (_applyGst) ...[
+                                CheckboxListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('Interstate sale (IGST)'),
+                                  subtitle: const Text('Leave unchecked for CGST + SGST.'),
+                                  value: _interstateSale,
+                                  onChanged: (value) => setState(() => _interstateSale = value ?? false),
+                                ),
+                                TextField(
+                                  controller: _customerGstin,
+                                  textCapitalization: TextCapitalization.characters,
+                                  decoration: _getInputDecoration(
+                                    label: 'Customer GSTIN (optional)',
+                                    icon: Icons.verified_outlined,
+                                    hint: 'For B2B invoices',
+                                  ),
+                                ),
+                              ],
+                            ] else
+                              const Text(
+                                'GST is disabled. An admin can configure it in Invoice & GST Settings.',
+                                style: TextStyle(fontSize: 12, color: _textSecondary),
+                              ),
                             const SizedBox(height: 16),
                             Container(
                               padding: const EdgeInsets.all(16),
@@ -549,7 +581,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                         ),
                                       ),
                                       Text(
-                                        cur.format(total),
+                                        cur.format(_subtotal),
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -569,7 +601,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                         ),
                                       ),
                                       Text(
-                                        cur.format(profit),
+                                        cur.format(_estimatedProfit),
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -578,6 +610,23 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                       ),
                                     ],
                                   ),
+                                  if (_discount > 0)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text('Discount'),
+                                        Text('-${cur.format(_discount)}'),
+                                      ],
+                                    ),
+                                  if (_applyGst) ...[
+                                    const SizedBox(height: 6),
+                                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Taxable value'), Text(cur.format(_taxableAmount))]),
+                                    if (!_interstateSale) ...[
+                                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('CGST'), Text(cur.format(_cgstAmount))]),
+                                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('SGST'), Text(cur.format(_sgstAmount))]),
+                                    ] else
+                                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('IGST'), Text(cur.format(_igstAmount))]),
+                                  ],
                                   const Divider(height: 24),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -608,7 +657,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                       ),
                                       Text(
-                                        cur.format(total - _discount),
+                                        cur.format(_grandTotal),
                                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _primaryColor),
                                       ),
                                     ],
