@@ -153,7 +153,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(displayGst ? 'TAX INVOICE' : 'INVOICE', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(displayGst && businessGstin.isNotEmpty ? 'TAX INVOICE' : (displayGst ? 'GST INVOICE (GSTIN REQUIRED)' : 'INVOICE'), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 8),
                   pw.Text('Invoice: ${sale.id}'),
                   pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
