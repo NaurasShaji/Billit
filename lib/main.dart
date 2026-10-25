@@ -37,6 +37,14 @@ Future<void> main() async {
   await Hive.openBox<Expense>(Boxes.expenses);
   await Hive.openBox<Employee>(Boxes.employees);
   await Hive.openBox('session');
+  final settings = await Hive.openBox<dynamic>('app_settings');
+  settings.putIfAbsent('business_name', () => 'Royal Garden');
+  settings.putIfAbsent('business_address', () => 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
+  settings.putIfAbsent('business_phone', () => '9562291843, 9446932750');
+  settings.putIfAbsent('business_email', () => '');
+  settings.putIfAbsent('business_gstin', () => '');
+  settings.putIfAbsent('gst_enabled', () => false);
+  settings.putIfAbsent('gst_rate', () => 0.0);
     
   // Initialize services
   final auth = AuthService();
