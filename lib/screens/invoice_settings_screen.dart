@@ -18,6 +18,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _gstin;
   late final TextEditingController _rate;
   late bool _gstEnabled;
+  late bool _gstInclusive;
   bool _saving = false;
 
   @override
@@ -31,6 +32,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _gstin = TextEditingController(text: _settings.get('business_gstin', defaultValue: ''));
     _rate = TextEditingController(text: (_settings.get('gst_rate', defaultValue: 0.0) as num).toString());
     _gstEnabled = _settings.get('gst_enabled', defaultValue: false) as bool;
+    _gstInclusive = _settings.get('gst_price_inclusive', defaultValue: false) as bool;
   }
 
   @override
@@ -52,6 +54,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       'business_gstin': _gstin.text.trim().toUpperCase(),
       'gst_enabled': _gstEnabled,
       'gst_rate': rate,
+      'gst_price_inclusive': _gstInclusive,
     });
     if (!mounted) return;
     setState(() => _saving = false);
@@ -94,6 +97,13 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
               subtitle: const Text('When enabled, GST can be applied to an individual bill.'),
               value: _gstEnabled,
               onChanged: (value) => setState(() => _gstEnabled = value),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Product prices include GST by default'),
+              subtitle: const Text('Enable if catalogue prices are tax-inclusive. This can be overridden for each bill.'),
+              value: _gstInclusive,
+              onChanged: _gstEnabled ? (value) => setState(() => _gstInclusive = value) : null,
             ),
             const SizedBox(height: 8),
             TextFormField(
