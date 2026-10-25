@@ -63,7 +63,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _invoiceAccent = _settings.get('invoice_accent', defaultValue: 'blue').toString();
     if (!const ['blue', 'green', 'purple', 'teal', 'orange', 'pink', 'indigo'].contains(_invoiceAccent)) _invoiceAccent = 'blue';
     _invoiceFooter = TextEditingController(text: _settings.get('invoice_footer_text', defaultValue: 'Thank you for your business.').toString());
-    if (!const ['green', 'blue', 'purple', 'teal', 'amber', 'rose'].contains(_appTheme)) _appTheme = 'green';
+    if (!const ['green', 'blue', 'purple', 'teal', 'amber', 'rose', 'indigo', 'slate', 'coral', 'ocean'].contains(_appTheme)) _appTheme = 'green';
     _appLogoBytes = _decodeImage('app_logo_base64');
     _invoiceLogoBytes = _decodeImage('business_logo_base64');
     _paymentQrBytes = _decodeImage('payment_qr_base64');
@@ -268,6 +268,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                 DropdownMenuItem(value: 'teal', child: Text('Calm Teal')),
                 DropdownMenuItem(value: 'amber', child: Text('Warm Amber')),
                 DropdownMenuItem(value: 'rose', child: Text('Rose')),
+                DropdownMenuItem(value: 'indigo', child: Text('Indigo')),
+                DropdownMenuItem(value: 'slate', child: Text('Slate')),
+                DropdownMenuItem(value: 'coral', child: Text('Coral')),
+                DropdownMenuItem(value: 'ocean', child: Text('Ocean')),
               ],
               onChanged: (value) { if (value != null) setState(() => _appTheme = value); },
             ),
