@@ -854,7 +854,6 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           ..igstAmount = _applyGst && _interstateSale ? tax : 0.0;
       }
       final salesBox = Hive.box<Sale>(Boxes.sales);
-      final productsBox = Hive.box<Product>(Boxes.products);
       final id = const Uuid().v4().substring(0, 8).toUpperCase();
 
       final sale = Sale()
