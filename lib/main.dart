@@ -153,8 +153,8 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     ),
     navigationBarTheme: NavigationBarThemeData(
       indicatorColor: scheme.primary.withOpacity(0.14),
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
+      labelTextStyle: MaterialStateProperty.resolveWith((states) {
+        final selected = states.contains(MaterialState.selected);
         return TextStyle(
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           fontSize: 12 * scale,
