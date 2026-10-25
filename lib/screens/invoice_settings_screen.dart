@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -17,6 +20,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _email;
   late final TextEditingController _gstin;
   late final TextEditingController _rate;
+  late final TextEditingController _invoicePrefix;
+  late final TextEditingController _nextInvoiceNumber;
+  Uint8List? _logoBytes;
+  bool _clearLogo = false;
   late bool _gstEnabled;
   late bool _gstInclusive;
   bool _saving = false;
@@ -33,19 +40,43 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _rate = TextEditingController(text: (_settings.get('gst_rate', defaultValue: 0.0) as num).toString());
     _gstEnabled = _settings.get('gst_enabled', defaultValue: false) as bool;
     _gstInclusive = _settings.get('gst_price_inclusive', defaultValue: false) as bool;
+    _invoicePrefix = TextEditingController(text: _settings.get('invoice_prefix', defaultValue: 'INV').toString());
+    _nextInvoiceNumber = TextEditingController(text: (_settings.get('next_invoice_number', defaultValue: 1) as num).toInt().toString());
+    final savedLogo = _settings.get('business_logo_base64') as String?;
+    if (savedLogo != null && savedLogo.isNotEmpty) {
+      try { _logoBytes = base64Decode(savedLogo); } catch (_) { _logoBytes = null; }
+    }
   }
 
   @override
   void dispose() {
     _name.dispose(); _address.dispose(); _phone.dispose();
     _email.dispose(); _gstin.dispose(); _rate.dispose();
+    _invoicePrefix.dispose(); _nextInvoiceNumber.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickLogo() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+    if (result == null || result.files.isEmpty || result.files.single.bytes == null) return;
+    setState(() {
+      _logoBytes = result.files.single.bytes;
+      _clearLogo = false;
+    });
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     final rate = double.parse(_rate.text.trim());
+    final nextInvoiceNumber = int.tryParse(_nextInvoiceNumber.text.trim());
+    if (nextInvoiceNumber == null || nextInvoiceNumber < 1) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Next invoice number must be a positive integer.')),
+      );
+      return;
+    }
     await _settings.putAll({
       'business_name': _name.text.trim(),
       'business_address': _address.text.trim(),
@@ -55,7 +86,14 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       'gst_enabled': _gstEnabled,
       'gst_rate': rate,
       'gst_price_inclusive': _gstInclusive,
+      'invoice_prefix': _invoicePrefix.text.trim().isEmpty ? 'INV' : _invoicePrefix.text.trim().toUpperCase(),
+      'next_invoice_number': nextInvoiceNumber,
     });
+    if (_logoBytes != null) {
+      await _settings.put('business_logo_base64', base64Encode(_logoBytes!));
+    } else if (_clearLogo) {
+      await _settings.delete('business_logo_base64');
+    }
     if (!mounted) return;
     setState(() => _saving = false);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -89,6 +127,43 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             TextFormField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: _decoration('Email (optional)', Icons.email_outlined)),
             const SizedBox(height: 12),
             TextFormField(controller: _gstin, textCapitalization: TextCapitalization.characters, decoration: _decoration('Business GSTIN (optional)', Icons.verified_outlined)),
+            const SizedBox(height: 20),
+            const Text('Invoice layout', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _invoicePrefix,
+              textCapitalization: TextCapitalization.characters,
+              decoration: _decoration('Invoice number prefix', Icons.tag),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _nextInvoiceNumber,
+              keyboardType: TextInputType.number,
+              decoration: _decoration('Next invoice number', Icons.format_list_numbered),
+              validator: (value) {
+                final number = int.tryParse(value?.trim() ?? '');
+                if (number == null || number < 1) return 'Enter a positive integer';
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    if (_logoBytes != null)
+                      ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.memory(_logoBytes!, width: 72, height: 56, fit: BoxFit.contain))
+                    else
+                      const SizedBox(width: 72, height: 56, child: Icon(Icons.image_outlined, size: 32)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(_logoBytes == null ? 'No invoice logo selected' : 'Invoice logo selected')),
+                    IconButton(tooltip: 'Choose logo', onPressed: _pickLogo, icon: const Icon(Icons.upload_file)),
+                    IconButton(tooltip: 'Remove logo', onPressed: _logoBytes == null ? null : () => setState(() { _logoBytes = null; _clearLogo = true; }), icon: const Icon(Icons.delete_outline)),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             const Text('GST settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SwitchListTile(
