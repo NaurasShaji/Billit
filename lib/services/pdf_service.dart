@@ -17,53 +17,243 @@ class PdfService {
     ThermalSize thermalSize = ThermalSize.mm80,
     bool includeHeader = true,
     bool includeFooter = true,
-    bool includeGST = false,
+    bool includeGST = true,
+    bool fullPage = true,
   }) async {
     final doc = pw.Document();
-    final double pageWidth =
-        thermalSize == ThermalSize.mm58 ? thermalWidth58mm : thermalWidth80mm;
 
-    // Load the same QR image used by the thermal receipt.
-    pw.ImageProvider? qrImage;
-    try {
-      final ByteData qrData =
-          await rootBundle.load('assets/tap_and_pay_qr.png');
-      qrImage = pw.MemoryImage(qrData.buffer.asUint8List());
-    } catch (e) {
-      print('QR image not found: $e');
-    }
-
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat(
-          pageWidth,
-          double.infinity,
-          marginLeft: 4, // Reduced margins for 58mm
-          marginRight: 4,
-          marginTop: 6,
-          marginBottom: 6,
+    if (fullPage) {
+      doc.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) => _buildFullPageInvoice(
+            sale,
+            includeHeader: includeHeader,
+            includeFooter: includeFooter,
+            includeGST: includeGST,
+          ),
         ),
-        build: (pw.Context context) {
-          return pw.Column(
+      );
+    } else {
+      final double pageWidth =
+          thermalSize == ThermalSize.mm58 ? thermalWidth58mm : thermalWidth80mm;
+      pw.ImageProvider? qrImage;
+      try {
+        final ByteData qrData = await rootBundle.load('assets/tap_and_pay_qr.png');
+        qrImage = pw.MemoryImage(qrData.buffer.asUint8List());
+      } catch (e) {
+        // The QR image is optional; the invoice remains printable without it.
+      }
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat(
+            pageWidth,
+            double.infinity,
+            marginLeft: 4,
+            marginRight: 4,
+            marginTop: 6,
+            marginBottom: 6,
+          ),
+          build: (context) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              ..._buildThermalReceipt(
-                sale,
-                thermalSize,
-                qrImage,
-                includeHeader,
-                includeFooter,
-              ),
-            ],
-          );
-        },
-      ),
-    );
+            children: _buildThermalReceipt(
+              sale, thermalSize, qrImage, includeHeader, includeFooter,
+            ),
+          ),
+        ),
+      );
+    }
 
     await Printing.sharePdf(
       bytes: await doc.save(),
-      filename:
-          'invoice_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
+      filename: 'invoice_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
+    );
+  }
+
+  static List<pw.Widget> _buildFullPageInvoice(
+    Sale sale, {
+    required bool includeHeader,
+    required bool includeFooter,
+    required bool includeGST,
+  }) {
+    final settings = Hive.box<dynamic>('app_settings');
+    final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
+    final businessAddress = settings.get('business_address', defaultValue: '').toString();
+    final businessPhone = settings.get('business_phone', defaultValue: '').toString();
+    final businessEmail = settings.get('business_email', defaultValue: '').toString();
+    final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
+    final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+    final subtotal = sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
+    final taxable = sale.gstEnabled
+        ? sale.taxableAmount
+        : (subtotal - sale.discount).clamp(0.0, double.infinity).toDouble();
+    final taxTotal = sale.cgstAmount + sale.sgstAmount + sale.igstAmount;
+    final displayGst = includeGST && sale.gstEnabled;
+    final productsBox = Hive.box<Product>(Boxes.products);
+    final itemRows = <List<String>>[
+      ['#', 'Description', 'Qty', 'Rate', 'Amount'],
+      for (var i = 0; i < sale.items.length; i++)
+        [
+          '${i + 1}',
+          productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
+          '${sale.items[i].qty} ${sale.items[i].unitLabel}',
+          currency.format(sale.items[i].sellingPrice),
+          currency.format(sale.items[i].subtotal),
+        ],
+    ];
+
+    return [
+      if (includeHeader) ...[
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(businessName, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                  if (businessAddress.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 4), child: pw.Text(businessAddress)),
+                  if (businessPhone.isNotEmpty) pw.Text('Phone: $businessPhone'),
+                  if (businessEmail.isNotEmpty) pw.Text('Email: $businessEmail'),
+                  if (businessGstin.isNotEmpty) pw.Text('GSTIN: $businessGstin', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+            ),
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                border: pw.Border.all(color: PdfColors.grey400),
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text('TAX INVOICE', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 8),
+                  pw.Text('Invoice: ${sale.id}'),
+                  pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 18),
+        pw.Divider(color: PdfColors.grey600),
+      ],
+      pw.SizedBox(height: 8),
+      pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.all(12),
+        decoration: pw.BoxDecoration(
+          color: PdfColors.grey100,
+          border: pw.Border.all(color: PdfColors.grey300),
+          borderRadius: pw.BorderRadius.circular(4),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('BILL TO', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 5),
+            pw.Text(sale.customerName.isEmpty ? 'Walk-in customer' : sale.customerName, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            if (sale.customerPhone.isNotEmpty) pw.Text('Phone: ${sale.customerPhone}'),
+            if (sale.customerGstin.isNotEmpty) pw.Text('Customer GSTIN: ${sale.customerGstin}'),
+          ],
+        ),
+      ),
+      pw.SizedBox(height: 18),
+      pw.Table.fromTextArray(
+        headers: itemRows.first,
+        data: itemRows.skip(1).toList(),
+        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
+        cellStyle: const pw.TextStyle(fontSize: 9),
+        cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+        border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+        columnWidths: {
+          0: const pw.FixedColumnWidth(24),
+          1: const pw.FlexColumnWidth(4),
+          2: const pw.FlexColumnWidth(1.5),
+          3: const pw.FlexColumnWidth(2),
+          4: const pw.FlexColumnWidth(2),
+        },
+        cellAlignments: {
+          0: pw.Alignment.center,
+          2: pw.Alignment.centerRight,
+          3: pw.Alignment.centerRight,
+          4: pw.Alignment.centerRight,
+        },
+      ),
+      pw.SizedBox(height: 18),
+      pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Payment method: ${sale.payment.name.toUpperCase()}'),
+                if (displayGst) ...[
+                  pw.SizedBox(height: 8),
+                  pw.Text('GST rate: ${sale.gstRate.toStringAsFixed(2)}%'),
+                  pw.Text(sale.interstateSale ? 'Tax type: IGST (interstate)' : 'Tax type: CGST + SGST (intrastate)'),
+                ],
+                if (includeFooter) ...[
+                  pw.SizedBox(height: 18),
+                  pw.Text('Thank you for your business.', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text('This invoice is generated electronically.'),
+                ],
+              ],
+            ),
+          ),
+          pw.SizedBox(width: 24),
+          pw.SizedBox(
+            width: 230,
+            child: pw.Column(
+              children: [
+                _fullPageTotalRow('Subtotal', currency.format(subtotal)),
+                if (sale.discount > 0) _fullPageTotalRow('Discount', '-${currency.format(sale.discount)}'),
+                if (displayGst) _fullPageTotalRow('Taxable value', currency.format(taxable)),
+                if (displayGst && !sale.interstateSale) _fullPageTotalRow('CGST', currency.format(sale.cgstAmount)),
+                if (displayGst && !sale.interstateSale) _fullPageTotalRow('SGST', currency.format(sale.sgstAmount)),
+                if (displayGst && sale.interstateSale) _fullPageTotalRow('IGST', currency.format(sale.igstAmount)),
+                if (displayGst) _fullPageTotalRow('Total GST', currency.format(taxTotal)),
+                pw.Divider(color: PdfColors.grey700, thickness: 1),
+                _fullPageTotalRow('GRAND TOTAL', currency.format(sale.totalAmount), bold: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+      pw.SizedBox(height: 24),
+      pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.all(10),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey300),
+          borderRadius: pw.BorderRadius.circular(4),
+        ),
+        child: pw.Text(
+          'Amount in words: ${_convertToWords(sale.totalAmount.round())} Rupees Only',
+          style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
+        ),
+      ),
+    ];
+  }
+
+  static pw.Widget _fullPageTotalRow(String label, String value, {bool bold = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Expanded(child: pw.Text(label, style: pw.TextStyle(fontSize: 10, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))),
+          pw.SizedBox(width: 8),
+          pw.Text(value, style: pw.TextStyle(fontSize: 10, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+        ],
+      ),
     );
   }
 
