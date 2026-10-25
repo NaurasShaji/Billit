@@ -10,6 +10,7 @@ import 'tabs/reports_tab.dart';
 import 'tabs/archive_tab.dart';
 import 'printer_settings_screen.dart';
 import 'invoice_settings_screen.dart';
+import 'gst_settings_screen.dart';
 import 'appearance_settings_screen.dart';
 import '../widgets/responsive_page.dart';
 
@@ -424,6 +425,11 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (value) {
               if (value == 'help_faq') {
                 _showHelpFaqDialog();
+              } else if (value == 'gst_settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GstSettingsScreen()),
+                );
               } else if (value == 'appearance_settings') {
                 Navigator.push(
                   context,
@@ -444,8 +450,10 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             itemBuilder: (context) => [
-              if (isAdmin)
-                const PopupMenuItem<String>(value: 'invoice_settings', child: Text('App, Invoice & GST Settings')),
+              if (isAdmin) ...[
+                const PopupMenuItem<String>(value: 'invoice_settings', child: Text('App & Invoice Settings')),
+                const PopupMenuItem<String>(value: 'gst_settings', child: Text('GST Settings')),
+              ],
               const PopupMenuItem<String>(value: 'appearance_settings', child: Text('Appearance & Personalisation')),
               const PopupMenuItem<String>(value: 'printer_settings', child: Text('Printer Settings')),
               const PopupMenuItem<String>(value: 'help_faq', child: Text('Help & FAQ')),
