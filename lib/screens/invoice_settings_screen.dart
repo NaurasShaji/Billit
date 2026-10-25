@@ -21,7 +21,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _phone;
   late final TextEditingController _email;
   late final TextEditingController _gstin;
-  late final TextEditingController _rate;
   late final TextEditingController _invoicePrefix;
   late final TextEditingController _nextInvoiceNumber;
   late final TextEditingController _upiId;
@@ -37,8 +36,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   bool _clearAppLogo = false;
   bool _clearInvoiceLogo = false;
   bool _clearPaymentQr = false;
-  late bool _gstEnabled;
-  late bool _gstInclusive;
   bool _saving = false;
 
   @override
@@ -51,9 +48,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _phone = TextEditingController(text: _settings.get('business_phone', defaultValue: '').toString());
     _email = TextEditingController(text: _settings.get('business_email', defaultValue: '').toString());
     _gstin = TextEditingController(text: _settings.get('business_gstin', defaultValue: '').toString());
-    _rate = TextEditingController(text: (_settings.get('gst_rate', defaultValue: 0.0) as num).toString());
-    _gstEnabled = _settings.get('gst_enabled', defaultValue: false) as bool;
-    _gstInclusive = _settings.get('gst_price_inclusive', defaultValue: false) as bool;
     _invoicePrefix = TextEditingController(text: _settings.get('invoice_prefix', defaultValue: 'INV').toString());
     _nextInvoiceNumber = TextEditingController(text: (_settings.get('next_invoice_number', defaultValue: 1) as num).toInt().toString());
     _upiId = TextEditingController(text: _settings.get('upi_id', defaultValue: '').toString());
@@ -78,7 +72,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   @override
   void dispose() {
     _appName.dispose(); _name.dispose(); _address.dispose(); _phone.dispose();
-    _email.dispose(); _gstin.dispose(); _rate.dispose();
+    _email.dispose(); _gstin.dispose();
     _invoicePrefix.dispose(); _nextInvoiceNumber.dispose();
     _upiId.dispose(); _upiPayeeName.dispose(); _upiNotePrefix.dispose(); _invoiceFooter.dispose();
     super.dispose();
@@ -146,9 +140,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       'business_phone': _phone.text.trim(),
       'business_email': _email.text.trim(),
       'business_gstin': _gstin.text.trim().toUpperCase(),
-      'gst_enabled': _gstEnabled,
-      'gst_rate': double.parse(_rate.text.trim()),
-      'gst_price_inclusive': _gstInclusive,
       'invoice_prefix': _invoicePrefix.text.trim().isEmpty ? 'INV' : _invoicePrefix.text.trim().toUpperCase(),
       'next_invoice_number': nextInvoiceNumber,
     });
@@ -159,7 +150,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     if (!mounted) return;
     setState(() => _saving = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('App, theme, UPI, invoice and GST settings saved')),
+      const SnackBar(content: Text('App, business, UPI and invoice settings saved')),
     );
   }
 
@@ -370,36 +361,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 24),
-            const Text('GST settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Enable GST for billing'),
-              subtitle: const Text('When enabled, GST can be applied to an individual bill.'),
-              value: _gstEnabled,
-              onChanged: (value) => setState(() => _gstEnabled = value),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Product prices include GST by default'),
-              subtitle: const Text('Enable if catalogue prices are tax-inclusive. This can be overridden for each bill.'),
-              value: _gstInclusive,
-              onChanged: _gstEnabled ? (value) => setState(() => _gstInclusive = value) : null,
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _rate,
-              enabled: _gstEnabled,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: _decoration('Default GST rate (%)', Icons.percent),
-              validator: (value) {
-                final rate = double.tryParse(value?.trim() ?? '');
-                if (rate == null || rate < 0 || rate > 100) return 'Enter a rate from 0 to 100';
-                return null;
-              },
-            ),
-            const SizedBox(height: 8),
-            const Text('Set rates according to the goods sold and your tax treatment. A single default rate is applied only when you enable GST on a bill; it is not a substitute for item-specific GST classification or tax advice.', style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: _saving ? null : _save,
