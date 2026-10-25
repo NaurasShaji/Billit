@@ -71,11 +71,12 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     super.dispose();
   }
 
-  double get _currentSubtotal => _editedItems.fold(0.0, (a, it) => a + it.subtotal);
+  double _money(double value) => (value * 100).roundToDouble() / 100;
+  double get _currentSubtotal => _money(_editedItems.fold(0.0, (a, it) => a + it.subtotal));
   double _grossAfterDiscount(SaleItem item) {
     if (_currentSubtotal <= 0) return 0.0;
-    return (item.subtotal - _discount * item.subtotal / _currentSubtotal)
-        .clamp(0.0, double.infinity).toDouble();
+    return _money((item.subtotal - _discount * item.subtotal / _currentSubtotal)
+        .clamp(0.0, double.infinity).toDouble());
   }
   double _rateForItem(SaleItem item) {
     if (item.gstRate > 0) return item.gstRate;
@@ -86,7 +87,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     final gross = _grossAfterDiscount(item);
     if (!widget.sale.gstEnabled || !widget.sale.gstInclusive) return gross;
     final rate = _rateForItem(item);
-    return rate <= 0 ? gross : gross / (1 + rate / 100.0);
+    return rate <= 0 ? gross : _money(gross / (1 + rate / 100.0));
   }
   double _taxForItem(SaleItem item) {
     if (!widget.sale.gstEnabled) return 0.0;
@@ -94,16 +95,19 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     final taxable = _taxableForItem(item);
     return widget.sale.gstInclusive
         ? gross - taxable
-        : taxable * _rateForItem(item) / 100.0;
+        : _money(taxable * _rateForItem(item) / 100.0);
   }
-  double get _currentTaxable => _editedItems.fold<double>(0.0, (sum, item) => sum + _taxableForItem(item));
-  double get _currentGst => _editedItems.fold<double>(0.0, (sum, item) => sum + _taxForItem(item));
-  double get _currentCgst => widget.sale.gstEnabled && !widget.sale.interstateSale ? _currentGst / 2 : 0.0;
-  double get _currentSgst => widget.sale.gstEnabled && !widget.sale.interstateSale ? _currentGst / 2 : 0.0;
-  double get _currentIgst => widget.sale.gstEnabled && widget.sale.interstateSale ? _currentGst : 0.0;
-  double get _currentTotal => widget.sale.gstEnabled && !widget.sale.gstInclusive
+  double get _currentTaxable => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _taxableForItem(item)));
+  double get _currentGst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _taxForItem(item)));
+  double _lineCgst(SaleItem item) => widget.sale.gstEnabled && !widget.sale.interstateSale ? _money(_taxForItem(item) / 2) : 0.0;
+  double _lineSgst(SaleItem item) => widget.sale.gstEnabled && !widget.sale.interstateSale ? _money(_taxForItem(item) - _lineCgst(item)) : 0.0;
+  double _lineIgst(SaleItem item) => widget.sale.gstEnabled && widget.sale.interstateSale ? _taxForItem(item) : 0.0;
+  double get _currentCgst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _lineCgst(item)));
+  double get _currentSgst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _lineSgst(item)));
+  double get _currentIgst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _lineIgst(item)));
+  double get _currentTotal => _money(widget.sale.gstEnabled && !widget.sale.gstInclusive
       ? _currentTaxable + _currentGst
-      : _currentSubtotal - _discount;
+      : _currentSubtotal - _discount);
   double get _currentCost => _editedItems.fold(0.0, (a, it) => a + (it.costPrice * it.qty));
   double get _currentProfit => _currentTaxable - _currentCost;
 
@@ -162,14 +166,13 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
       for (final item in _editedItems) {
         final product = Hive.box<Product>(Boxes.products).get(item.productId);
         final taxable = _taxableForItem(item);
-        final tax = _taxForItem(item);
         item
           ..hsnCode = product?.hsnCode ?? item.hsnCode
           ..gstRate = widget.sale.gstEnabled ? _rateForItem(item) : 0.0
           ..taxableAmount = taxable
-          ..cgstAmount = widget.sale.gstEnabled && !widget.sale.interstateSale ? tax / 2 : 0.0
-          ..sgstAmount = widget.sale.gstEnabled && !widget.sale.interstateSale ? tax / 2 : 0.0
-          ..igstAmount = widget.sale.gstEnabled && widget.sale.interstateSale ? tax : 0.0;
+          ..cgstAmount = _lineCgst(item)
+          ..sgstAmount = _lineSgst(item)
+          ..igstAmount = _lineIgst(item);
       }
 
       widget.sale
