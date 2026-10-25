@@ -902,6 +902,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         ..igstAmount = _igstAmount
         ..customerGstin = _customerGstin.text.trim().toUpperCase()
         ..interstateSale = _interstateSale
+        ..gstInclusive = _applyGst && _gstInclusive
         ..userId = context.read<AuthService>().currentUser?.id ?? '';
 
       await salesBox.put(sale.id, sale);
