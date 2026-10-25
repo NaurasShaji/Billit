@@ -41,6 +41,9 @@ Future<void> main() async {
   Future<void> setDefaultSetting(String key, dynamic value) async {
     if (!settings.containsKey(key)) await settings.put(key, value);
   }
+  await setDefaultSetting('app_name', 'Floral Bill');
+  await setDefaultSetting('app_logo_base64', '');
+  await setDefaultSetting('payment_qr_base64', '');
   await setDefaultSetting('business_name', 'Royal Garden');
   await setDefaultSetting('business_address', 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
   await setDefaultSetting('business_phone', '9562291843, 9446932750');
@@ -73,8 +76,10 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()..restoreSessionIfAny())
       ],
-      child: MaterialApp(
-        title: 'Floral Billing',
+      child: ValueListenableBuilder<Box<dynamic>>(
+        valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+        builder: (context, settings, _) => MaterialApp(
+        title: settings.get('app_name', defaultValue: 'Floral Bill').toString(),
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
           useMaterial3: true,
