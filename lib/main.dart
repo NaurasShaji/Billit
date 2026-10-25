@@ -38,14 +38,17 @@ Future<void> main() async {
   await Hive.openBox<Employee>(Boxes.employees);
   await Hive.openBox('session');
   final settings = await Hive.openBox<dynamic>('app_settings');
-  settings.putIfAbsent('business_name', () => 'Royal Garden');
-  settings.putIfAbsent('business_address', () => 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
-  settings.putIfAbsent('business_phone', () => '9562291843, 9446932750');
-  settings.putIfAbsent('business_email', () => '');
-  settings.putIfAbsent('business_gstin', () => '');
-  settings.putIfAbsent('gst_enabled', () => false);
-  settings.putIfAbsent('gst_rate', () => 0.0);
-  settings.putIfAbsent('gst_price_inclusive', () => false);
+  Future<void> setDefaultSetting(String key, dynamic value) async {
+    if (!settings.containsKey(key)) await settings.put(key, value);
+  }
+  await setDefaultSetting('business_name', 'Royal Garden');
+  await setDefaultSetting('business_address', 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
+  await setDefaultSetting('business_phone', '9562291843, 9446932750');
+  await setDefaultSetting('business_email', '');
+  await setDefaultSetting('business_gstin', '');
+  await setDefaultSetting('gst_enabled', false);
+  await setDefaultSetting('gst_rate', 0.0);
+  await setDefaultSetting('gst_price_inclusive', false);
     
   // Initialize services
   final auth = AuthService();
