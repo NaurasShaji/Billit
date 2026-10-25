@@ -20,6 +20,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   late final TextEditingController _stockController;
   late final TextEditingController _categoryController;
   late final TextEditingController _subCategoryController;
+  late final TextEditingController _barcodeController;
   late UnitType _selectedUnit;
   bool _isLoading = false;
   double _profitMargin = 0;
@@ -34,6 +35,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     _stockController = TextEditingController(text: widget.product?.stock.toString() ?? '0');
     _categoryController = TextEditingController(text: widget.product?.category ?? 'General');
     _subCategoryController = TextEditingController(text: widget.product?.subCategory ?? '');
+    _barcodeController = TextEditingController(text: widget.product?.barcode ?? '');
     _selectedUnit = widget.product?.unit ?? UnitType.pcs;
 
     // Calculate initial profit margin
@@ -61,6 +63,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     _stockController.dispose();
     _categoryController.dispose();
     _subCategoryController.dispose();
+    _barcodeController.dispose();
     super.dispose();
   }
 
@@ -91,6 +94,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
         ..stock = double.tryParse(_stockController.text) ?? 0
         ..category = _categoryController.text
         ..subCategory = _subCategoryController.text
+        ..barcode = _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim()
         ..unit = _selectedUnit;
 
       if (widget.product == null) {
@@ -349,6 +353,21 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                     ],
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _buildSectionCard(
+              title: 'Barcode',
+              icon: Icons.qr_code_scanner,
+              content: TextFormField(
+                controller: _barcodeController,
+                decoration: InputDecoration(
+                  labelText: 'Barcode / SKU',
+                  hintText: 'Scan with USB/Bluetooth scanner or enter manually',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.qr_code_2),
+                ),
               ),
             ),
             const SizedBox(height: 20),
