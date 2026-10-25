@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -96,6 +100,76 @@ class _ReportsTabState extends State<ReportsTab>
         setState(() => _printingSaleIds.remove(sale.id));
       }
     }
+  }
+
+  String _csvCell(Object? value) {
+    final text = (value ?? '').toString().replaceAll('"', '""');
+    return '"$text"';
+  }
+
+  Future<void> _shareCsv(String filename, List<List<Object?>> rows) async {
+    try {
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/$filename');
+      final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\r\n');
+      await file.writeAsString('\uFEFF$csv', encoding: utf8, flush: true);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'text/csv', name: filename)],
+        subject: filename,
+        text: 'Floral Bill accounting export',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not export CSV: $e')),
+      );
+    }
+  }
+
+  Future<void> _exportGstSalesRegister() async {
+    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final rows = <List<Object?>>[
+      ['Invoice No', 'Date', 'Customer', 'Phone', 'Customer GSTIN', 'Subtotal', 'Discount', 'Taxable Value', 'CGST', 'SGST', 'IGST', 'Total GST', 'Invoice Total', 'Payment', 'Tax Type', 'HSN/SAC Summary', 'GST Rate Summary'],
+      for (final sale in sales)
+        [
+          sale.id,
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(sale.date.toLocal()),
+          sale.customerName,
+          sale.customerPhone,
+          sale.customerGstin,
+          sale.items.fold<double>(0, (sum, item) => sum + item.subtotal).toStringAsFixed(2),
+          sale.discount.toStringAsFixed(2),
+          (sale.gstEnabled ? sale.taxableAmount : (sale.items.fold<double>(0, (sum, item) => sum + item.subtotal) - sale.discount)).toStringAsFixed(2),
+          sale.cgstAmount.toStringAsFixed(2),
+          sale.sgstAmount.toStringAsFixed(2),
+          sale.igstAmount.toStringAsFixed(2),
+          (sale.cgstAmount + sale.sgstAmount + sale.igstAmount).toStringAsFixed(2),
+          sale.totalAmount.toStringAsFixed(2),
+          sale.payment.name.toUpperCase(),
+          sale.gstEnabled ? (sale.interstateSale ? 'IGST' : 'CGST+SGST') : 'No GST',
+          sale.items.map((item) => item.hsnCode).where((code) => code.isNotEmpty).toSet().join('; '),
+          sale.items.map((item) => item.gstRate).where((rate) => rate > 0).toSet().join('; '),
+        ],
+    ];
+    await _shareCsv('floralbill_gst_sales_register.csv', rows);
+  }
+
+  Future<void> _exportExpensesRegister() async {
+    final expenses = Hive.box<Expense>(Boxes.expenses).values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final rows = <List<Object?>>[
+      ['Expense ID', 'Date', 'Category', 'Description', 'Amount'],
+      for (final expense in expenses)
+        [
+          expense.id,
+          DateFormat('yyyy-MM-dd').format(expense.date.toLocal()),
+          expense.category,
+          expense.description,
+          expense.amount.toStringAsFixed(2),
+        ],
+    ];
+    await _shareCsv('floralbill_expenses_register.csv', rows);
   }
 
   @override
@@ -223,6 +297,27 @@ class _ReportsTabState extends State<ReportsTab>
                         ],
                 ),
               ),
+              if (_isAdmin) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _exportGstSalesRegister,
+                        icon: const Icon(Icons.receipt_long),
+                        label: const Text('Export GST Sales Register'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _exportExpensesRegister,
+                        icon: const Icon(Icons.account_balance_wallet_outlined),
+                        label: const Text('Export Expenses'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
             ],
           ),
