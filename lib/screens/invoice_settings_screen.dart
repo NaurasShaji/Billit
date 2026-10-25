@@ -26,7 +26,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _upiId;
   late final TextEditingController _upiPayeeName;
   late final TextEditingController _upiNotePrefix;
-  late String _appTheme;
   late String _invoiceAccent;
   late final TextEditingController _invoiceFooter;
 
@@ -53,11 +52,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _upiId = TextEditingController(text: _settings.get('upi_id', defaultValue: '').toString());
     _upiPayeeName = TextEditingController(text: _settings.get('upi_payee_name', defaultValue: '').toString());
     _upiNotePrefix = TextEditingController(text: _settings.get('upi_note_prefix', defaultValue: 'Invoice').toString());
-    _appTheme = _settings.get('app_theme', defaultValue: 'green').toString();
     _invoiceAccent = _settings.get('invoice_accent', defaultValue: 'blue').toString();
     if (!const ['blue', 'green', 'purple', 'teal', 'orange', 'pink', 'indigo'].contains(_invoiceAccent)) _invoiceAccent = 'blue';
     _invoiceFooter = TextEditingController(text: _settings.get('invoice_footer_text', defaultValue: 'Thank you for your business.').toString());
-    if (!const ['green', 'blue', 'purple', 'teal', 'amber', 'rose', 'indigo', 'slate', 'coral', 'ocean'].contains(_appTheme)) _appTheme = 'green';
     _appLogoBytes = _decodeImage('app_logo_base64');
     _invoiceLogoBytes = _decodeImage('business_logo_base64');
     _paymentQrBytes = _decodeImage('payment_qr_base64');
@@ -129,7 +126,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
     await _settings.putAll({
       'app_name': _appName.text.trim(),
-      'app_theme': _appTheme,
       'invoice_accent': _invoiceAccent,
       'invoice_footer_text': _invoiceFooter.text.trim(),
       'upi_id': _upiId.text.trim(),
@@ -243,28 +239,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
               key: 'app',
               bytes: _appLogoBytes,
               placeholderIcon: Icons.apps,
-            ),
-            const SizedBox(height: 20),
-            const Text('App theme', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            const Text('Choose an accent colour and matching soft background for the app.', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: _appTheme,
-              decoration: _decoration('Colour theme', Icons.palette_outlined),
-              items: const [
-                DropdownMenuItem(value: 'green', child: Text('Garden Green')),
-                DropdownMenuItem(value: 'blue', child: Text('Classic Blue')),
-                DropdownMenuItem(value: 'purple', child: Text('Royal Purple')),
-                DropdownMenuItem(value: 'teal', child: Text('Calm Teal')),
-                DropdownMenuItem(value: 'amber', child: Text('Warm Amber')),
-                DropdownMenuItem(value: 'rose', child: Text('Rose')),
-                DropdownMenuItem(value: 'indigo', child: Text('Indigo')),
-                DropdownMenuItem(value: 'slate', child: Text('Slate')),
-                DropdownMenuItem(value: 'coral', child: Text('Coral')),
-                DropdownMenuItem(value: 'ocean', child: Text('Ocean')),
-              ],
-              onChanged: (value) { if (value != null) setState(() => _appTheme = value); },
             ),
             const SizedBox(height: 20),
             const Text('Business details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
