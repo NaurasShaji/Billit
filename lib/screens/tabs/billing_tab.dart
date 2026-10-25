@@ -39,6 +39,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   bool _gstAvailable = false;
   bool _applyGst = false;
   bool _interstateSale = false;
+  bool _gstInclusive = false;
   double _gstRate = 0.0;
   AnimationController? _animationController;
   Animation<double>? _fadeAnimation;
@@ -52,23 +53,39 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   double get profit => _cartService.profit;
   int get itemCount => _cartService.itemCount;
   double get _subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
-  double get _taxableAmount => (_subtotal - _discount).clamp(0.0, double.infinity).toDouble();
-  double _lineTaxableAmount(SaleItem item) {
+  double _lineGrossAfterDiscount(SaleItem item) {
     if (_subtotal <= 0) return 0.0;
     final allocatedDiscount = _discount * item.subtotal / _subtotal;
     return (item.subtotal - allocatedDiscount).clamp(0.0, double.infinity).toDouble();
+  }
+  double _lineTaxableAmount(SaleItem item) {
+    final gross = _lineGrossAfterDiscount(item);
+    if (!_applyGst || !_gstInclusive) return gross;
+    final rate = _lineGstRate(item);
+    return rate <= 0 ? gross : gross / (1 + rate / 100.0);
+  }
+  double get _taxableAmount => _applyGst && _gstInclusive
+      ? items.fold<double>(0.0, (sum, item) => sum + _lineTaxableAmount(item))
+      : (_subtotal - _discount).clamp(0.0, double.infinity).toDouble();
+  double _lineTaxAmount(SaleItem item) {
+    if (!_applyGst) return 0.0;
+    final rate = _lineGstRate(item);
+    final taxable = _lineTaxableAmount(item);
+    return _gstInclusive
+        ? _lineGrossAfterDiscount(item) - taxable
+        : taxable * rate / 100.0;
   }
   double _lineGstRate(SaleItem item) {
     final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate ?? 0.0;
     return productRate > 0 ? productRate : _gstRate;
   }
   double get _gstAmount => !_applyGst ? 0.0 : items.fold<double>(
-    0.0, (sum, item) => sum + _lineTaxableAmount(item) * _lineGstRate(item) / 100.0,
+    0.0, (sum, item) => sum + _lineTaxAmount(item),
   );
   double get _cgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
   double get _sgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
   double get _igstAmount => _applyGst && _interstateSale ? _gstAmount : 0.0;
-  double get _grandTotal => _taxableAmount + _gstAmount;
+  double get _grandTotal => _applyGst && _gstInclusive ? _subtotal - _discount : _taxableAmount + _gstAmount;
   double get _estimatedProfit => _taxableAmount - cost;
 
   @override
@@ -78,6 +95,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final settings = Hive.box<dynamic>('app_settings');
     _gstAvailable = settings.get('gst_enabled', defaultValue: false) as bool;
     _gstRate = (settings.get('gst_rate', defaultValue: 0.0) as num).toDouble();
+    _gstInclusive = settings.get('gst_price_inclusive', defaultValue: false) as bool;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -543,6 +561,13 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                   value: _interstateSale,
                                   onChanged: (value) => setState(() => _interstateSale = value ?? false),
                                 ),
+                                CheckboxListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('Prices already include GST'),
+                                  subtitle: const Text('If enabled, GST is extracted from the listed price instead of added on top.'),
+                                  value: _gstInclusive,
+                                  onChanged: (value) => setState(() => _gstInclusive = value ?? false),
+                                ),
                                 TextField(
                                   controller: _customerGstin,
                                   textCapitalization: TextCapitalization.characters,
@@ -844,7 +869,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         final product = productsBox.get(item.productId);
         final taxable = _lineTaxableAmount(item);
         final rate = _applyGst ? _lineGstRate(item) : 0.0;
-        final tax = taxable * rate / 100.0;
+        final tax = _lineTaxAmount(item);
         item
           ..hsnCode = product?.hsnCode ?? ''
           ..gstRate = rate
