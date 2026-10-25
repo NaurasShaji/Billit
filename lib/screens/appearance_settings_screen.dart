@@ -43,6 +43,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
         final selectedTheme = box.get('app_theme', defaultValue: 'green').toString();
         final themeMode = box.get('theme_mode', defaultValue: 'system').toString();
         final density = box.get('ui_density', defaultValue: 'comfortable').toString();
+        final productView = box.get('product_view', defaultValue: 'list').toString();
         final textScale = (box.get('text_scale', defaultValue: 1.0) as num).toDouble();
         final radius = (box.get('corner_radius', defaultValue: 16.0) as num).toDouble();
         final lowStockThreshold = (box.get('low_stock_threshold', defaultValue: 10) as num).toDouble();
@@ -164,6 +165,22 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  _sectionTitle(context, 'Product catalogue layout', 'Choose how inventory items are displayed.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'list', icon: Icon(Icons.view_list_outlined), label: Text('List')),
+                          ButtonSegment(value: 'grid', icon: Icon(Icons.grid_view_rounded), label: Text('Grid')),
+                        ],
+                        selected: {productView},
+                        onSelectionChanged: (values) => _save('product_view', values.first),
+                        showSelectedIcon: false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   _sectionTitle(context, 'Text size', 'Adjust app text for readability.'),
                   Card(
                     child: Padding(
@@ -271,6 +288,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('app_theme', 'green');
                       await _save('theme_mode', 'system');
                       await _save('ui_density', 'comfortable');
+                      await _save('product_view', 'list');
                       await _save('text_scale', 1.0);
                       await _save('corner_radius', 16.0);
                       await _save('low_stock_threshold', 10);
