@@ -35,6 +35,11 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   final TextEditingController _customerPhone = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
   final TextEditingController _barcodeInputController = TextEditingController();
+  final TextEditingController _customerGstin = TextEditingController();
+  bool _gstAvailable = false;
+  bool _applyGst = false;
+  bool _interstateSale = false;
+  double _gstRate = 0.0;
   AnimationController? _animationController;
   Animation<double>? _fadeAnimation;
 
@@ -46,11 +51,22 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   double get cost => _cartService.cost;
   double get profit => _cartService.profit;
   int get itemCount => _cartService.itemCount;
+  double get _subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
+  double get _taxableAmount => (_subtotal - _discount).clamp(0.0, double.infinity).toDouble();
+  double get _gstAmount => _applyGst ? _taxableAmount * _gstRate / 100.0 : 0.0;
+  double get _cgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
+  double get _sgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
+  double get _igstAmount => _applyGst && _interstateSale ? _gstAmount : 0.0;
+  double get _grandTotal => _taxableAmount + _gstAmount;
+  double get _estimatedProfit => _taxableAmount - cost;
 
   @override
   void initState() {
     super.initState();
     _cartService = CartService();
+    final settings = Hive.box<dynamic>('app_settings');
+    _gstAvailable = settings.get('gst_enabled', defaultValue: false) as bool;
+    _gstRate = (settings.get('gst_rate', defaultValue: 0.0) as num).toDouble();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -77,6 +93,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     _customerPhone.dispose();
     _discountController.dispose();
     _barcodeInputController.dispose();
+    _customerGstin.dispose();
     super.dispose();
   }
 
@@ -435,6 +452,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                       _customerName.clear();
                       _customerPhone.clear();
                       _discountController.clear();
+        _customerGstin.clear();
+        _applyGst = false;
+        _interstateSale = false;
                     },
                     onAddProduct: (product) {
                       // Logic to add product using CartService
@@ -491,7 +511,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                               ),
                               onChanged: (value) {
                                 final discount = double.tryParse(value) ?? 0.0;
-                                final clampedDiscount = discount.clamp(0.0, total);
+                                final clampedDiscount = discount.clamp(0.0, _subtotal);
                                 _cartService.updateDiscount(clampedDiscount);
                               },
                             ),
@@ -767,13 +787,21 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         ..id = id
         ..date = DateTime.now()
         ..items = items.map((e) => e).toList()
-        ..totalAmount = total
+        ..totalAmount = _grandTotal
         ..totalCost = cost
-        ..profit = profit
+        ..profit = _estimatedProfit
         ..payment = _method
         ..customerName = _customerName.text.trim()
         ..customerPhone = _customerPhone.text.trim()
         ..discount = _discount
+        ..gstEnabled = _applyGst
+        ..gstRate = _applyGst ? _gstRate : 0.0
+        ..taxableAmount = _taxableAmount
+        ..cgstAmount = _cgstAmount
+        ..sgstAmount = _sgstAmount
+        ..igstAmount = _igstAmount
+        ..customerGstin = _customerGstin.text.trim().toUpperCase()
+        ..interstateSale = _interstateSale
         ..userId = context.read<AuthService>().currentUser?.id ?? '';
 
       await salesBox.put(sale.id, sale);
