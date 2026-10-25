@@ -21,7 +21,7 @@ class Product extends HiveObject {
   @HiveField(8) bool active = true;
   @HiveField(9) String? barcode;
   @HiveField(10) String hsnCode = '';
-  @HiveField(11) double gstRate = 0.0;
+  @HiveField(11) double? gstRate;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -54,6 +54,6 @@ class Product extends HiveObject {
       ..active = json['active'] as bool? ?? true
       ..barcode = json['barcode'] as String?
       ..hsnCode = json['hsnCode'] as String? ?? ''
-      ..gstRate = (json['gstRate'] as num?)?.toDouble() ?? 0.0;
+      ..gstRate = (json['gstRate'] as num?)?.toDouble();
   }
 }
