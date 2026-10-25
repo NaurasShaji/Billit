@@ -57,7 +57,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _upiPayeeName = TextEditingController(text: _settings.get('upi_payee_name', defaultValue: '').toString());
     _upiNotePrefix = TextEditingController(text: _settings.get('upi_note_prefix', defaultValue: 'Invoice').toString());
     _appTheme = _settings.get('app_theme', defaultValue: 'green').toString();
-    if (!const ['green', 'blue', 'purple', 'teal', 'amber', 'rose', 'dark'].contains(_appTheme)) _appTheme = 'green';
+    if (!const ['green', 'blue', 'purple', 'teal', 'amber', 'rose'].contains(_appTheme)) _appTheme = 'green';
     _appLogoBytes = _decodeImage('app_logo_base64');
     _invoiceLogoBytes = _decodeImage('business_logo_base64');
     _paymentQrBytes = _decodeImage('payment_qr_base64');
@@ -260,7 +260,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                 DropdownMenuItem(value: 'teal', child: Text('Calm Teal')),
                 DropdownMenuItem(value: 'amber', child: Text('Warm Amber')),
                 DropdownMenuItem(value: 'rose', child: Text('Rose')),
-                DropdownMenuItem(value: 'dark', child: Text('Dark Blue-Grey')),
               ],
               onChanged: (value) { if (value != null) setState(() => _appTheme = value); },
             ),
