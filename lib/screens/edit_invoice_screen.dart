@@ -6,6 +6,7 @@ import '../../services/boxes.dart';
 import '../../services/pdf_service.dart';
 import '../../services/invoice_service.dart'; // Added import
 import './product_selection_screen.dart';
+import '../widgets/responsive_page.dart';
 
 class EditInvoiceScreen extends StatefulWidget {
   final Sale sale;
@@ -289,7 +290,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             ),
         ],
       ),
-      body: SlideTransition(
+      body: ResponsivePage(maxWidth: 1100, child: SlideTransition(
         position: _slideAnimation,
         child: SingleChildScrollView(
           padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
@@ -321,7 +322,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 
