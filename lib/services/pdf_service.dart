@@ -107,7 +107,7 @@ class PdfService {
           '${sale.items[i].qty} ${sale.items[i].unitLabel}',
           currency.format(sale.items[i].sellingPrice),
           currency.format(sale.gstEnabled ? sale.items[i].taxableAmount : sale.items[i].subtotal),
-          sale.gstEnabled ? '${sale.items[i].gstRate.toStringAsFixed(2)}%' : '-',
+          sale.gstEnabled ? '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%' : '-',
           sale.gstEnabled ? currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount) : '-',
           currency.format((sale.gstEnabled ? sale.items[i].taxableAmount : sale.items[i].subtotal) + sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
         ],
