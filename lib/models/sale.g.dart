@@ -101,13 +101,14 @@ class SaleAdapter extends TypeAdapter<Sale> {
       ..sgstAmount = fields[15] as double? ?? 0.0
       ..igstAmount = fields[16] as double? ?? 0.0
       ..customerGstin = fields[17] as String? ?? ''
-      ..interstateSale = fields[18] as bool? ?? false;
+      ..interstateSale = fields[18] as bool? ?? false
+      ..gstInclusive = fields[19] as bool? ?? false;
   }
 
   @override
   void write(BinaryWriter writer, Sale obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -145,7 +146,9 @@ class SaleAdapter extends TypeAdapter<Sale> {
       ..writeByte(17)
       ..write(obj.customerGstin)
       ..writeByte(18)
-      ..write(obj.interstateSale);
+      ..write(obj.interstateSale)
+      ..writeByte(19)
+      ..write(obj.gstInclusive);
   }
 
   @override
