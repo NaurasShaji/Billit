@@ -92,7 +92,6 @@ Color _themeSeedColor(String theme) {
 
 ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
   final themeName = settings.get('app_theme', defaultValue: 'green').toString();
-  final scale = (settings.get('text_scale', defaultValue: 1.0) as num).toDouble().clamp(0.9, 1.2).toDouble();
   final radius = (settings.get('corner_radius', defaultValue: 16.0) as num).toDouble();
   final compact = settings.get('ui_density', defaultValue: 'comfortable') == 'compact';
   final scheme = ColorScheme.fromSeed(
