@@ -437,7 +437,8 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   void _showProductDetails(Product product) {
-    final isLowStock = product.stock < 10;
+    final threshold = (Hive.box<dynamic>('app_settings').get('low_stock_threshold', defaultValue: 10) as num).toDouble();
+    final isLowStock = product.stock <= threshold;
     
     showDialog(
       context: context,
