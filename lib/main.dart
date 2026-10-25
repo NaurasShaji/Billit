@@ -46,6 +46,7 @@ Future<void> main() async {
   await setDefaultSetting('app_theme', 'green');
   await setDefaultSetting('theme_mode', 'system');
   await setDefaultSetting('ui_density', 'comfortable');
+  await setDefaultSetting('product_view', 'list');
   await setDefaultSetting('text_scale', 1.0);
   await setDefaultSetting('corner_radius', 16.0);
   await setDefaultSetting('low_stock_threshold', 10);
