@@ -77,7 +77,6 @@ Color _themeSeedColor(String theme) {
     case 'amber': return Colors.amber;
     case 'teal': return Colors.teal;
     case 'rose': return const Color(0xFFB83280);
-    case 'dark': return Colors.blueGrey;
     case 'green':
     default: return Colors.green;
   }
@@ -99,7 +98,6 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: _themeSeedColor(settings.get('app_theme', defaultValue: 'green').toString()),
-            brightness: settings.get('app_theme', defaultValue: 'green') == 'dark' ? Brightness.dark : Brightness.light,
           ),
           useMaterial3: true,
         ),
