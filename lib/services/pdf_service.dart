@@ -305,8 +305,9 @@ class PdfService {
   static Future<pw.ImageProvider?> _loadPaymentQrImage() async {
     try {
       final settings = Hive.box<dynamic>('app_settings');
-      final savedQr = settings.get('payment_qr_base64') as String?;
-      if (savedQr != null && savedQr.isNotEmpty) {
+      if (settings.containsKey('payment_qr_base64')) {
+        final savedQr = settings.get('payment_qr_base64') as String?;
+        if (savedQr == null || savedQr.isEmpty) return null;
         return pw.MemoryImage(base64Decode(savedQr));
       }
     } catch (_) {
