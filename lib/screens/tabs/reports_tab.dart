@@ -168,7 +168,7 @@ class _ReportsTabState extends State<ReportsTab>
             item.qty,
             item.sellingPrice.toStringAsFixed(2),
             (sale.gstEnabled ? item.taxableAmount : item.subtotal).toStringAsFixed(2),
-            sale.gstEnabled ? item.gstRate.toStringAsFixed(2) : '0.00',
+            sale.gstEnabled ? (item.gstRate ?? 0.0).toStringAsFixed(2) : '0.00',
             item.cgstAmount.toStringAsFixed(2),
             item.sgstAmount.toStringAsFixed(2),
             item.igstAmount.toStringAsFixed(2),
