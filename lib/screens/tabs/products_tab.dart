@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
 import '../manage_product_screen.dart';
@@ -132,9 +133,14 @@ class _ProductsTabState extends State<ProductsTab> {
           
           // Products List
           Expanded(
-            child: filtered.isEmpty
-                ? _buildEmptyState()
-                : _buildListView(filtered),
+            child: ValueListenableBuilder<Box<dynamic>>(
+              valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+              builder: (context, settings, _) {
+                if (filtered.isEmpty) return _buildEmptyState();
+                final view = settings.get('product_view', defaultValue: 'list').toString();
+                return view == 'grid' ? _buildGridView(filtered) : _buildListView(filtered);
+              },
+            ),
           ),
         ],
       ),
@@ -214,6 +220,94 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
 
+
+  Widget _buildGridView(List<Product> products) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 300,
+        mainAxisExtent: 230,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        final product = products[index];
+        final threshold = (Hive.box<dynamic>('app_settings').get('low_stock_threshold', defaultValue: 10) as num).toDouble();
+        final lowStock = product.stock <= threshold;
+        final theme = Theme.of(context);
+        return Card(
+          elevation: 0,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          child: InkWell(
+            onTap: () => _showProductDetails(product),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          product.category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                      if (product.barcode?.isNotEmpty == true)
+                        const Tooltip(message: 'Barcode assigned', child: Icon(Icons.qr_code_2, size: 18)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  Text('₹${product.sellingPrice.toStringAsFixed(2)}',
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: theme.colorScheme.primary)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: lowStock ? theme.colorScheme.errorContainer : theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${product.stock.toStringAsFixed(product.stock == product.stock.roundToDouble() ? 0 : 1)} ${product.unit.name}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: lowStock ? theme.colorScheme.onErrorContainer : theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Edit product',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _openEditor(product: product),
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildListView(List<Product> products) {
     return ListView.separated(
