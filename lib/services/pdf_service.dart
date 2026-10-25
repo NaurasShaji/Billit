@@ -349,7 +349,7 @@ class PdfService {
       }),
       _thermalSeparator(contentWidth),
       _thermalTotalRow(
-          'Subtotal:', 'Rs.${subtotal.truncate()}', contentWidth, fontSize),
+          'Subtotal:', 'Rs.${subtotal.toStringAsFixed(2)}', contentWidth, fontSize),
       if (sale.discount > 0)
         _thermalTotalRow('Discount:', '-Rs.${sale.discount.toStringAsFixed(2)}',
             contentWidth, fontSize),
@@ -363,7 +363,7 @@ class PdfService {
         ],
       ],
       _thermalSeparator(contentWidth, doubleLine: true),
-      _thermalTotalRow('TOTAL:', 'Rs.${sale.totalAmount.truncate()}',
+      _thermalTotalRow('TOTAL:', 'Rs.${sale.totalAmount.toStringAsFixed(2)}',
           contentWidth, fontSize + 3,
           bold: true),
       if (qrImage != null) ...[
