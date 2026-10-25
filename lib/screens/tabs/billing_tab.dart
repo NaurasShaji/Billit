@@ -888,7 +888,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       final safePrefix = prefix.isEmpty ? 'INV' : prefix;
       final nextNumber = (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num).toInt();
       final datePart = DateFormat('yyyyMM').format(DateTime.now());
-      final id = '$safePrefix-$datePart-${nextNumber.toString().padLeft(5, '0')}';
+      final id = '$safePrefix-$datePart-${nextNumber.toString().padLeft(5, "0")}';
       await invoiceSettings.put('next_invoice_number', nextNumber + 1);
 
       final sale = Sale()
