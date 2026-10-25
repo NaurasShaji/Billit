@@ -344,7 +344,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       final recentSales = allSales.take(5).toList();
 
     return Scaffold(
-      backgroundColor: _surfaceColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: null,
       body: _fadeAnimation != null 
         ? FadeTransition(
