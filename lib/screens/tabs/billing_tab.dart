@@ -639,7 +639,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                         ),
                                       ),
                                       Text(
-                                        cur.format(total),
+                                        cur.format(_grandTotal),
                                         style: const TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.w700,
