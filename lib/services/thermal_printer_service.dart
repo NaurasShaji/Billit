@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:image/image.dart' as img;
+import 'payment_qr_service.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -365,21 +366,23 @@ class ThermalPrinterService {
     bytes += _totalLineBytes(totalAmount);
     bytes += generator.text('');
 
-    // Print QR / Tap & Pay image
+    // Generate a bill-specific UPI QR when a UPI ID is configured;
+    // otherwise use the optional static QR fallback.
     try {
-      final ByteData qrData =
-          await rootBundle.load('assets/tap_and_pay_qr.png');
-      final Uint8List qrBytes = qrData.buffer.asUint8List();
-      final img.Image? qrImage = img.decodeImage(qrBytes);
-      if (qrImage != null) {
-        bytes += generator.text(
-          'SCAN & PAY',
-          styles: PosStyles(align: PosAlign.center, bold: true),
-        );
-        bytes += generator.image(qrImage);
+      final qrBytes = await PaymentQrService.generateForSale(sale) ??
+          await PaymentQrService.loadStaticQrFallback();
+      if (qrBytes != null) {
+        final img.Image? qrImage = img.decodeImage(qrBytes);
+        if (qrImage != null) {
+          bytes += generator.text(
+            'SCAN & PAY',
+            styles: PosStyles(align: PosAlign.center, bold: true),
+          );
+          bytes += generator.image(qrImage);
+        }
       }
     } catch (e) {
-      print('Error printing QR image: $e');
+      print('Error generating/printing payment QR: $e');
     }
 
     // Footer
