@@ -82,7 +82,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
         .clamp(0.0, double.infinity).toDouble());
   }
   double _rateForItem(SaleItem item) {
-    if (item.gstRate > 0) return item.gstRate;
+    if (item.gstRate != null) return item.gstRate!;
     final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
     return productRate ?? widget.sale.gstRate;
   }
