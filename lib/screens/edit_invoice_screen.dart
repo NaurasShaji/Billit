@@ -72,9 +72,40 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
   }
 
   double get _currentSubtotal => _editedItems.fold(0.0, (a, it) => a + it.subtotal);
-  double get _currentTotal => _currentSubtotal - _discount;
+  double _grossAfterDiscount(SaleItem item) {
+    if (_currentSubtotal <= 0) return 0.0;
+    return (item.subtotal - _discount * item.subtotal / _currentSubtotal)
+        .clamp(0.0, double.infinity).toDouble();
+  }
+  double _rateForItem(SaleItem item) {
+    if (item.gstRate > 0) return item.gstRate;
+    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate ?? 0.0;
+    return productRate > 0 ? productRate : widget.sale.gstRate;
+  }
+  double _taxableForItem(SaleItem item) {
+    final gross = _grossAfterDiscount(item);
+    if (!widget.sale.gstEnabled || !widget.sale.gstInclusive) return gross;
+    final rate = _rateForItem(item);
+    return rate <= 0 ? gross : gross / (1 + rate / 100.0);
+  }
+  double _taxForItem(SaleItem item) {
+    if (!widget.sale.gstEnabled) return 0.0;
+    final gross = _grossAfterDiscount(item);
+    final taxable = _taxableForItem(item);
+    return widget.sale.gstInclusive
+        ? gross - taxable
+        : taxable * _rateForItem(item) / 100.0;
+  }
+  double get _currentTaxable => _editedItems.fold<double>(0.0, (sum, item) => sum + _taxableForItem(item));
+  double get _currentGst => _editedItems.fold<double>(0.0, (sum, item) => sum + _taxForItem(item));
+  double get _currentCgst => widget.sale.gstEnabled && !widget.sale.interstateSale ? _currentGst / 2 : 0.0;
+  double get _currentSgst => widget.sale.gstEnabled && !widget.sale.interstateSale ? _currentGst / 2 : 0.0;
+  double get _currentIgst => widget.sale.gstEnabled && widget.sale.interstateSale ? _currentGst : 0.0;
+  double get _currentTotal => widget.sale.gstEnabled && !widget.sale.gstInclusive
+      ? _currentTaxable + _currentGst
+      : _currentSubtotal - _discount;
   double get _currentCost => _editedItems.fold(0.0, (a, it) => a + (it.costPrice * it.qty));
-  double get _currentProfit => _currentTotal - _currentCost;
+  double get _currentProfit => _currentTaxable - _currentCost;
 
   double _getAvailableStock(Product product, SaleItem? currentItem) {
     final originalQty = currentItem?.qty ?? 0.0;
@@ -128,6 +159,18 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     setState(() => _isSaving = true);
     
     try {
+      for (final item in _editedItems) {
+        final product = Hive.box<Product>(Boxes.products).get(item.productId);
+        final taxable = _taxableForItem(item);
+        final tax = _taxForItem(item);
+        item
+          ..hsnCode = product?.hsnCode ?? item.hsnCode
+          ..taxableAmount = taxable
+          ..cgstAmount = widget.sale.gstEnabled && !widget.sale.interstateSale ? tax / 2 : 0.0
+          ..sgstAmount = widget.sale.gstEnabled && !widget.sale.interstateSale ? tax / 2 : 0.0
+          ..igstAmount = widget.sale.gstEnabled && widget.sale.interstateSale ? tax : 0.0;
+      }
+
       widget.sale
         ..customerName = _customerNameController.text.trim()
         ..customerPhone = _customerPhoneController.text.trim()
@@ -136,6 +179,10 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
         ..totalAmount = _currentTotal
         ..totalCost = _currentCost
         ..profit = _currentProfit
+        ..taxableAmount = _currentTaxable
+        ..cgstAmount = _currentCgst
+        ..sgstAmount = _currentSgst
+        ..igstAmount = _currentIgst
         ..discount = _discount;
 
       await widget.sale.save();
@@ -941,6 +988,15 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
               
               _buildSummaryRow('Subtotal', cur.format(_currentSubtotal)),
               _buildSummaryRow('Discount', '- ${cur.format(_discount)}', isDiscount: true),
+              if (widget.sale.gstEnabled) ...[
+                _buildSummaryRow('Taxable value', cur.format(_currentTaxable)),
+                if (widget.sale.interstateSale)
+                  _buildSummaryRow('IGST', cur.format(_currentIgst))
+                else ...[
+                  _buildSummaryRow('CGST', cur.format(_currentCgst)),
+                  _buildSummaryRow('SGST', cur.format(_currentSgst)),
+                ],
+              ],
               const Divider(thickness: 2),
               _buildSummaryRow('Total', cur.format(_currentTotal), isTotal: true, theme: theme),
               const SizedBox(height: 8),
