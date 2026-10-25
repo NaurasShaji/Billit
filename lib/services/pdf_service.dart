@@ -341,8 +341,17 @@ class PdfService {
       _thermalTotalRow(
           'Subtotal:', 'Rs.${subtotal.truncate()}', contentWidth, fontSize),
       if (sale.discount > 0)
-        _thermalTotalRow('Discount:', '-Rs.${sale.discount.truncate()}',
+        _thermalTotalRow('Discount:', '-Rs.${sale.discount.toStringAsFixed(2)}',
             contentWidth, fontSize),
+      if (sale.gstEnabled) ...[
+        _thermalTotalRow('Taxable value:', 'Rs.${sale.taxableAmount.toStringAsFixed(2)}', contentWidth, fontSize),
+        if (sale.interstateSale)
+          _thermalTotalRow('IGST:', 'Rs.${sale.igstAmount.toStringAsFixed(2)}', contentWidth, fontSize)
+        else ...[
+          _thermalTotalRow('CGST:', 'Rs.${sale.cgstAmount.toStringAsFixed(2)}', contentWidth, fontSize),
+          _thermalTotalRow('SGST:', 'Rs.${sale.sgstAmount.toStringAsFixed(2)}', contentWidth, fontSize),
+        ],
+      ],
       _thermalSeparator(contentWidth, doubleLine: true),
       _thermalTotalRow('TOTAL:', 'Rs.${sale.totalAmount.truncate()}',
           contentWidth, fontSize + 3,
@@ -899,7 +908,7 @@ class PdfService {
     final bool isWide = thermalSize == ThermalSize.mm80;
     final bool is58mm = thermalSize == ThermalSize.mm58;
     final subtotal = sale.items.fold(0.0, (a, b) => a + b.subtotal);
-    final gstAmount = includeGST ? (sale.totalAmount * 0.18) : 0.0;
+    final gstAmount = includeGST && sale.gstEnabled ? sale.cgstAmount + sale.sgstAmount + sale.igstAmount : 0.0;
 
     // Font sizes based on printer width
     final double normalFontSize = is58mm ? 8 : (isWide ? 10 : 9);
@@ -926,10 +935,16 @@ class PdfService {
                   valueColor: PdfColors.red),
             ],
 
-            if (includeGST && gstAmount > 0) ...[
+            if (includeGST && sale.gstEnabled) ...[
               pw.SizedBox(height: is58mm ? 1 : 2),
-              _buildCompactTotalRow(
-                  'GST (18%):', gstAmount.toStringAsFixed(2), normalFontSize),
+              _buildCompactTotalRow('Taxable value:', sale.taxableAmount.toStringAsFixed(2), normalFontSize),
+              if (sale.interstateSale)
+                _buildCompactTotalRow('IGST:', sale.igstAmount.toStringAsFixed(2), normalFontSize)
+              else ...[
+                _buildCompactTotalRow('CGST:', sale.cgstAmount.toStringAsFixed(2), normalFontSize),
+                _buildCompactTotalRow('SGST:', sale.sgstAmount.toStringAsFixed(2), normalFontSize),
+              ],
+              _buildCompactTotalRow('Total GST:', gstAmount.toStringAsFixed(2), normalFontSize),
             ],
 
             pw.SizedBox(height: is58mm ? 2 : 4),
