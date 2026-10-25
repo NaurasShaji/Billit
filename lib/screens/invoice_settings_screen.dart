@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../widgets/responsive_page.dart';
 
 class InvoiceSettingsScreen extends StatefulWidget {
   const InvoiceSettingsScreen({super.key});
@@ -223,7 +224,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('App & Invoice Settings')),
-      body: Form(
+      body: ResponsivePage(maxWidth: 900, child: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -372,7 +373,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }
