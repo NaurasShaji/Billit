@@ -187,7 +187,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             label: '${(textScale * 100).round()}%',
                             onChanged: (value) => _save('text_scale', value),
                           ),
-                          Text('Sample text · Invoice total ₹1,250.00', style: TextStyle(fontSize: 14 * textScale)),
+                          Text('Sample text · Invoice total ₹1,250.00', style: TextStyle(fontSize: 14)),
                         ],
                       ),
                     ),
