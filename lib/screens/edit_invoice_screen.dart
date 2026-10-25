@@ -83,8 +83,8 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
   }
   double _rateForItem(SaleItem item) {
     if (item.gstRate > 0) return item.gstRate;
-    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate ?? 0.0;
-    return productRate > 0 ? productRate : widget.sale.gstRate;
+    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
+    return productRate ?? widget.sale.gstRate;
   }
   double _taxableForItem(SaleItem item) {
     final gross = _grossAfterDiscount(item);
