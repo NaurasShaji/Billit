@@ -462,7 +462,7 @@ class _ProductsTabState extends State<ProductsTab> {
           ],
         ),
         content: SizedBox(
-          width: 400,
+          width: (MediaQuery.sizeOf(context).width * 0.82).clamp(260.0, 400.0).toDouble(),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,8 +643,8 @@ class _ProductsTabState extends State<ProductsTab> {
       builder: (dialogContext) => AlertDialog(
         title: Text('Stock history · ${product.name}'),
         content: SizedBox(
-          width: 460,
-          height: 360,
+          width: (MediaQuery.sizeOf(context).width * 0.84).clamp(260.0, 460.0).toDouble(),
+          height: (MediaQuery.sizeOf(context).height * 0.55).clamp(240.0, 360.0).toDouble(),
           child: history.isEmpty
               ? const Center(child: Text('No manual stock adjustments have been recorded yet.'))
               : ListView.separated(
