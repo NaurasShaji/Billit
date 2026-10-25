@@ -203,8 +203,8 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Import products?'),
         content: Text(
-          'Add \${rowsToImport.length} products from "\$_fileName". '
-          '\${_skippedCount == 0 ? '' : '$_skippedCount row(s) with errors or duplicates will be skipped.'} '
+          'Add ${rowsToImport.length} products from "\$_fileName". '
+          '${_skippedCount == 0 ? '' : '$_skippedCount row(s) with errors or duplicates will be skipped.'} '
           'Existing products will not be overwritten.',
         ),
         actions: [
@@ -247,7 +247,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         _importedCount = products.length;
         _isImporting = false;
       });
-      _showMessage('Successfully imported \${products.length} products.');
+      _showMessage('Successfully imported ${products.length} products.');
     } catch (error) {
       if (!mounted) return;
       setState(() => _isImporting = false);
@@ -279,7 +279,8 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
 
   String _readOptionalColumn(List<Data?> row, int index, String fallback) {
     if (index < 0 || index >= row.length) return fallback;
-    return _cellText(row[index]);
+    final value = _cellText(row[index]);
+    return value.trim().isEmpty ? fallback : value;
   }
 
   void _showMessage(String message) {
@@ -391,7 +392,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            Chip(label: Text('Rows: \${_rows.length}')),
+                            Chip(label: Text('Rows: ${_rows.length}')),
                             Chip(label: Text('Ready to import: \$_validCount')),
                             Chip(label: Text('Skipped: \$_skippedCount')),
                           ],
@@ -403,12 +404,12 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                             backgroundColor: row.error == null
                                 ? theme.colorScheme.primaryContainer
                                 : theme.colorScheme.errorContainer,
-                            child: Text('\${row.spreadsheetRow}', style: const TextStyle(fontSize: 11)),
+                            child: Text('${row.spreadsheetRow}', style: const TextStyle(fontSize: 11)),
                           ),
                           title: Text(row.name.isEmpty ? '(Unnamed product)' : row.name),
                           subtitle: Text(
                             row.error ??
-                                'Selling: \${row.sellingPrice.toStringAsFixed(2)} • Cost: \${row.costPrice.toStringAsFixed(2)} • Stock: \${row.stock} \${row.unit.name}',
+                                'Selling: ${row.sellingPrice.toStringAsFixed(2)} • Cost: ${row.costPrice.toStringAsFixed(2)} • Stock: ${row.stock} ${row.unit.name}',
                             style: TextStyle(
                               color: row.error == null ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.error,
                             ),
@@ -419,7 +420,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                           ),
                         )),
                         if (_rows.length > 100)
-                          Text('Showing the first 100 of \${_rows.length} rows.', style: theme.textTheme.bodySmall),
+                          Text('Showing the first 100 of ${_rows.length} rows.', style: theme.textTheme.bodySmall),
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
