@@ -49,6 +49,8 @@ Future<void> main() async {
   await setDefaultSetting('gst_enabled', false);
   await setDefaultSetting('gst_rate', 0.0);
   await setDefaultSetting('gst_price_inclusive', false);
+  await setDefaultSetting('invoice_prefix', 'INV');
+  await setDefaultSetting('next_invoice_number', 1);
     
   // Initialize services
   final auth = AuthService();
