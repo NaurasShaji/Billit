@@ -322,27 +322,59 @@ class _ReportsTabState extends State<ReportsTab>
               ),
               if (_isAdmin) ...[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _exportGstSalesRegister,
-                        icon: const Icon(Icons.receipt_long),
-                        label: const Text('Export GST Sales Register'),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: PopupMenuButton<String>(
+                      tooltip: 'Export reports',
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'gst_sales':
+                            _exportGstSalesRegister();
+                            break;
+                          case 'gst_items':
+                            _exportGstItemRegister();
+                            break;
+                          case 'expenses':
+                            _exportExpensesRegister();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'gst_sales',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.receipt_long),
+                            title: Text('GST Sales Register'),
+                            dense: true,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'gst_items',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.table_chart_outlined),
+                            title: Text('GST Item Register'),
+                            dense: true,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'expenses',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.account_balance_wallet_outlined),
+                            title: Text('Expenses Register'),
+                            dense: true,
+                          ),
+                        ),
+                      ],
+                      child: OutlinedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.file_download_outlined),
+                        label: const Text('Export reports'),
                       ),
-                      OutlinedButton.icon(
-                        onPressed: _exportGstItemRegister,
-                        icon: const Icon(Icons.table_chart_outlined),
-                        label: const Text('Export GST Item Register'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _exportExpensesRegister,
-                        icon: const Icon(Icons.account_balance_wallet_outlined),
-                        label: const Text('Export Expenses'),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
