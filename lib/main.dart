@@ -43,7 +43,6 @@ Future<void> main() async {
   }
   await setDefaultSetting('app_name', 'Floral Bill');
   await setDefaultSetting('app_logo_base64', '');
-  await setDefaultSetting('payment_qr_base64', '');
   await setDefaultSetting('business_name', 'Royal Garden');
   await setDefaultSetting('business_address', 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
   await setDefaultSetting('business_phone', '9562291843, 9446932750');
