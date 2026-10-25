@@ -49,7 +49,11 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   Color get _textPrimary => Theme.of(context).colorScheme.onSurface;
   Color get _textSecondary => Theme.of(context).colorScheme.onSurfaceVariant;
 
-  bool get _gstAvailable => Hive.box<dynamic>('app_settings').get('gst_enabled', defaultValue: false) as bool;
+  bool get _gstAvailable {
+    final settings = Hive.box<dynamic>('app_settings');
+    final registration = settings.get('gst_registration_type', defaultValue: 'regular').toString();
+    return (settings.get('gst_enabled', defaultValue: false) as bool) && registration == 'regular';
+  }
   double get _gstRate => (Hive.box<dynamic>('app_settings').get('gst_rate', defaultValue: 0.0) as num).toDouble();
   double _money(double value) => (value * 100).roundToDouble() / 100;
   double get _subtotal => _money(items.fold(0.0, (sum, item) => sum + item.subtotal));
@@ -556,7 +560,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                             if (_gstAvailable) ...[
                               SwitchListTile(
                                 contentPadding: EdgeInsets.zero,
-                                title: Text('Apply GST (${_gstRate.toStringAsFixed(2)}%)'),
+                                title: const Text('Apply GST'),
                                 subtitle: const Text('Tax is calculated after discount.'),
                                 value: _applyGst,
                                 onChanged: (value) => setState(() {
