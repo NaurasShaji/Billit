@@ -44,7 +44,7 @@ class InvoiceService {
     bool useThermalPrinter = false,
     bool includeHeader = true,
     bool includeFooter = true,
-    bool includeGST = false,
+    bool includeGST = true,
     ThermalSize thermalSize = ThermalSize.mm80,
   }) async {
     if (useThermalPrinter) {
