@@ -203,7 +203,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Import products?'),
         content: Text(
-          'Add ${rowsToImport.length} products from "\$_fileName". '
+          'Add ${rowsToImport.length} products from "$_fileName". '
           '${_skippedCount == 0 ? '' : '$_skippedCount row(s) with errors or duplicates will be skipped.'} '
           'Existing products will not be overwritten.',
         ),
@@ -364,7 +364,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                       children: [
                         Icon(Icons.check_circle_outline, color: theme.colorScheme.onPrimaryContainer),
                         const SizedBox(width: 12),
-                        Expanded(child: Text('\$_importedCount products imported successfully.', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600))),
+                        Expanded(child: Text('$_importedCount products imported successfully.', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600))),
                         TextButton(
                           onPressed: () => setState(() {
                             _fileName = null;
@@ -393,8 +393,8 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                           runSpacing: 8,
                           children: [
                             Chip(label: Text('Rows: ${_rows.length}')),
-                            Chip(label: Text('Ready to import: \$_validCount')),
-                            Chip(label: Text('Skipped: \$_skippedCount')),
+                            Chip(label: Text('Ready to import: $_validCount')),
+                            Chip(label: Text('Skipped: $_skippedCount')),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -429,7 +429,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                             icon: _isImporting
                                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                                 : const Icon(Icons.playlist_add_check),
-                            label: Text(_isImporting ? 'Importing…' : 'Import \$_validCount products'),
+                            label: Text(_isImporting ? 'Importing…' : 'Import $_validCount products'),
                           ),
                         ),
                       ],
