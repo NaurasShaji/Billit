@@ -260,7 +260,7 @@ class PdfService {
     final paise = paiseTotal % 100;
     final parts = <String>['${_convertToWords(rupees)} Rupees'];
     if (paise > 0) parts.add('${_convertToWords(paise)} Paise');
-    return '${parts.join(' and ')} Only';
+    return '${parts.join(" and ")} Only';
   }
 
   static pw.Widget _fullPageTotalRow(String label, String value, {bool bold = false}) {
