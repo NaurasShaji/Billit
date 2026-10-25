@@ -28,6 +28,7 @@ dependencies:
   googleapis_auth: ^1.6.0
   permission_handler: ^11.3.0
   mobile_scanner: ^5.2.3
+  share_plus: ^9.0.0
 
 dev_dependencies:
   flutter_test:
