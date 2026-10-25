@@ -20,6 +20,7 @@ class EditInvoiceScreen extends StatefulWidget {
 class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProviderStateMixin {
   final TextEditingController _customerNameController = TextEditingController();
   final TextEditingController _customerPhoneController = TextEditingController();
+  final TextEditingController _customerGstinController = TextEditingController();
   PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
   final List<SaleItem> _editedItems = [];
   final TextEditingController _discountController = TextEditingController();
@@ -46,6 +47,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     
     _customerNameController.text = widget.sale.customerName;
     _customerPhoneController.text = widget.sale.customerPhone;
+    _customerGstinController.text = widget.sale.customerGstin;
     _selectedPaymentMethod = widget.sale.payment;
     _editedItems.addAll(widget.sale.items.map((e) => SaleItem.fromSaleItem(e)));
     _discountController.text = widget.sale.discount.toStringAsFixed(2);
@@ -66,6 +68,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
   void dispose() {
     _customerNameController.dispose();
     _customerPhoneController.dispose();
+    _customerGstinController.dispose();
     _discountController.dispose();
     _slideController.dispose();
     super.dispose();
@@ -178,6 +181,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
       widget.sale
         ..customerName = _customerNameController.text.trim()
         ..customerPhone = _customerPhoneController.text.trim()
+        ..customerGstin = _customerGstinController.text.trim().toUpperCase()
         ..payment = _selectedPaymentMethod
         ..items = _editedItems.toList()
         ..totalAmount = _currentTotal
@@ -435,6 +439,10 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                     ],
                   ),
             
+            if (widget.sale.gstEnabled) ...[
+              const SizedBox(height: 16),
+              _buildCustomerGstinField(),
+            ],
             const SizedBox(height: 20),
             _buildPaymentMethodSection(theme),
           ],
@@ -506,6 +514,26 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
               hintText: 'Enter phone number',
             ),
             readOnly: widget.isViewOnly,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomerGstinField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Customer GSTIN (optional)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _customerGstinController,
+          textCapitalization: TextCapitalization.characters,
+          readOnly: widget.isViewOnly,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.verified_outlined),
+            border: OutlineInputBorder(),
+            hintText: 'Enter customer GSTIN for B2B invoice',
           ),
         ),
       ],
