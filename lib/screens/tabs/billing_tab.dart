@@ -95,7 +95,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _cartService = CartService();
-    _gstInclusive = Hive.box<dynamic>('app_settings').get('gst_price_inclusive', defaultValue: false) as bool;
+    final gstSettings = Hive.box<dynamic>('app_settings');
+    _gstInclusive = gstSettings.get('gst_price_inclusive', defaultValue: false) as bool;
+    _interstateSale = gstSettings.get('gst_default_interstate_sale', defaultValue: false) as bool;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
