@@ -1007,16 +1007,40 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           );
         }
       } else {
-        // Generate PDF
-        await invoiceService.generateInvoice(sale, useThermalPrinter: false);
+        // Choose a distinct normal invoice or GST tax invoice PDF.
+        final includeGst = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Choose PDF type'),
+            content: const Text('Generate a normal invoice without GST details, or a separate GST tax invoice.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Normal PDF'),
+              ),
+              if (sale.gstEnabled)
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('GST Tax Invoice'),
+                ),
+              if (!sale.gstEnabled)
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(null),
+                  child: const Text('Cancel'),
+                ),
+            ],
+          ),
+        );
+        if (includeGst == null) return;
+        await PdfService.generateInvoice(sale, includeGST: includeGst);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('PDF invoice generated successfully!'),
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text(includeGst ? 'GST tax invoice PDF generated!' : 'Normal invoice PDF generated!'),
                 ],
               ),
               backgroundColor: _successColor,
