@@ -7,6 +7,7 @@ import '../archive/payroll/monthly_salary_screen.dart';
 import '../archive/backup_restore_screen.dart';
 import '../archive/change_password_screen.dart';
 import '../archive/customer_lookup_screen.dart';
+import '../archive/bulk_product_import_screen.dart';
 
 class ArchiveTab extends StatelessWidget {
   const ArchiveTab({Key? key}) : super(key: key);
@@ -108,6 +109,25 @@ class ArchiveTab extends StatelessWidget {
                   title: 'Pay Monthly Salary',
                   subtitle: 'Process monthly salary payments',
                   onTap: () => _navigate(context, const MonthlySalaryScreen()),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Product Import Section
+            _buildSection(
+              context,
+              title: 'Product Management',
+              subtitle: 'Add many products from a spreadsheet',
+              icon: Icons.inventory_2_outlined,
+              color: Colors.teal,
+              items: [
+                _MenuItem(
+                  icon: Icons.table_view_outlined,
+                  title: 'Bulk Add Products (Excel)',
+                  subtitle: 'Import product names, prices, stock, barcodes and GST',
+                  onTap: () => _navigate(context, const BulkProductImportScreen()),
                 ),
               ],
             ),
