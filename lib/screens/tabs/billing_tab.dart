@@ -52,40 +52,44 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   int get itemCount => _cartService.itemCount;
   bool get _gstAvailable => Hive.box<dynamic>('app_settings').get('gst_enabled', defaultValue: false) as bool;
   double get _gstRate => (Hive.box<dynamic>('app_settings').get('gst_rate', defaultValue: 0.0) as num).toDouble();
-  double get _subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
+  double _money(double value) => (value * 100).roundToDouble() / 100;
+  double get _subtotal => _money(items.fold(0.0, (sum, item) => sum + item.subtotal));
   double _lineGrossAfterDiscount(SaleItem item) {
     if (_subtotal <= 0) return 0.0;
     final allocatedDiscount = _discount * item.subtotal / _subtotal;
-    return (item.subtotal - allocatedDiscount).clamp(0.0, double.infinity).toDouble();
+    return _money((item.subtotal - allocatedDiscount).clamp(0.0, double.infinity).toDouble());
   }
   double _lineTaxableAmount(SaleItem item) {
     final gross = _lineGrossAfterDiscount(item);
     if (!_applyGst || !_gstInclusive) return gross;
     final rate = _lineGstRate(item);
-    return rate <= 0 ? gross : gross / (1 + rate / 100.0);
+    return rate <= 0 ? gross : _money(gross / (1 + rate / 100.0));
   }
   double get _taxableAmount => _applyGst && _gstInclusive
-      ? items.fold<double>(0.0, (sum, item) => sum + _lineTaxableAmount(item))
-      : (_subtotal - _discount).clamp(0.0, double.infinity).toDouble();
+      ? _money(items.fold<double>(0.0, (sum, item) => sum + _lineTaxableAmount(item)))
+      : _money((_subtotal - _discount).clamp(0.0, double.infinity).toDouble());
   double _lineTaxAmount(SaleItem item) {
     if (!_applyGst) return 0.0;
     final rate = _lineGstRate(item);
     final taxable = _lineTaxableAmount(item);
     return _gstInclusive
         ? _lineGrossAfterDiscount(item) - taxable
-        : taxable * rate / 100.0;
+        : _money(taxable * rate / 100.0);
   }
   double _lineGstRate(SaleItem item) {
     final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate ?? 0.0;
     return productRate > 0 ? productRate : _gstRate;
   }
-  double get _gstAmount => !_applyGst ? 0.0 : items.fold<double>(
+  double get _gstAmount => !_applyGst ? 0.0 : _money(items.fold<double>(
     0.0, (sum, item) => sum + _lineTaxAmount(item),
-  );
-  double get _cgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
-  double get _sgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
-  double get _igstAmount => _applyGst && _interstateSale ? _gstAmount : 0.0;
-  double get _grandTotal => _applyGst && _gstInclusive ? _subtotal - _discount : _taxableAmount + _gstAmount;
+  ));
+  double _lineCgst(SaleItem item) => _applyGst && !_interstateSale ? _money(_lineTaxAmount(item) / 2) : 0.0;
+  double _lineSgst(SaleItem item) => _applyGst && !_interstateSale ? _money(_lineTaxAmount(item) - _lineCgst(item)) : 0.0;
+  double _lineIgst(SaleItem item) => _applyGst && _interstateSale ? _lineTaxAmount(item) : 0.0;
+  double get _cgstAmount => _money(items.fold<double>(0.0, (sum, item) => sum + _lineCgst(item)));
+  double get _sgstAmount => _money(items.fold<double>(0.0, (sum, item) => sum + _lineSgst(item)));
+  double get _igstAmount => _money(items.fold<double>(0.0, (sum, item) => sum + _lineIgst(item)));
+  double get _grandTotal => _money(_applyGst && _gstInclusive ? _subtotal - _discount : _taxableAmount + _gstAmount);
   double get _estimatedProfit => _taxableAmount - cost;
 
   @override
@@ -876,9 +880,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           ..hsnCode = product?.hsnCode ?? ''
           ..gstRate = rate
           ..taxableAmount = taxable
-          ..cgstAmount = _applyGst && !_interstateSale ? tax / 2 : 0.0
-          ..sgstAmount = _applyGst && !_interstateSale ? tax / 2 : 0.0
-          ..igstAmount = _applyGst && _interstateSale ? tax : 0.0;
+          ..cgstAmount = _lineCgst(item)
+          ..sgstAmount = _lineSgst(item)
+          ..igstAmount = _lineIgst(item);
       }
       final salesBox = Hive.box<Sale>(Boxes.sales);
       final id = const Uuid().v4().substring(0, 8).toUpperCase();
