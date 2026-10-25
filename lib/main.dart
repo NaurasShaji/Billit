@@ -133,6 +133,34 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
         borderSide: BorderSide(color: scheme.primary, width: 1.6),
       ),
     ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      indicatorColor: scheme.primary.withOpacity(0.14),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return TextStyle(
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          fontSize: 12 * scale,
+        );
+      }),
+    ),
   );
 }
 
