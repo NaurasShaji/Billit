@@ -9,6 +9,7 @@ import 'tabs/reports_tab.dart';
 import 'tabs/archive_tab.dart';
 import 'printer_settings_screen.dart';
 import 'invoice_settings_screen.dart';
+import '../widgets/responsive_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -436,12 +437,46 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         ],
       ),
-      body: tabs[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i)=>setState(()=>_index=i),
-        destinations: [for (var i=0;i<labels.length;i++) NavigationDestination(icon: Icon(icons[i]), label: labels[i])],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= ResponsiveBreakpoints.desktop) {
+            return Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: _index,
+                  onDestinationSelected: (i) => setState(() => _index = i),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: [
+                    for (var i = 0; i < labels.length; i++)
+                      NavigationRailDestination(
+                        icon: Icon(icons[i]),
+                        label: Text(labels[i]),
+                      ),
+                  ],
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: ResponsivePage(
+                    maxWidth: 1600,
+                    child: tabs[_index],
+                  ),
+                ),
+              ],
+            );
+          }
+          return tabs[_index];
+        },
       ),
+      bottomNavigationBar: MediaQuery.sizeOf(context).width < ResponsiveBreakpoints.desktop
+          ? NavigationBar(
+              selectedIndex: _index,
+              onDestinationSelected: (i) => setState(() => _index = i),
+              destinations: [
+                for (var i = 0; i < labels.length; i++)
+                  NavigationDestination(icon: Icon(icons[i]), label: labels[i]),
+              ],
+            )
+          : null,
     );
   }
 }
