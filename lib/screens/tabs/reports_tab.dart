@@ -144,7 +144,7 @@ class _ReportsTabState extends State<ReportsTab>
           sale.payment.name.toUpperCase(),
           sale.gstEnabled ? (sale.interstateSale ? 'IGST' : 'CGST+SGST') : 'No GST',
           sale.items.map((item) => item.hsnCode).where((code) => code.isNotEmpty).toSet().join('; '),
-          sale.items.map((item) => item.gstRate).where((rate) => rate > 0).toSet().join('; '),
+          sale.items.map((item) => item.gstRate ?? 0.0).where((rate) => rate > 0).toSet().join('; '),
         ],
     ];
     await _shareCsv('floralbill_gst_sales_register.csv', rows);
