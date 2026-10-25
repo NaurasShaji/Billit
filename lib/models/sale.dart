@@ -68,6 +68,14 @@ class Sale extends HiveObject {
   @HiveField(8) String customerPhone = '';
   @HiveField(9) String userId = '';
   @HiveField(10) double discount = 0.0;
+  @HiveField(11) bool gstEnabled = false;
+  @HiveField(12) double gstRate = 0.0;
+  @HiveField(13) double taxableAmount = 0.0;
+  @HiveField(14) double cgstAmount = 0.0;
+  @HiveField(15) double sgstAmount = 0.0;
+  @HiveField(16) double igstAmount = 0.0;
+  @HiveField(17) String customerGstin = '';
+  @HiveField(18) bool interstateSale = false;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -81,6 +89,14 @@ class Sale extends HiveObject {
     'customerPhone': customerPhone,
     'userId': userId,
     'discount': discount,
+    'gstEnabled': gstEnabled,
+    'gstRate': gstRate,
+    'taxableAmount': taxableAmount,
+    'cgstAmount': cgstAmount,
+    'sgstAmount': sgstAmount,
+    'igstAmount': igstAmount,
+    'customerGstin': customerGstin,
+    'interstateSale': interstateSale,
   };
 
   static Sale fromJson(Map<String, dynamic> json) {
@@ -98,6 +114,14 @@ class Sale extends HiveObject {
       ..customerName = json['customerName'] as String
       ..customerPhone = json['customerPhone'] as String
       ..userId = json['userId'] as String
-      ..discount = (json['discount'] as num).toDouble();
+      ..discount = (json['discount'] as num?)?.toDouble() ?? 0.0
+      ..gstEnabled = json['gstEnabled'] as bool? ?? false
+      ..gstRate = (json['gstRate'] as num?)?.toDouble() ?? 0.0
+      ..taxableAmount = (json['taxableAmount'] as num?)?.toDouble() ?? 0.0
+      ..cgstAmount = (json['cgstAmount'] as num?)?.toDouble() ?? 0.0
+      ..sgstAmount = (json['sgstAmount'] as num?)?.toDouble() ?? 0.0
+      ..igstAmount = (json['igstAmount'] as num?)?.toDouble() ?? 0.0
+      ..customerGstin = json['customerGstin'] as String? ?? ''
+      ..interstateSale = json['interstateSale'] as bool? ?? false;
   }
 }
