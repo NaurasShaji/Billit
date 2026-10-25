@@ -425,11 +425,11 @@ class PdfService {
         pw.SizedBox(
             width: itemWidth, child: pw.Text(item, style: style, maxLines: 1)),
         pw.SizedBox(
-            width: qtyWidth,
-            child: pw.Text(qty, style: style, textAlign: pw.TextAlign.right)),
-        pw.SizedBox(
             width: rateWidth,
             child: pw.Text(rate, style: style, textAlign: pw.TextAlign.right)),
+        pw.SizedBox(
+            width: qtyWidth,
+            child: pw.Text(qty, style: style, textAlign: pw.TextAlign.right)),
         pw.SizedBox(
             width: amountWidth,
             child:
