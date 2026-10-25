@@ -135,7 +135,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('TAX INVOICE', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(displayGst && businessGstin.isNotEmpty ? 'TAX INVOICE' : 'INVOICE', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 8),
                   pw.Text('Invoice: ${sale.id}'),
                   pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
@@ -247,11 +247,20 @@ class PdfService {
           borderRadius: pw.BorderRadius.circular(4),
         ),
         child: pw.Text(
-          'Amount in words: ${_convertToWords(sale.totalAmount.round())} Rupees Only',
+          'Amount in words: ${_amountInWords(sale.totalAmount)}',
           style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
         ),
       ),
     ];
+  }
+
+  static String _amountInWords(double amount) {
+    final paiseTotal = (amount * 100).round();
+    final rupees = paiseTotal ~/ 100;
+    final paise = paiseTotal % 100;
+    final parts = <String>['${_convertToWords(rupees)} Rupees'];
+    if (paise > 0) parts.add('${_convertToWords(paise)} Paise');
+    return '${parts.join(' and ')} Only';
   }
 
   static pw.Widget _fullPageTotalRow(String label, String value, {bool bold = false}) {
