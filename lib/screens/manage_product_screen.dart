@@ -21,6 +21,8 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   late final TextEditingController _categoryController;
   late final TextEditingController _subCategoryController;
   late final TextEditingController _barcodeController;
+  late final TextEditingController _hsnController;
+  late final TextEditingController _gstRateController;
   late UnitType _selectedUnit;
   bool _isLoading = false;
   double _profitMargin = 0;
@@ -36,6 +38,8 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     _categoryController = TextEditingController(text: widget.product?.category ?? 'General');
     _subCategoryController = TextEditingController(text: widget.product?.subCategory ?? '');
     _barcodeController = TextEditingController(text: widget.product?.barcode ?? '');
+    _hsnController = TextEditingController(text: widget.product?.hsnCode ?? '');
+    _gstRateController = TextEditingController(text: (widget.product?.gstRate ?? 0.0).toString());
     _selectedUnit = widget.product?.unit ?? UnitType.pcs;
 
     // Calculate initial profit margin
@@ -64,6 +68,8 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     _categoryController.dispose();
     _subCategoryController.dispose();
     _barcodeController.dispose();
+    _hsnController.dispose();
+    _gstRateController.dispose();
     super.dispose();
   }
 
@@ -95,6 +101,8 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
         ..category = _categoryController.text
         ..subCategory = _subCategoryController.text
         ..barcode = _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim()
+        ..hsnCode = _hsnController.text.trim()
+        ..gstRate = double.tryParse(_gstRateController.text.trim()) ?? 0.0
         ..unit = _selectedUnit;
 
       if (widget.product == null) {
@@ -368,6 +376,39 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.qr_code_2),
                 ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildSectionCard(
+              title: 'Tax Classification',
+              icon: Icons.receipt_long_outlined,
+              content: Column(
+                children: [
+                  TextFormField(
+                    controller: _hsnController,
+                    decoration: InputDecoration(
+                      labelText: 'HSN / SAC code (optional)',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: const Icon(Icons.numbers),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _gstRateController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Product GST rate (%)',
+                      helperText: 'Enter 0 to use the default rate from Invoice & GST Settings.',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: const Icon(Icons.percent),
+                    ),
+                    validator: (value) {
+                      final rate = double.tryParse(value?.trim() ?? '');
+                      if (rate == null || rate < 0 || rate > 100) return 'Enter a rate from 0 to 100';
+                      return null;
+                    },
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
