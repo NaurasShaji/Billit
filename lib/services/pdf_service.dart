@@ -83,7 +83,7 @@ class PdfService {
     final businessPhone = settings.get('business_phone', defaultValue: '').toString();
     final businessEmail = settings.get('business_email', defaultValue: '').toString();
     final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
-    final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+    final currency = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs. ');
     final subtotal = sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
     final taxable = sale.gstEnabled
         ? sale.taxableAmount
@@ -208,7 +208,7 @@ class PdfService {
                 pw.Text('Payment method: ${sale.payment.name.toUpperCase()}'),
                 if (displayGst) ...[
                   pw.SizedBox(height: 8),
-                  pw.Text('GST rate: ${sale.gstRate.toStringAsFixed(2)}%'),
+                  pw.Text('GST rates are shown against each invoice line.'),
                   pw.Text(sale.interstateSale ? 'Tax type: IGST (interstate)' : 'Tax type: CGST + SGST (intrastate)'),
                 ],
                 if (includeFooter) ...[
