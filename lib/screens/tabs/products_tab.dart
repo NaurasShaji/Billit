@@ -222,7 +222,8 @@ class _ProductsTabState extends State<ProductsTab> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final product = products[index];
-        final isLowStock = product.stock < 10;
+        final threshold = (Hive.box<dynamic>('app_settings').get('low_stock_threshold', defaultValue: 10) as num).toDouble();
+        final isLowStock = product.stock <= threshold;
         return _buildListCard(product, isLowStock);
       },
     );
@@ -287,7 +288,7 @@ class _ProductsTabState extends State<ProductsTab> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isLowStock ? Colors.orange[100] : Colors.green[100],
+                          color: isLowStock ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -295,7 +296,7 @@ class _ProductsTabState extends State<ProductsTab> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: isLowStock ? Colors.orange[800] : Colors.green[800],
+                            color: isLowStock ? Theme.of(context).colorScheme.onErrorContainer : Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
                         ),
                       ),
