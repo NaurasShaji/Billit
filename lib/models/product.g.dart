@@ -25,13 +25,14 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..unit = fields[5] as UnitType
       ..category = fields[6] as String
       ..subCategory = fields[7] as String
-      ..active = fields[8] as bool;
+      ..active = fields[8] as bool? ?? true
+      ..barcode = fields[9] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Product obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -49,7 +50,9 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..writeByte(7)
       ..write(obj.subCategory)
       ..writeByte(8)
-      ..write(obj.active);
+      ..write(obj.active)
+      ..writeByte(9)
+      ..write(obj.barcode);
   }
 
   @override
