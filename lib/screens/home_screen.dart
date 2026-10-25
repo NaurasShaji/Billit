@@ -428,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             itemBuilder: (context) => [
               if (isAdmin)
-                const PopupMenuItem<String>(value: 'invoice_settings', child: Text('Invoice & GST Settings')),
+                const PopupMenuItem<String>(value: 'invoice_settings', child: Text('App, Invoice & GST Settings')),
               const PopupMenuItem<String>(value: 'printer_settings', child: Text('Printer Settings')),
               const PopupMenuItem<String>(value: 'help_faq', child: Text('Help & FAQ')),
               const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
