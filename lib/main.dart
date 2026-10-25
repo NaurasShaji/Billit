@@ -109,7 +109,7 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       scheme.primary.withOpacity(0.025),
       scheme.surface,
     ),
-    textTheme: base.textTheme.apply(fontSizeFactor: scale),
+    textTheme: base.textTheme,
     primaryColor: scheme.primary,
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.primary,
@@ -157,7 +157,7 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
         final selected = states.contains(MaterialState.selected);
         return TextStyle(
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          fontSize: 12 * scale,
+          fontSize: 12,
         );
       }),
     ),
@@ -188,6 +188,18 @@ class MyApp extends StatelessWidget {
             darkTheme: _buildAppTheme(settings, Brightness.dark),
             themeMode: mode,
             debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              final scale = (settings.get('text_scale', defaultValue: 1.0) as num)
+                  .toDouble()
+                  .clamp(0.9, 1.2)
+                  .toDouble();
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
             home: AppWrapper(),
           );
         },
