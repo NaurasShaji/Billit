@@ -77,6 +77,8 @@ class PdfService {
   }) {
     final settings = Hive.box<dynamic>('app_settings');
     final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
+    final accent = _invoiceAccentColor(settings.get('invoice_accent', defaultValue: 'blue').toString());
+    final footerText = settings.get('invoice_footer_text', defaultValue: 'Thank you for your business.').toString().trim();
     final businessAddress = settings.get('business_address', defaultValue: '').toString();
     final businessPhone = settings.get('business_phone', defaultValue: '').toString();
     final businessEmail = settings.get('business_email', defaultValue: '').toString();
@@ -148,7 +150,7 @@ class PdfService {
               padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               decoration: pw.BoxDecoration(
                 color: PdfColors.grey100,
-                border: pw.Border.all(color: PdfColors.grey400),
+                border: pw.Border.all(color: accent),
                 borderRadius: pw.BorderRadius.circular(4),
               ),
               child: pw.Column(
@@ -191,7 +193,7 @@ class PdfService {
         headers: itemRows.first,
         data: itemRows.skip(1).toList(),
         headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
-        headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
+        headerDecoration: pw.BoxDecoration(color: accent),
         cellStyle: const pw.TextStyle(fontSize: 9),
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 8),
         border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
@@ -247,7 +249,7 @@ class PdfService {
                 ],
                 if (includeFooter) ...[
                   pw.SizedBox(height: 18),
-                  pw.Text('Thank you for your business.', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  if (footerText.isNotEmpty) pw.Text(footerText, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                   pw.Text('This invoice is generated electronically.'),
                 ],
               ],
@@ -315,6 +317,19 @@ class PdfService {
     return null;
   }
 
+  static PdfColor _invoiceAccentColor(String value) {
+    switch (value) {
+      case 'green': return PdfColors.green;
+      case 'purple': return PdfColors.purple;
+      case 'teal': return PdfColors.teal;
+      case 'orange': return PdfColors.orange;
+      case 'pink': return PdfColors.pink;
+      case 'indigo': return PdfColors.indigo;
+      case 'blue':
+      default: return PdfColors.blue;
+    }
+  }
+
   static String _amountInWords(double amount) {
     final paiseTotal = (amount * 100).round();
     final rupees = paiseTotal ~/ 100;
@@ -355,6 +370,7 @@ class PdfService {
     final subtotal = sale.items.fold(0.0, (sum, item) => sum + item.subtotal);
     final settings = Hive.box<dynamic>('app_settings');
     final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
+    final footerText = settings.get('invoice_footer_text', defaultValue: 'Thank you for your business.').toString().trim();
     final businessAddress = settings.get('business_address', defaultValue: '').toString();
     final businessPhone = settings.get('business_phone', defaultValue: '').toString();
     final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
@@ -448,9 +464,9 @@ class PdfService {
         ),
         pw.Center(child: pw.Image(qrImage, width: is58mm ? 80 : 100)),
       ],
-      if (includeFooter) ...[
+      if (includeFooter && footerText.isNotEmpty) ...[
         pw.SizedBox(height: 5),
-        pw.Text('THANK YOU!',
+        pw.Text(footerText.toUpperCase(),
             style: pw.TextStyle(
                 fontSize: fontSize + 1, fontWeight: pw.FontWeight.bold),
             textAlign: pw.TextAlign.center),
