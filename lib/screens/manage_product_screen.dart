@@ -85,6 +85,14 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
       return;
     }
 
+    final gstRate = double.tryParse(_gstRateController.text.trim());
+    if (gstRate == null || gstRate < 0 || gstRate > 100) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('GST rate must be between 0 and 100.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -102,7 +110,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
         ..subCategory = _subCategoryController.text
         ..barcode = _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim()
         ..hsnCode = _hsnController.text.trim()
-        ..gstRate = double.tryParse(_gstRateController.text.trim()) ?? 0.0
+        ..gstRate = gstRate
         ..unit = _selectedUnit;
 
       if (widget.product == null) {
