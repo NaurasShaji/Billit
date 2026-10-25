@@ -143,7 +143,7 @@ class DashboardTab extends StatelessWidget {
                                                 ),
                                               ),
                                             Container(
-                                              height: 105 * ratio.clamp(0.04, 1.0),
+                                              height: 105.0 * ratio.clamp(0.04, 1.0).toDouble(),
                                               decoration: BoxDecoration(
                                                 color: day.day.year == now.year && day.day.month == now.month && day.day.day == now.day
                                                     ? theme.colorScheme.primary
