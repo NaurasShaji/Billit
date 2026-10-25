@@ -43,6 +43,10 @@ Future<void> main() async {
   }
   await setDefaultSetting('app_name', 'Floral Bill');
   await setDefaultSetting('app_logo_base64', '');
+  await setDefaultSetting('app_theme', 'green');
+  await setDefaultSetting('upi_id', '');
+  await setDefaultSetting('upi_payee_name', '');
+  await setDefaultSetting('upi_note_prefix', 'Invoice');
   await setDefaultSetting('business_name', 'Royal Garden');
   await setDefaultSetting('business_address', 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
   await setDefaultSetting('business_phone', '9562291843, 9446932750');
@@ -66,6 +70,19 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+Color _themeSeedColor(String theme) {
+  switch (theme) {
+    case 'blue': return Colors.blue;
+    case 'purple': return Colors.deepPurple;
+    case 'amber': return Colors.amber;
+    case 'teal': return Colors.teal;
+    case 'rose': return const Color(0xFFB83280);
+    case 'dark': return Colors.blueGrey;
+    case 'green':
+    default: return Colors.green;
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -80,7 +97,10 @@ class MyApp extends StatelessWidget {
         builder: (context, settings, _) => MaterialApp(
         title: settings.get('app_name', defaultValue: 'Floral Bill').toString(),
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: _themeSeedColor(settings.get('app_theme', defaultValue: 'green').toString()),
+            brightness: settings.get('app_theme', defaultValue: 'green') == 'dark' ? Brightness.dark : Brightness.light,
+          ),
           useMaterial3: true,
         ),
         debugShowCheckedModeBanner: false,
