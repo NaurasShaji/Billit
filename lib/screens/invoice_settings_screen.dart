@@ -28,6 +28,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _upiPayeeName;
   late final TextEditingController _upiNotePrefix;
   late String _appTheme;
+  late String _invoiceAccent;
+  late final TextEditingController _invoiceFooter;
 
   Uint8List? _appLogoBytes;
   Uint8List? _invoiceLogoBytes;
@@ -58,6 +60,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _upiPayeeName = TextEditingController(text: _settings.get('upi_payee_name', defaultValue: '').toString());
     _upiNotePrefix = TextEditingController(text: _settings.get('upi_note_prefix', defaultValue: 'Invoice').toString());
     _appTheme = _settings.get('app_theme', defaultValue: 'green').toString();
+    _invoiceAccent = _settings.get('invoice_accent', defaultValue: 'blue').toString();
+    if (!const ['blue', 'green', 'purple', 'teal', 'orange', 'pink', 'indigo'].contains(_invoiceAccent)) _invoiceAccent = 'blue';
+    _invoiceFooter = TextEditingController(text: _settings.get('invoice_footer_text', defaultValue: 'Thank you for your business.').toString());
     if (!const ['green', 'blue', 'purple', 'teal', 'amber', 'rose'].contains(_appTheme)) _appTheme = 'green';
     _appLogoBytes = _decodeImage('app_logo_base64');
     _invoiceLogoBytes = _decodeImage('business_logo_base64');
@@ -75,7 +80,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _appName.dispose(); _name.dispose(); _address.dispose(); _phone.dispose();
     _email.dispose(); _gstin.dispose(); _rate.dispose();
     _invoicePrefix.dispose(); _nextInvoiceNumber.dispose();
-    _upiId.dispose(); _upiPayeeName.dispose(); _upiNotePrefix.dispose();
+    _upiId.dispose(); _upiPayeeName.dispose(); _upiNotePrefix.dispose(); _invoiceFooter.dispose();
     super.dispose();
   }
 
@@ -131,6 +136,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await _settings.putAll({
       'app_name': _appName.text.trim(),
       'app_theme': _appTheme,
+      'invoice_accent': _invoiceAccent,
+      'invoice_footer_text': _invoiceFooter.text.trim(),
       'upi_id': _upiId.text.trim(),
       'upi_payee_name': _upiPayeeName.text.trim(),
       'upi_note_prefix': _upiNotePrefix.text.trim().isEmpty ? 'Invoice' : _upiNotePrefix.text.trim(),
@@ -276,6 +283,30 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             TextFormField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: _decoration('Email (optional)', Icons.email_outlined)),
             const SizedBox(height: 12),
             TextFormField(controller: _gstin, textCapitalization: TextCapitalization.characters, decoration: _decoration('Business GSTIN (optional)', Icons.verified_outlined)),
+            const SizedBox(height: 8),
+            const Text('Invoice design', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _invoiceAccent,
+              decoration: _decoration('Invoice accent colour', Icons.format_color_fill_outlined),
+              items: const [
+                DropdownMenuItem(value: 'blue', child: Text('Classic Blue')),
+                DropdownMenuItem(value: 'green', child: Text('Garden Green')),
+                DropdownMenuItem(value: 'purple', child: Text('Royal Purple')),
+                DropdownMenuItem(value: 'teal', child: Text('Teal')),
+                DropdownMenuItem(value: 'orange', child: Text('Warm Orange')),
+                DropdownMenuItem(value: 'pink', child: Text('Pink')),
+                DropdownMenuItem(value: 'indigo', child: Text('Indigo')),
+              ],
+              onChanged: (value) { if (value != null) setState(() => _invoiceAccent = value); },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _invoiceFooter,
+              maxLines: 2,
+              maxLength: 120,
+              decoration: _decoration('Invoice footer message', Icons.notes_outlined),
+            ),
             const SizedBox(height: 8),
             _imageSetting(
               title: 'Invoice / bill logo',
