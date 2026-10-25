@@ -145,7 +145,11 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     if (bytes != null) {
       await _settings.put(key, base64Encode(bytes));
     } else if (shouldClear) {
-      await _settings.delete(key);
+      if (key == 'payment_qr_base64') {
+        await _settings.put(key, '');
+      } else {
+        await _settings.delete(key);
+      }
     }
   }
 
