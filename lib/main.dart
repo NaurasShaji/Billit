@@ -44,6 +44,10 @@ Future<void> main() async {
   await setDefaultSetting('app_name', 'Floral Bill');
   await setDefaultSetting('app_logo_base64', '');
   await setDefaultSetting('app_theme', 'green');
+  await setDefaultSetting('theme_mode', 'system');
+  await setDefaultSetting('ui_density', 'comfortable');
+  await setDefaultSetting('text_scale', 1.0);
+  await setDefaultSetting('corner_radius', 16.0);
   await setDefaultSetting('upi_id', '');
   await setDefaultSetting('upi_payee_name', '');
   await setDefaultSetting('upi_note_prefix', 'Invoice');
@@ -72,26 +76,64 @@ Future<void> main() async {
 
 Color _themeSeedColor(String theme) {
   switch (theme) {
-    case 'blue': return Colors.blue;
-    case 'purple': return Colors.deepPurple;
-    case 'amber': return Colors.amber;
-    case 'teal': return Colors.teal;
+    case 'blue': return const Color(0xFF2864C5);
+    case 'purple': return const Color(0xFF7651B5);
+    case 'amber': return const Color(0xFFB77916);
+    case 'teal': return const Color(0xFF168A8A);
     case 'rose': return const Color(0xFFB83280);
+    case 'indigo': return const Color(0xFF4F46B8);
+    case 'slate': return const Color(0xFF475569);
+    case 'coral': return const Color(0xFFD45D45);
+    case 'ocean': return const Color(0xFF087EAA);
     case 'green':
-    default: return Colors.green;
+    default: return const Color(0xFF25855A);
   }
 }
 
-Color _themeBackgroundColor(String theme) {
-  switch (theme) {
-    case 'blue': return const Color(0xFFF1F6FC);
-    case 'purple': return const Color(0xFFF7F2FB);
-    case 'amber': return const Color(0xFFFFF8E8);
-    case 'teal': return const Color(0xFFF0F8F7);
-    case 'rose': return const Color(0xFFFFF3F6);
-    case 'green':
-    default: return const Color(0xFFF3F8F0);
-  }
+ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
+  final themeName = settings.get('app_theme', defaultValue: 'green').toString();
+  final scale = (settings.get('text_scale', defaultValue: 1.0) as num).toDouble().clamp(0.9, 1.2);
+  final radius = (settings.get('corner_radius', defaultValue: 16.0) as num).toDouble();
+  final compact = settings.get('ui_density', defaultValue: 'comfortable') == 'compact';
+  final scheme = ColorScheme.fromSeed(
+    seedColor: _themeSeedColor(themeName),
+    brightness: brightness,
+  );
+  final dark = brightness == Brightness.dark;
+  final base = ThemeData(brightness: brightness);
+  return ThemeData(
+    colorScheme: scheme,
+    useMaterial3: true,
+    visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
+    scaffoldBackgroundColor: dark ? const Color(0xFF111418) : Color.alphaBlend(
+      scheme.primary.withOpacity(0.025),
+      scheme.surface,
+    ),
+    textTheme: base.textTheme.apply(fontSizeFactor: scale),
+    primaryColor: scheme.primary,
+    appBarTheme: AppBarTheme(
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
+      elevation: 0,
+      centerTitle: false,
+      surfaceTintColor: Colors.transparent,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: scheme.surface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radius),
+        borderSide: BorderSide(color: scheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radius),
+        borderSide: BorderSide(color: scheme.primary, width: 1.6),
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -105,18 +147,22 @@ class MyApp extends StatelessWidget {
       ],
       child: ValueListenableBuilder<Box<dynamic>>(
         valueListenable: Hive.box<dynamic>('app_settings').listenable(),
-        builder: (context, settings, _) => MaterialApp(
-        title: settings.get('app_name', defaultValue: 'Floral Bill').toString(),
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: _themeSeedColor(settings.get('app_theme', defaultValue: 'green').toString()),
-          ),
-          scaffoldBackgroundColor: _themeBackgroundColor(settings.get('app_theme', defaultValue: 'green').toString()),
-          useMaterial3: true,
-        ),
-        debugShowCheckedModeBanner: false,
-        home: AppWrapper(),
-        ),
+        builder: (context, settings, _) {
+          final modeName = settings.get('theme_mode', defaultValue: 'system').toString();
+          final mode = modeName == 'dark'
+              ? ThemeMode.dark
+              : modeName == 'light'
+                  ? ThemeMode.light
+                  : ThemeMode.system;
+          return MaterialApp(
+            title: settings.get('app_name', defaultValue: 'Floral Bill').toString(),
+            theme: _buildAppTheme(settings, Brightness.light),
+            darkTheme: _buildAppTheme(settings, Brightness.dark),
+            themeMode: mode,
+            debugShowCheckedModeBanner: false,
+            home: AppWrapper(),
+          );
+        },
       ),
     );
   }
