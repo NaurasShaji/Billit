@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
 import '../../services/auth_service.dart';
@@ -884,7 +883,13 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           ..igstAmount = _lineIgst(item);
       }
       final salesBox = Hive.box<Sale>(Boxes.sales);
-      final id = const Uuid().v4().substring(0, 8).toUpperCase();
+      final invoiceSettings = Hive.box<dynamic>('app_settings');
+      final prefix = invoiceSettings.get('invoice_prefix', defaultValue: 'INV').toString().trim().toUpperCase();
+      final safePrefix = prefix.isEmpty ? 'INV' : prefix;
+      final nextNumber = (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num).toInt();
+      final datePart = DateFormat('yyyyMM').format(DateTime.now());
+      final id = '$safePrefix-$datePart-${nextNumber.toString().padLeft(5, '0')}';
+      await invoiceSettings.put('next_invoice_number', nextNumber + 1);
 
       final sale = Sale()
         ..id = id
