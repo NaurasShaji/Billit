@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -83,6 +84,11 @@ class PdfService {
     final businessPhone = settings.get('business_phone', defaultValue: '').toString();
     final businessEmail = settings.get('business_email', defaultValue: '').toString();
     final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
+    pw.ImageProvider? businessLogo;
+    final logoBase64 = settings.get('business_logo_base64') as String?;
+    if (logoBase64 != null && logoBase64.isNotEmpty) {
+      try { businessLogo = pw.MemoryImage(base64Decode(logoBase64)); } catch (_) { businessLogo = null; }
+    }
     final currency = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs. ');
     final subtotal = sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
     final taxable = sale.gstEnabled
@@ -117,6 +123,10 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
+                  if (businessLogo != null) ...[
+                    pw.Container(width: 110, height: 60, alignment: pw.Alignment.centerLeft, child: pw.Image(businessLogo, fit: pw.BoxFit.contain)),
+                    pw.SizedBox(height: 6),
+                  ],
                   pw.Text(businessName, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
                   if (businessAddress.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 4), child: pw.Text(businessAddress)),
                   if (businessPhone.isNotEmpty) pw.Text('Phone: $businessPhone'),
