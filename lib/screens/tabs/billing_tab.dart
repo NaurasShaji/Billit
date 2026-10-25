@@ -331,7 +331,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final savedPrefix = invoiceSettings.get('invoice_prefix', defaultValue: 'INV').toString().trim().toUpperCase();
     final invoicePrefix = savedPrefix.isEmpty ? 'INV' : savedPrefix;
     final nextInvoiceNumber = (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num).toInt();
-    final invoiceIdPreview = '$invoicePrefix-${DateFormat('yyyyMM').format(DateTime.now())}-${nextInvoiceNumber.toString().padLeft(5, "0")}';
+    final invoiceDatePart = DateFormat('yyyyMM').format(DateTime.now());
+    final invoiceIdPreview = '$invoicePrefix-$invoiceDatePart-${nextInvoiceNumber.toString().padLeft(5, "0")}';
 
       // Get last 5 invoices, sorted by date and time (newest first)
       final salesBox = Hive.box<Sale>(Boxes.sales);
