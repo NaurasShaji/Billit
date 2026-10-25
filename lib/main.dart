@@ -48,6 +48,7 @@ Future<void> main() async {
   await setDefaultSetting('ui_density', 'comfortable');
   await setDefaultSetting('text_scale', 1.0);
   await setDefaultSetting('corner_radius', 16.0);
+  await setDefaultSetting('low_stock_threshold', 10);
   await setDefaultSetting('upi_id', '');
   await setDefaultSetting('upi_payee_name', '');
   await setDefaultSetting('upi_note_prefix', 'Invoice');
