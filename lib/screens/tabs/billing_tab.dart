@@ -65,7 +65,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final rate = _lineGstRate(item);
     return rate <= 0 ? gross : _money(gross / (1 + rate / 100.0));
   }
-  double get _taxableAmount => _applyGst && _gstInclusive
+  double get _taxableAmount => _applyGst
       ? _money(items.fold<double>(0.0, (sum, item) => sum + _lineTaxableAmount(item)))
       : _money((_subtotal - _discount).clamp(0.0, double.infinity).toDouble());
   double _lineTaxAmount(SaleItem item) {
@@ -875,7 +875,6 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         final product = productsBox.get(item.productId);
         final taxable = _lineTaxableAmount(item);
         final rate = _applyGst ? _lineGstRate(item) : 0.0;
-        final tax = _lineTaxAmount(item);
         item
           ..hsnCode = product?.hsnCode ?? ''
           ..gstRate = rate
