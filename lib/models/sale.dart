@@ -100,6 +100,7 @@ class Sale extends HiveObject {
   @HiveField(16) double igstAmount = 0.0;
   @HiveField(17) String customerGstin = '';
   @HiveField(18) bool interstateSale = false;
+  @HiveField(19) bool gstInclusive = false;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -121,6 +122,7 @@ class Sale extends HiveObject {
     'igstAmount': igstAmount,
     'customerGstin': customerGstin,
     'interstateSale': interstateSale,
+    'gstInclusive': gstInclusive,
   };
 
   static Sale fromJson(Map<String, dynamic> json) {
@@ -146,6 +148,7 @@ class Sale extends HiveObject {
       ..sgstAmount = (json['sgstAmount'] as num?)?.toDouble() ?? 0.0
       ..igstAmount = (json['igstAmount'] as num?)?.toDouble() ?? 0.0
       ..customerGstin = json['customerGstin'] as String? ?? ''
-      ..interstateSale = json['interstateSale'] as bool? ?? false;
+      ..interstateSale = json['interstateSale'] as bool? ?? false
+      ..gstInclusive = json['gstInclusive'] as bool? ?? false;
   }
 }
