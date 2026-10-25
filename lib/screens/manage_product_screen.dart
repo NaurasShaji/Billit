@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import '../services/boxes.dart';
 import 'barcode_scanner_screen.dart';
+import '../widgets/responsive_page.dart';
 
 class ManageProductScreen extends StatefulWidget {
   final Product? product;
@@ -337,7 +338,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ResponsivePage(maxWidth: 900, child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -623,7 +624,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
             const SizedBox(height: 20),
           ],
         ),
-      ),
+      )),
     );
   }
 }
