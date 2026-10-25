@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'tabs/billing_tab.dart';
@@ -369,7 +371,41 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         centerTitle: true,
-        title: Text(labels[_index]),
+        title: ValueListenableBuilder<Box<dynamic>>(
+          valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+          builder: (context, settings, _) {
+            final appName = settings.get('app_name', defaultValue: 'Floral Bill').toString();
+            final logoBase64 = settings.get('app_logo_base64') as String?;
+            Widget? logo;
+            if (logoBase64 != null && logoBase64.isNotEmpty) {
+              try {
+                logo = ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.memory(base64Decode(logoBase64), width: 32, height: 32, fit: BoxFit.contain),
+                );
+              } catch (_) {
+                logo = null;
+              }
+            }
+            return Row(
+              children: [
+                if (logo != null) ...[logo, const SizedBox(width: 8)],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(appName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      Text(labels[_index], maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
