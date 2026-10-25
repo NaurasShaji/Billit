@@ -53,7 +53,18 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   int get itemCount => _cartService.itemCount;
   double get _subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
   double get _taxableAmount => (_subtotal - _discount).clamp(0.0, double.infinity).toDouble();
-  double get _gstAmount => _applyGst ? _taxableAmount * _gstRate / 100.0 : 0.0;
+  double _lineTaxableAmount(SaleItem item) {
+    if (_subtotal <= 0) return 0.0;
+    final allocatedDiscount = _discount * item.subtotal / _subtotal;
+    return (item.subtotal - allocatedDiscount).clamp(0.0, double.infinity).toDouble();
+  }
+  double _lineGstRate(SaleItem item) {
+    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate ?? 0.0;
+    return productRate > 0 ? productRate : _gstRate;
+  }
+  double get _gstAmount => !_applyGst ? 0.0 : items.fold<double>(
+    0.0, (sum, item) => sum + _lineTaxableAmount(item) * _lineGstRate(item) / 100.0,
+  );
   double get _cgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
   double get _sgstAmount => _applyGst && !_interstateSale ? _gstAmount / 2 : 0.0;
   double get _igstAmount => _applyGst && _interstateSale ? _gstAmount : 0.0;
@@ -828,6 +839,20 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     );
 
     try {
+      final productsBox = Hive.box<Product>(Boxes.products);
+      for (final item in items) {
+        final product = productsBox.get(item.productId);
+        final taxable = _lineTaxableAmount(item);
+        final rate = _applyGst ? _lineGstRate(item) : 0.0;
+        final tax = taxable * rate / 100.0;
+        item
+          ..hsnCode = product?.hsnCode ?? ''
+          ..gstRate = rate
+          ..taxableAmount = taxable
+          ..cgstAmount = _applyGst && !_interstateSale ? tax / 2 : 0.0
+          ..sgstAmount = _applyGst && !_interstateSale ? tax / 2 : 0.0
+          ..igstAmount = _applyGst && _interstateSale ? tax : 0.0;
+      }
       final salesBox = Hive.box<Sale>(Boxes.sales);
       final productsBox = Hive.box<Product>(Boxes.products);
       final id = const Uuid().v4().substring(0, 8).toUpperCase();
