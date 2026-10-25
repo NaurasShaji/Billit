@@ -107,12 +107,9 @@ class _ReportsTabState extends State<ReportsTab>
 
   Future<void> _shareCsv(String filename, List<List<Object?>> rows) async {
     try {
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/$filename');
       final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\r\n');
-      await file.writeAsString('\uFEFF$csv', encoding: utf8, flush: true);
       await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'text/csv', name: filename)],
+        [XFile.fromData(utf8.encode('\\uFEFF$csv'), mimeType: 'text/csv', name: filename)],
         subject: filename,
         text: 'Floral Bill accounting export',
       );
