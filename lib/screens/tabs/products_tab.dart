@@ -70,37 +70,50 @@ class _ProductsTabState extends State<ProductsTab> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Filters Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildFilterDropdown(
-                        value: category,
-                        items: categories,
-                        label: 'Category',
-                        onChanged: (v) => setState(() => category = v ?? 'All'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildFilterDropdown(
-                        value: subCategory,
-                        items: subcats,
-                        label: 'Sub-Category',
-                        onChanged: (v) => setState(() => subCategory = v ?? 'All'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildFilterDropdown(
-                        value: unitFilter,
-                        items: [null, ...UnitType.values],
-                        label: 'Unit',
-                        onChanged: (v) => setState(() => unitFilter = v),
-                        itemBuilder: (item) => Text(item == null ? 'All Units' : item.name.toUpperCase()),
-                      ),
-                    ),
-                  ],
+                // Stack filters on narrow screens to avoid dropdown overflow.
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final narrow = constraints.maxWidth < 600;
+                    final categoryFilter = _buildFilterDropdown(
+                      value: category,
+                      items: categories,
+                      label: 'Category',
+                      onChanged: (v) => setState(() => category = v ?? 'All'),
+                    );
+                    final subCategoryFilter = _buildFilterDropdown(
+                      value: subCategory,
+                      items: subcats,
+                      label: 'Sub-Category',
+                      onChanged: (v) => setState(() => subCategory = v ?? 'All'),
+                    );
+                    final unitDropdown = _buildFilterDropdown<UnitType?>(
+                      value: unitFilter,
+                      items: [null, ...UnitType.values],
+                      label: 'Unit',
+                      onChanged: (v) => setState(() => unitFilter = v),
+                      itemBuilder: (item) => Text(item == null ? 'All Units' : item.name.toUpperCase()),
+                    );
+                    if (narrow) {
+                      return Column(
+                        children: [
+                          categoryFilter,
+                          const SizedBox(height: 8),
+                          subCategoryFilter,
+                          const SizedBox(height: 8),
+                          unitDropdown,
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: categoryFilter),
+                        const SizedBox(width: 12),
+                        Expanded(child: subCategoryFilter),
+                        const SizedBox(width: 12),
+                        Expanded(child: unitDropdown),
+                      ],
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 12),
