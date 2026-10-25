@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import 'package:flutter/services.dart';
 import '../models/models.dart';
 import './boxes.dart';
+import './payment_qr_service.dart';
 
 class PdfService {
   // Thermal printer configurations
@@ -22,7 +23,7 @@ class PdfService {
     bool fullPage = true,
   }) async {
     final doc = pw.Document();
-    final qrImage = await _loadPaymentQrImage();
+    final qrImage = await _loadPaymentQrImage(sale);
 
     if (fullPage) {
       doc.addPage(
@@ -302,23 +303,16 @@ class PdfService {
     ];
   }
 
-  static Future<pw.ImageProvider?> _loadPaymentQrImage() async {
+  static Future<pw.ImageProvider?> _loadPaymentQrImage(Sale sale) async {
     try {
-      final settings = Hive.box<dynamic>('app_settings');
-      if (settings.containsKey('payment_qr_base64')) {
-        final savedQr = settings.get('payment_qr_base64') as String?;
-        if (savedQr == null || savedQr.isEmpty) return null;
-        return pw.MemoryImage(base64Decode(savedQr));
-      }
+      final dynamicQr = await PaymentQrService.generateForSale(sale);
+      if (dynamicQr != null) return pw.MemoryImage(dynamicQr);
+      final fallback = await PaymentQrService.loadStaticQrFallback();
+      if (fallback != null) return pw.MemoryImage(fallback);
     } catch (_) {
-      // Fall back to the bundled QR asset when settings are not available.
+      // An invalid or missing payment configuration should not block invoicing.
     }
-    try {
-      final data = await rootBundle.load('assets/tap_and_pay_qr.png');
-      return pw.MemoryImage(data.buffer.asUint8List());
-    } catch (_) {
-      return null;
-    }
+    return null;
   }
 
   static String _amountInWords(double amount) {
