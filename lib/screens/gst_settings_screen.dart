@@ -14,10 +14,8 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
   late bool _gstEnabled;
   late bool _gstInclusive;
   late bool _defaultInterstate;
-  late bool _showTaxBreakdown;
   late String _registrationType;
   late String _stateCode;
-  late String _invoiceDocumentType;
   late final TextEditingController _defaultRate;
   bool _saving = false;
 
@@ -47,13 +45,9 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
     _gstEnabled = _settings.get('gst_enabled', defaultValue: false) as bool;
     _gstInclusive = _settings.get('gst_price_inclusive', defaultValue: false) as bool;
     _defaultInterstate = _settings.get('gst_default_interstate_sale', defaultValue: false) as bool;
-    _showTaxBreakdown = _settings.get('gst_show_tax_breakdown', defaultValue: true) as bool;
     _stateCode = _settings.get('business_state_code', defaultValue: '32').toString();
     if (!_states.containsKey(_stateCode)) _stateCode = '32';
-    _invoiceDocumentType = _settings.get('gst_invoice_document_type', defaultValue: 'tax_invoice').toString();
-    if (!const ['tax_invoice', 'bill_of_supply', 'invoice'].contains(_invoiceDocumentType)) {
-      _invoiceDocumentType = 'tax_invoice';
-    }
+    if (_registrationType != 'regular') _gstEnabled = false;
     _defaultRate = TextEditingController(
       text: (_settings.get('gst_rate', defaultValue: 0.0) as num).toString(),
     );
@@ -88,10 +82,6 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
         'gst_rate': rate,
         'business_state_code': _stateCode,
         'gst_default_interstate_sale': _defaultInterstate,
-        'gst_show_tax_breakdown': _showTaxBreakdown,
-        'gst_invoice_document_type': _registrationType == 'composition'
-            ? 'bill_of_supply'
-            : _invoiceDocumentType,
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -197,13 +187,6 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     value: _defaultInterstate,
                     onChanged: (value) => setState(() => _defaultInterstate = value),
                   ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Show tax breakdown on GST invoices'),
-                    subtitle: const Text('Display CGST/SGST or IGST totals where supported by the invoice template.'),
-                    value: _showTaxBreakdown,
-                    onChanged: (value) => setState(() => _showTaxBreakdown = value),
-                  ),
                 ],
               ),
             ),
@@ -227,27 +210,10 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                       'Used only when a product has no individual GST rate. Confirm the correct rate and HSN classification for each product; GST rates are not interchangeable across goods.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _registrationType == 'composition' ? 'bill_of_supply' : _invoiceDocumentType,
-                      decoration: _decoration('Invoice document label', Icons.description_outlined),
-                      items: const [
-                        DropdownMenuItem(value: 'tax_invoice', child: Text('Tax Invoice')),
-                        DropdownMenuItem(value: 'bill_of_supply', child: Text('Bill of Supply')),
-                        DropdownMenuItem(value: 'invoice', child: Text('Invoice')),
-                      ],
-                      onChanged: _registrationType == 'composition' ? null : (value) {
-                        if (value != null) setState(() => _invoiceDocumentType = value);
-                      },
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'This controls the saved document preference only. Invoice wording and required particulars must be checked against your registration and transaction type.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
                   ],
                 ),
               ),
+
             ),
             const SizedBox(height: 12),
             const Card(
