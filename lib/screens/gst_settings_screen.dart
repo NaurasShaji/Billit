@@ -138,7 +138,6 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                         setState(() {
                           _registrationType = value;
                           if (value != 'regular') _gstEnabled = false;
-                          if (value == 'composition') _invoiceDocumentType = 'bill_of_supply';
                         });
                       },
                     ),
@@ -213,8 +212,6 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                   ],
                 ),
               ),
-
-            ),
             const SizedBox(height: 12),
             const Card(
               child: Padding(
