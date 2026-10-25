@@ -76,8 +76,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         : _money(taxable * rate / 100.0);
   }
   double _lineGstRate(SaleItem item) {
-    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate ?? 0.0;
-    return productRate > 0 ? productRate : _gstRate;
+    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
+    return productRate ?? _gstRate;
   }
   double get _gstAmount => !_applyGst ? 0.0 : _money(items.fold<double>(
     0.0, (sum, item) => sum + _lineTaxAmount(item),
