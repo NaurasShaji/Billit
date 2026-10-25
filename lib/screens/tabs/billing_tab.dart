@@ -13,15 +13,6 @@ import '../../widgets/shopping_cart_section.dart';
 import '../../widgets/print_option_dialog.dart';
 import '../barcode_scanner_screen.dart';
 
-const _primaryColor = Color(0xFF1565C0); // Blue 800
-const _errorColor = Color(0xFFD32F2F); // Red 700
-const _successColor = Color(0xFF388E3C); // Green 700
-const _warningColor = Color(0xFFF57C00); // Orange 700
-const _surfaceColor = Color(0xFFFAFAFA); // Grey 50
-const _cardColor = Colors.white;
-const _textPrimary = Color(0xFF212121); // Grey 900
-const _textSecondary = Color(0xFF757575); // Grey 600
-
 class BillingTab extends StatefulWidget {
   const BillingTab({super.key});
   @override
@@ -49,6 +40,15 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   double get cost => _cartService.cost;
   double get profit => _cartService.profit;
   int get itemCount => _cartService.itemCount;
+  Color get _primaryColor => Theme.of(context).colorScheme.primary;
+  Color get _errorColor => Theme.of(context).colorScheme.error;
+  Color get _successColor => Colors.green.shade700;
+  Color get _warningColor => Colors.orange.shade700;
+  Color get _surfaceColor => Theme.of(context).colorScheme.surface;
+  Color get _cardColor => Theme.of(context).colorScheme.surface;
+  Color get _textPrimary => Theme.of(context).colorScheme.onSurface;
+  Color get _textSecondary => Theme.of(context).colorScheme.onSurfaceVariant;
+
   bool get _gstAvailable => Hive.box<dynamic>('app_settings').get('gst_enabled', defaultValue: false) as bool;
   double get _gstRate => (Hive.box<dynamic>('app_settings').get('gst_rate', defaultValue: 0.0) as num).toDouble();
   double _money(double value) => (value * 100).roundToDouble() / 100;
@@ -166,11 +166,11 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _primaryColor, width: 2),
+        borderSide: BorderSide(color: _primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _errorColor),
+        borderSide: BorderSide(color: _errorColor),
       ),
       fillColor: _cardColor,
       filled: true,
@@ -705,7 +705,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                       ),
                                       Text(
                                         cur.format(_grandTotal),
-                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _primaryColor),
+                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _primaryColor),
                                       ),
                                     ],
                                   ),
@@ -781,13 +781,13 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                         children: [
                                           Text(
                                             cur.format(sale.totalAmount),
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _primaryColor),
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _primaryColor),
                                           ),
                                           Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               IconButton(
-                                                icon: const Icon(Icons.print, color: _primaryColor),
+                                                icon: Icon(Icons.print, color: _primaryColor),
                                                 onPressed: () async {
                                                   final printOption = await showPrintOptionDialog(context, sale);
                                                   if (printOption != null) {
@@ -797,7 +797,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                                 tooltip: 'Print Invoice',
                                               ),
                                               IconButton(
-                                                icon: const Icon(Icons.edit, color: _primaryColor),
+                                                icon: Icon(Icons.edit, color: _primaryColor),
                                                 onPressed: () async {
                                                   final result = await Navigator.of(context).push(
                                                     MaterialPageRoute(
@@ -811,7 +811,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                                 tooltip: 'Edit Invoice',
                                               ),
                                               IconButton(
-                                                icon: const Icon(Icons.delete, color: _errorColor),
+                                                icon: Icon(Icons.delete, color: _errorColor),
                                                 onPressed: () async {
                                                   final confirm = await showDialog<bool>(
                                                     context: context,
