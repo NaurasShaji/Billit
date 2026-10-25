@@ -6,6 +6,7 @@ import 'tabs/products_tab.dart';
 import 'tabs/reports_tab.dart';
 import 'tabs/archive_tab.dart';
 import 'printer_settings_screen.dart';
+import 'invoice_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -380,14 +381,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
                 );
+              } else if (value == 'invoice_settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const InvoiceSettingsScreen()),
+                );
               } else if (value == 'logout') {
                 context.read<AuthService>().logout();
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem<String>(value: 'printer_settings', child: Text('Printer Settings')),
-              PopupMenuItem<String>(value: 'help_faq', child: Text('Help & FAQ')),
-              PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
+            itemBuilder: (context) => [
+              if (isAdmin)
+                const PopupMenuItem<String>(value: 'invoice_settings', child: Text('Invoice & GST Settings')),
+              const PopupMenuItem<String>(value: 'printer_settings', child: Text('Printer Settings')),
+              const PopupMenuItem<String>(value: 'help_faq', child: Text('Help & FAQ')),
+              const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
             ],
           )
         ],
