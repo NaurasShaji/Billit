@@ -248,7 +248,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             const SizedBox(height: 20),
             const Text('App theme', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
-            const Text('Choose the accent colour used throughout the app. The dark theme uses a dark colour scheme.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const Text('Choose an accent colour and matching soft background for the app.', style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               value: _appTheme,
