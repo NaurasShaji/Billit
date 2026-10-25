@@ -401,9 +401,14 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                 controller: _barcodeController,
                 decoration: InputDecoration(
                   labelText: 'Barcode / SKU',
-                  hintText: 'Scan with USB/Bluetooth scanner or enter manually',
+                  hintText: 'Scan with camera or external scanner, or enter manually',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.qr_code_2),
+                  suffixIcon: IconButton(
+                    onPressed: _isLoading ? null : _scanProductBarcode,
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'Scan barcode with camera',
+                  ),
                 ),
               ),
             ),
