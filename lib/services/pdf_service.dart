@@ -1156,74 +1156,39 @@ class PdfService {
 
   // Simple number to words converter (for amounts)
   static String _convertToWords(int amount) {
-    if (amount == 0) return "Zero";
-    if (amount > 99999) return "Amount too large";
+    if (amount == 0) return 'Zero';
+    if (amount < 0) return 'Minus ${_convertToWords(-amount)}';
 
-    final ones = [
-      "",
-      "One",
-      "Two",
-      "Three",
-      "Four",
-      "Five",
-      "Six",
-      "Seven",
-      "Eight",
-      "Nine"
-    ];
-    final teens = [
-      "Ten",
-      "Eleven",
-      "Twelve",
-      "Thirteen",
-      "Fourteen",
-      "Fifteen",
-      "Sixteen",
-      "Seventeen",
-      "Eighteen",
-      "Nineteen"
-    ];
-    final tens = [
-      "",
-      "",
-      "Twenty",
-      "Thirty",
-      "Forty",
-      "Fifty",
-      "Sixty",
-      "Seventy",
-      "Eighty",
-      "Ninety"
-    ];
-
-    String result = "";
-
+    final parts = <String>[];
+    if (amount >= 10000000) {
+      parts.add('${_convertToWords(amount ~/ 10000000)} Crore');
+      amount %= 10000000;
+    }
+    if (amount >= 100000) {
+      parts.add('${_convertToWords(amount ~/ 100000)} Lakh');
+      amount %= 100000;
+    }
     if (amount >= 1000) {
-      int thousands = amount ~/ 1000;
-      result += ones[thousands] + " Thousand ";
+      parts.add('${_convertToWords(amount ~/ 1000)} Thousand');
       amount %= 1000;
     }
-
     if (amount >= 100) {
-      int hundreds = amount ~/ 100;
-      result += ones[hundreds] + " Hundred ";
+      parts.add('${_convertToWords(amount ~/ 100)} Hundred');
       amount %= 100;
     }
+    if (amount > 0) parts.add(_convertUnderHundred(amount));
+    return parts.join(' ');
+  }
 
-    if (amount >= 20) {
-      int tensPlace = amount ~/ 10;
-      result += tens[tensPlace] + " ";
-      amount %= 10;
-    } else if (amount >= 10) {
-      result += teens[amount - 10] + " ";
-      return result.trim();
-    }
-
-    if (amount > 0) {
-      result += ones[amount];
-    }
-
-    return result.trim();
+  static String _convertUnderHundred(int amount) {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    if (amount < 10) return ones[amount];
+    if (amount < 20) return teens[amount - 10];
+    final ten = tens[amount ~/ 10];
+    final one = amount % 10;
+    return one == 0 ? ten : '$ten ${ones[one]}';
   }
 }
 
