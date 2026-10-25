@@ -94,19 +94,31 @@ class PdfService {
     final displayGst = includeGST && sale.gstEnabled;
     final productsBox = Hive.box<Product>(Boxes.products);
     final itemRows = <List<String>>[
-      ['#', 'Description', 'HSN/SAC', 'Qty', 'Rate', 'Taxable', 'GST %', 'Tax', 'Line total'],
+      if (displayGst)
+        ['#', 'Description', 'HSN/SAC', 'Qty', 'Rate', 'Taxable', 'GST %', 'Tax', 'Line total']
+      else
+        ['#', 'Description', 'Qty', 'Rate', 'Amount'],
       for (var i = 0; i < sale.items.length; i++)
-        [
-          '${i + 1}',
-          productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
-          sale.items[i].hsnCode.isNotEmpty ? sale.items[i].hsnCode : (productsBox.get(sale.items[i].productId)?.hsnCode ?? '-'),
-          '${sale.items[i].qty} ${sale.items[i].unitLabel}',
-          currency.format(sale.items[i].sellingPrice),
-          currency.format(displayGst ? sale.items[i].taxableAmount : sale.items[i].subtotal),
-          displayGst ? '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%' : '-',
-          displayGst ? currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount) : '-',
-          currency.format((displayGst ? sale.items[i].taxableAmount : sale.items[i].subtotal) + (displayGst ? sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount : 0)),
-        ],
+        if (displayGst)
+          [
+            '${i + 1}',
+            productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
+            sale.items[i].hsnCode.isNotEmpty ? sale.items[i].hsnCode : (productsBox.get(sale.items[i].productId)?.hsnCode ?? '-'),
+            '${sale.items[i].qty} ${sale.items[i].unitLabel}',
+            currency.format(sale.items[i].sellingPrice),
+            currency.format(sale.items[i].taxableAmount),
+            '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%',
+            currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
+            currency.format(sale.items[i].taxableAmount + sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
+          ]
+        else
+          [
+            '${i + 1}',
+            productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
+            '${sale.items[i].qty} ${sale.items[i].unitLabel}',
+            currency.format(sale.items[i].sellingPrice),
+            currency.format(sale.items[i].subtotal),
+          ],
     ];
 
     return [
@@ -182,26 +194,41 @@ class PdfService {
         cellStyle: const pw.TextStyle(fontSize: 9),
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 8),
         border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-        columnWidths: {
-          0: const pw.FixedColumnWidth(20),
-          1: const pw.FlexColumnWidth(3.5),
-          2: const pw.FlexColumnWidth(1.6),
-          3: const pw.FlexColumnWidth(1.4),
-          4: const pw.FlexColumnWidth(1.7),
-          5: const pw.FlexColumnWidth(1.8),
-          6: const pw.FlexColumnWidth(1.2),
-          7: const pw.FlexColumnWidth(1.7),
-          8: const pw.FlexColumnWidth(1.8),
-        },
-        cellAlignments: {
-          0: pw.Alignment.center,
-          3: pw.Alignment.centerRight,
-          4: pw.Alignment.centerRight,
-          5: pw.Alignment.centerRight,
-          6: pw.Alignment.centerRight,
-          7: pw.Alignment.centerRight,
-          8: pw.Alignment.centerRight,
-        },
+        columnWidths: displayGst
+            ? {
+                0: const pw.FixedColumnWidth(20),
+                1: const pw.FlexColumnWidth(3.5),
+                2: const pw.FlexColumnWidth(1.6),
+                3: const pw.FlexColumnWidth(1.4),
+                4: const pw.FlexColumnWidth(1.7),
+                5: const pw.FlexColumnWidth(1.8),
+                6: const pw.FlexColumnWidth(1.2),
+                7: const pw.FlexColumnWidth(1.7),
+                8: const pw.FlexColumnWidth(1.8),
+              }
+            : {
+                0: const pw.FixedColumnWidth(20),
+                1: const pw.FlexColumnWidth(4),
+                2: const pw.FlexColumnWidth(1.5),
+                3: const pw.FlexColumnWidth(1.8),
+                4: const pw.FlexColumnWidth(2),
+              },
+        cellAlignments: displayGst
+            ? {
+                0: pw.Alignment.center,
+                3: pw.Alignment.centerRight,
+                4: pw.Alignment.centerRight,
+                5: pw.Alignment.centerRight,
+                6: pw.Alignment.centerRight,
+                7: pw.Alignment.centerRight,
+                8: pw.Alignment.centerRight,
+              }
+            : {
+                0: pw.Alignment.center,
+                2: pw.Alignment.centerRight,
+                3: pw.Alignment.centerRight,
+                4: pw.Alignment.centerRight,
+              },
       ),
       pw.SizedBox(height: 18),
       pw.Row(
