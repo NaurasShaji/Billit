@@ -26,13 +26,15 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..category = fields[6] as String
       ..subCategory = fields[7] as String
       ..active = fields[8] as bool? ?? true
-      ..barcode = fields[9] as String?;
+      ..barcode = fields[9] as String?
+      ..hsnCode = fields[10] as String? ?? ''
+      ..gstRate = fields[11] as double? ?? 0.0;
   }
 
   @override
   void write(BinaryWriter writer, Product obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -52,7 +54,11 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..writeByte(8)
       ..write(obj.active)
       ..writeByte(9)
-      ..write(obj.barcode);
+      ..write(obj.barcode)
+      ..writeByte(10)
+      ..write(obj.hsnCode)
+      ..writeByte(11)
+      ..write(obj.gstRate);
   }
 
   @override
