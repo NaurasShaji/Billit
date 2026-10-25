@@ -349,6 +349,16 @@ class ThermalPrinterService {
       bytes += generator.text(discountLine);
     }
 
+    if (sale.gstEnabled) {
+      bytes += generator.text('Taxable value:'.padRight(24) + _formatRupees(sale.taxableAmount).padLeft(24));
+      if (sale.interstateSale) {
+        bytes += generator.text('IGST:'.padRight(24) + _formatRupees(sale.igstAmount).padLeft(24));
+      } else {
+        bytes += generator.text('CGST:'.padRight(24) + _formatRupees(sale.cgstAmount).padLeft(24));
+        bytes += generator.text('SGST:'.padRight(24) + _formatRupees(sale.sgstAmount).padLeft(24));
+      }
+    }
+
     bytes += generator.text('================================================');
 
     final totalAmount = _formatRupees(sale.totalAmount);
