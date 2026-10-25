@@ -5,6 +5,7 @@ import '../archive/payroll/add_employee_screen.dart';
 import '../archive/payroll/daily_wage_screen.dart';
 import '../archive/payroll/monthly_salary_screen.dart';
 import '../archive/backup_restore_screen.dart';
+import '../archive/bulk_import_products_screen.dart';
 import '../archive/change_password_screen.dart';
 import '../archive/customer_lookup_screen.dart';
 import '../archive/bulk_product_import_screen.dart';
@@ -147,6 +148,12 @@ class ArchiveTab extends StatelessWidget {
                   title: 'Backup & Restore',
                   subtitle: 'Secure your business data',
                   onTap: () => _navigate(context, const BackupRestoreScreen()),
+                ),
+                _MenuItem(
+                  icon: Icons.table_view_outlined,
+                  title: 'Bulk Import Products',
+                  subtitle: 'Add many products from an Excel spreadsheet',
+                  onTap: () => _navigate(context, const BulkImportProductsScreen()),
                 ),
               ],
             ),
