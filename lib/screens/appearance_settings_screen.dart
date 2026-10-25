@@ -45,6 +45,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
         final density = box.get('ui_density', defaultValue: 'comfortable').toString();
         final textScale = (box.get('text_scale', defaultValue: 1.0) as num).toDouble();
         final radius = (box.get('corner_radius', defaultValue: 16.0) as num).toDouble();
+        final lowStockThreshold = (box.get('low_stock_threshold', defaultValue: 10) as num).toDouble();
         final color = _palettes[selectedTheme] ?? _palettes['green']!;
 
         return Scaffold(
@@ -193,6 +194,38 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  _sectionTitle(context, 'Inventory alerts', 'Choose when a product should be flagged as low stock.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.inventory_2_outlined),
+                              const SizedBox(width: 10),
+                              const Expanded(child: Text('Low-stock threshold')),
+                              Text('${lowStockThreshold.round()} units', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          Slider(
+                            min: 1,
+                            max: 100,
+                            divisions: 99,
+                            value: lowStockThreshold.clamp(1.0, 100.0).toDouble(),
+                            label: '${lowStockThreshold.round()}',
+                            onChanged: (value) => _save('low_stock_threshold', value.round()),
+                          ),
+                          Text(
+                            'Products at or below this stock level appear in the dashboard alerts.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   _sectionTitle(context, 'Corner style', 'Set the roundness used by the app theme.'),
                   Card(
                     child: Padding(
@@ -240,6 +273,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('ui_density', 'comfortable');
                       await _save('text_scale', 1.0);
                       await _save('corner_radius', 16.0);
+                      await _save('low_stock_threshold', 10);
                     },
                     icon: const Icon(Icons.restart_alt),
                     label: const Text('Reset appearance'),
