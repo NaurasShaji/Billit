@@ -1196,6 +1196,6 @@ Future<void> generateInvoicePdf(Sale sale) async {
     thermalSize: ThermalSize.mm80,
     includeHeader: true,
     includeFooter: true,
-    includeGST: false, // Set to true if you need GST calculation
+    includeGST: true,
   );
 }
