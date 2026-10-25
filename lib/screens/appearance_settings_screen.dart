@@ -61,7 +61,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [color, color.withValues(alpha: 0.72)],
+                        colors: [color, color.withOpacity(0.72)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -183,7 +183,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             min: 0.9,
                             max: 1.2,
                             divisions: 6,
-                            value: textScale.clamp(0.9, 1.2),
+                            value: textScale.clamp(0.9, 1.2).toDouble(),
                             label: '${(textScale * 100).round()}%',
                             onChanged: (value) => _save('text_scale', value),
                           ),
@@ -215,8 +215,8 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.10),
-                              border: Border.all(color: color.withValues(alpha: 0.6)),
+                              color: color.withOpacity(0.10),
+                              border: Border.all(color: color.withOpacity(0.6)),
                               borderRadius: BorderRadius.circular(radius),
                             ),
                             child: Row(
