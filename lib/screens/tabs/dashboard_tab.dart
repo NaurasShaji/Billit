@@ -111,7 +111,7 @@ class DashboardTab extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final wide = constraints.maxWidth >= 820;
-                      final trend = _Panel(
+                      final trend = showFinancials ? _Panel(
                         title: 'Sales trend',
                         subtitle: 'Revenue over the last 7 days',
                         trailing: TextButton(onPressed: onOpenReports, child: const Text('View reports')),
@@ -160,7 +160,7 @@ class DashboardTab extends StatelessWidget {
                                   }).toList(),
                                 ),
                         ),
-                      );
+                      ) : const SizedBox.shrink();
                       final actions = _Panel(
                         title: 'Quick actions',
                         subtitle: 'Jump to a common task',
@@ -220,6 +220,7 @@ class DashboardTab extends StatelessWidget {
                             )).toList(),
                           ),
                   ),
+                  if (showFinancials) ...[
                   const SizedBox(height: 20),
                   _Panel(
                     title: 'Recent bills',
@@ -245,6 +246,7 @@ class DashboardTab extends StatelessWidget {
                             )).toList(),
                           ),
                   ),
+                  ],
                   const SizedBox(height: 24),
                 ],
               );
