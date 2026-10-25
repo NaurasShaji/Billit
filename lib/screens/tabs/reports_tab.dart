@@ -369,10 +369,22 @@ class _ReportsTabState extends State<ReportsTab>
                           ),
                         ),
                       ],
-                      child: OutlinedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.file_download_outlined),
-                        label: const Text('Export reports'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.6)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.file_download_outlined, color: theme.colorScheme.primary, size: 20),
+                            const SizedBox(width: 8),
+                            const Text('Export reports', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.keyboard_arrow_down, size: 20),
+                          ],
+                        ),
                       ),
                     ),
                   ),
