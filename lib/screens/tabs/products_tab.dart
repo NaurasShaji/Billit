@@ -518,6 +518,15 @@ class _ProductsTabState extends State<ProductsTab> {
                   label: const Text('Restock / Adjust quantity'),
                 ),
               ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () => _showStockHistory(product),
+                  icon: const Icon(Icons.history),
+                  label: const Text('View stock adjustment history'),
+                ),
+              ),
             ],
           ),
         ),
@@ -593,12 +602,79 @@ class _ProductsTabState extends State<ProductsTab> {
     );
     controller.dispose();
     if (delta == null || !mounted) return;
+    final previousStock = product.stock;
     product.stock += delta;
     await product.save();
+
+    final settings = Hive.box<dynamic>('app_settings');
+    final history = (settings.get('inventory_adjustments', defaultValue: <dynamic>[]) as List)
+        .map((entry) => Map<String, dynamic>.from(entry as Map))
+        .toList();
+    history.add({
+      'productId': product.id,
+      'productName': product.name,
+      'date': DateTime.now().toIso8601String(),
+      'delta': delta,
+      'previousStock': previousStock,
+      'newStock': product.stock,
+      'unit': product.unit.name,
+    });
+    if (history.length > 500) {
+      history.removeRange(0, history.length - 500);
+    }
+    await settings.put('inventory_adjustments', history);
     if (!mounted) return;
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Stock updated for ${product.name}. New stock: ${product.stock} ${product.unit.name}.')),
+    );
+  }
+
+  Future<void> _showStockHistory(Product product) async {
+    final settings = Hive.box<dynamic>('app_settings');
+    final history = (settings.get('inventory_adjustments', defaultValue: <dynamic>[]) as List)
+        .map((entry) => Map<String, dynamic>.from(entry as Map))
+        .where((entry) => entry['productId'] == product.id)
+        .toList()
+      ..sort((a, b) => DateTime.parse(b['date'] as String).compareTo(DateTime.parse(a['date'] as String)));
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Stock history · ${product.name}'),
+        content: SizedBox(
+          width: 460,
+          height: 360,
+          child: history.isEmpty
+              ? const Center(child: Text('No manual stock adjustments have been recorded yet.'))
+              : ListView.separated(
+                  itemCount: history.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final entry = history[index];
+                    final delta = (entry['delta'] as num).toDouble();
+                    final date = DateTime.parse(entry['date'] as String).toLocal();
+                    final quantity = delta.abs().toStringAsFixed(delta.abs() == delta.abs().roundToDouble() ? 0 : 2);
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: delta >= 0
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : Theme.of(context).colorScheme.errorContainer,
+                        child: Icon(delta >= 0 ? Icons.add : Icons.remove),
+                      ),
+                      title: Text('${delta >= 0 ? '+' : '-'}$quantity ${entry['unit']}',
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: Text('${DateFormat('d MMM yyyy, h:mm a').format(date)}\n${(entry['previousStock'] as num).toString()} → ${(entry['newStock'] as num).toString()} ${entry['unit']}'),
+                      isThreeLine: true,
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close')),
+        ],
+      ),
     );
   }
 
