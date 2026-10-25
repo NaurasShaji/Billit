@@ -82,6 +82,18 @@ Color _themeSeedColor(String theme) {
   }
 }
 
+Color _themeBackgroundColor(String theme) {
+  switch (theme) {
+    case 'blue': return const Color(0xFFF1F6FC);
+    case 'purple': return const Color(0xFFF7F2FB);
+    case 'amber': return const Color(0xFFFFF8E8);
+    case 'teal': return const Color(0xFFF0F8F7);
+    case 'rose': return const Color(0xFFFFF3F6);
+    case 'green':
+    default: return const Color(0xFFF3F8F0);
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -99,6 +111,7 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: _themeSeedColor(settings.get('app_theme', defaultValue: 'green').toString()),
           ),
+          scaffoldBackgroundColor: _themeBackgroundColor(settings.get('app_theme', defaultValue: 'green').toString()),
           useMaterial3: true,
         ),
         debugShowCheckedModeBanner: false,
