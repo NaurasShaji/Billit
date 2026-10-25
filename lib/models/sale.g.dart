@@ -22,13 +22,19 @@ class SaleItemAdapter extends TypeAdapter<SaleItem> {
       ..sellingPrice = fields[2] as double
       ..costPrice = fields[3] as double
       ..subtotal = fields[4] as double
-      ..unitLabel = fields[5] as String;
+      ..unitLabel = fields[5] as String
+      ..hsnCode = fields[6] as String? ?? ''
+      ..gstRate = fields[7] as double? ?? 0.0
+      ..taxableAmount = fields[8] as double? ?? 0.0
+      ..cgstAmount = fields[9] as double? ?? 0.0
+      ..sgstAmount = fields[10] as double? ?? 0.0
+      ..igstAmount = fields[11] as double? ?? 0.0;
   }
 
   @override
   void write(BinaryWriter writer, SaleItem obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.productId)
       ..writeByte(1)
@@ -40,7 +46,19 @@ class SaleItemAdapter extends TypeAdapter<SaleItem> {
       ..writeByte(4)
       ..write(obj.subtotal)
       ..writeByte(5)
-      ..write(obj.unitLabel);
+      ..write(obj.unitLabel)
+      ..writeByte(6)
+      ..write(obj.hsnCode)
+      ..writeByte(7)
+      ..write(obj.gstRate)
+      ..writeByte(8)
+      ..write(obj.taxableAmount)
+      ..writeByte(9)
+      ..write(obj.cgstAmount)
+      ..writeByte(10)
+      ..write(obj.sgstAmount)
+      ..writeByte(11)
+      ..write(obj.igstAmount);
   }
 
   @override
