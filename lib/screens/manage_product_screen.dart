@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import '../services/boxes.dart';
+import 'barcode_scanner_screen.dart';
 
 class ManageProductScreen extends StatefulWidget {
   final Product? product;
@@ -73,6 +74,15 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     super.dispose();
   }
 
+  Future<void> _scanProductBarcode() async {
+    final value = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (value != null && mounted) {
+      setState(() => _barcodeController.text = value);
+    }
+  }
+
   Future<void> _saveProduct() async {
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,6 +107,15 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
 
     try {
       final box = Hive.box<Product>(Boxes.products);
+      final barcode = _barcodeController.text.trim();
+      final duplicate = barcode.isNotEmpty && box.values.any((existing) =>
+          existing.id != widget.product?.id && existing.barcode?.trim() == barcode);
+      if (duplicate) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('That barcode is already assigned to another product.')),
+        );
+        return;
+      }
       final product = widget.product ?? Product()
         ..id = widget.product?.id ?? const Uuid().v4()
         ..active = true;
@@ -108,7 +127,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
         ..stock = double.tryParse(_stockController.text) ?? 0
         ..category = _categoryController.text
         ..subCategory = _subCategoryController.text
-        ..barcode = _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim()
+        ..barcode = barcode.isEmpty ? null : barcode
         ..hsnCode = _hsnController.text.trim()
         ..gstRate = gstRate
         ..unit = _selectedUnit;
