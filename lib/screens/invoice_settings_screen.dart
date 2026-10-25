@@ -23,6 +23,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _rate;
   late final TextEditingController _invoicePrefix;
   late final TextEditingController _nextInvoiceNumber;
+  late final TextEditingController _upiId;
+  late final TextEditingController _upiPayeeName;
+  late final TextEditingController _upiNotePrefix;
+  late String _appTheme;
 
   Uint8List? _appLogoBytes;
   Uint8List? _invoiceLogoBytes;
@@ -49,6 +53,11 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _gstInclusive = _settings.get('gst_price_inclusive', defaultValue: false) as bool;
     _invoicePrefix = TextEditingController(text: _settings.get('invoice_prefix', defaultValue: 'INV').toString());
     _nextInvoiceNumber = TextEditingController(text: (_settings.get('next_invoice_number', defaultValue: 1) as num).toInt().toString());
+    _upiId = TextEditingController(text: _settings.get('upi_id', defaultValue: '').toString());
+    _upiPayeeName = TextEditingController(text: _settings.get('upi_payee_name', defaultValue: '').toString());
+    _upiNotePrefix = TextEditingController(text: _settings.get('upi_note_prefix', defaultValue: 'Invoice').toString());
+    _appTheme = _settings.get('app_theme', defaultValue: 'green').toString();
+    if (!const ['green', 'blue', 'purple', 'teal', 'amber', 'rose', 'dark'].contains(_appTheme)) _appTheme = 'green';
     _appLogoBytes = _decodeImage('app_logo_base64');
     _invoiceLogoBytes = _decodeImage('business_logo_base64');
     _paymentQrBytes = _decodeImage('payment_qr_base64');
@@ -65,6 +74,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _appName.dispose(); _name.dispose(); _address.dispose(); _phone.dispose();
     _email.dispose(); _gstin.dispose(); _rate.dispose();
     _invoicePrefix.dispose(); _nextInvoiceNumber.dispose();
+    _upiId.dispose(); _upiPayeeName.dispose(); _upiNotePrefix.dispose();
     super.dispose();
   }
 
@@ -119,6 +129,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
     await _settings.putAll({
       'app_name': _appName.text.trim(),
+      'app_theme': _appTheme,
+      'upi_id': _upiId.text.trim(),
+      'upi_payee_name': _upiPayeeName.text.trim(),
+      'upi_note_prefix': _upiNotePrefix.text.trim().isEmpty ? 'Invoice' : _upiNotePrefix.text.trim(),
       'business_name': _name.text.trim(),
       'business_address': _address.text.trim(),
       'business_phone': _phone.text.trim(),
@@ -137,7 +151,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     if (!mounted) return;
     setState(() => _saving = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('App, invoice and GST settings saved')),
+      const SnackBar(content: Text('App, theme, UPI, invoice and GST settings saved')),
     );
   }
 
@@ -232,6 +246,25 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
               placeholderIcon: Icons.apps,
             ),
             const SizedBox(height: 20),
+            const Text('App theme', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            const Text('Choose the accent colour used throughout the app. The dark theme uses a dark colour scheme.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: _appTheme,
+              decoration: _decoration('Colour theme', Icons.palette_outlined),
+              items: const [
+                DropdownMenuItem(value: 'green', child: Text('Garden Green')),
+                DropdownMenuItem(value: 'blue', child: Text('Classic Blue')),
+                DropdownMenuItem(value: 'purple', child: Text('Royal Purple')),
+                DropdownMenuItem(value: 'teal', child: Text('Calm Teal')),
+                DropdownMenuItem(value: 'amber', child: Text('Warm Amber')),
+                DropdownMenuItem(value: 'rose', child: Text('Rose')),
+                DropdownMenuItem(value: 'dark', child: Text('Dark Blue-Grey')),
+              ],
+              onChanged: (value) { if (value != null) setState(() => _appTheme = value); },
+            ),
+            const SizedBox(height: 20),
             const Text('Business details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             TextFormField(controller: _name, decoration: _decoration('Business / shop name', Icons.store), validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter business name' : null),
@@ -252,9 +285,37 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
               placeholderIcon: Icons.receipt_long,
             ),
             const SizedBox(height: 8),
+            const SizedBox(height: 20),
+            const Text('Dynamic UPI payment QR', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            const Text('Configure your UPI details once. Each new bill will get a QR containing that invoice ID and the exact bill total in INR. A compatible UPI app is required to pay.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _upiId,
+              decoration: _decoration('UPI ID / VPA (e.g. shop@bank)', Icons.account_balance_wallet_outlined),
+              validator: (value) {
+                final upi = value?.trim() ?? '';
+                if (upi.isNotEmpty && (!upi.contains('@') || upi.contains(' '))) return 'Enter a valid UPI ID or leave it blank';
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _upiPayeeName,
+              decoration: _decoration('Payee / business name', Icons.storefront_outlined),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _upiNotePrefix,
+              decoration: _decoration('Payment note prefix', Icons.notes_outlined),
+              maxLength: 30,
+            ),
+            const SizedBox(height: 8),
+            const Text('The QR is generated locally from the saved UPI ID and bill total. No payment is processed by Floral Bill, and payment completion must be verified in your UPI app/bank.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 12),
             _imageSetting(
-              title: 'Payment QR code',
-              description: 'UPI or scan-to-pay image shown on generated invoices and thermal receipts. This is not the product barcode scanner.',
+              title: 'Static payment QR fallback (optional)',
+              description: 'Used only when no UPI ID is configured. A dynamic invoice QR takes priority when the UPI ID is set.',
               key: 'qr',
               bytes: _paymentQrBytes,
               placeholderIcon: Icons.qr_code_2,
