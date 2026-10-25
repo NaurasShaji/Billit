@@ -45,6 +45,7 @@ Future<void> main() async {
   settings.putIfAbsent('business_gstin', () => '');
   settings.putIfAbsent('gst_enabled', () => false);
   settings.putIfAbsent('gst_rate', () => 0.0);
+  settings.putIfAbsent('gst_price_inclusive', () => false);
     
   // Initialize services
   final auth = AuthService();
