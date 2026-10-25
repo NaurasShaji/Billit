@@ -510,6 +510,14 @@ class _ProductsTabState extends State<ProductsTab> {
                     const SizedBox(height: 16),
                   ],
                 ),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _adjustStock(product),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('Restock / Adjust quantity'),
+                ),
+              ),
             ],
           ),
         ),
@@ -532,6 +540,65 @@ class _ProductsTabState extends State<ProductsTab> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _adjustStock(Product product) async {
+    final controller = TextEditingController();
+    final delta = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Adjust stock · ${product.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current stock: ${product.stock} ${product.unit.name}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              decoration: const InputDecoration(
+                labelText: 'Quantity change',
+                hintText: 'e.g. 12 to restock, -2 to remove',
+                helperText: 'Use a positive number to add stock or a negative number to remove it.',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              final value = double.tryParse(controller.text.trim());
+              if (value == null || value == 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Enter a non-zero quantity change.')),
+                );
+                return;
+              }
+              if (product.stock + value < 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Stock cannot become negative.')),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, value);
+            },
+            child: const Text('Update stock'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (delta == null || !mounted) return;
+    product.stock += delta;
+    await product.save();
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Stock updated for ${product.name}. New stock: ${product.stock} ${product.unit.name}.')),
     );
   }
 
