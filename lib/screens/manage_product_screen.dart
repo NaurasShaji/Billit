@@ -40,7 +40,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     _subCategoryController = TextEditingController(text: widget.product?.subCategory ?? '');
     _barcodeController = TextEditingController(text: widget.product?.barcode ?? '');
     _hsnController = TextEditingController(text: widget.product?.hsnCode ?? '');
-    _gstRateController = TextEditingController(text: (widget.product?.gstRate ?? 0.0).toString());
+    _gstRateController = TextEditingController(text: widget.product?.gstRate?.toString() ?? '');
     _selectedUnit = widget.product?.unit ?? UnitType.pcs;
 
     // Calculate initial profit margin
@@ -95,10 +95,11 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
       return;
     }
 
-    final gstRate = double.tryParse(_gstRateController.text.trim());
-    if (gstRate == null || gstRate < 0 || gstRate > 100) {
+    final gstRateText = _gstRateController.text.trim();
+    final gstRate = gstRateText.isEmpty ? null : double.tryParse(gstRateText);
+    if (gstRateText.isNotEmpty && (gstRate == null || gstRate < 0 || gstRate > 100)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('GST rate must be between 0 and 100.')),
+        const SnackBar(content: Text('GST rate must be between 0 and 100, or left blank to use the default.')),
       );
       return;
     }
@@ -425,7 +426,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       labelText: 'Product GST rate (%)',
-                      helperText: 'Enter 0 to use the default rate from Invoice & GST Settings.',
+                      helperText: 'Leave blank to use default GST. Enter 0 for a zero-rated product.',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.percent),
                     ),
