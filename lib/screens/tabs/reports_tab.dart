@@ -109,7 +109,7 @@ class _ReportsTabState extends State<ReportsTab>
     try {
       final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\r\n');
       await Share.shareXFiles(
-        [XFile.fromData(utf8.encode('\\uFEFF$csv'), mimeType: 'text/csv', name: filename)],
+        [XFile.fromData(utf8.encode(csv), mimeType: 'text/csv', name: filename)],
         subject: filename,
         text: 'Floral Bill accounting export',
       );
