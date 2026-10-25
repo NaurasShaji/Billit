@@ -22,6 +22,7 @@ class PdfService {
     bool fullPage = true,
   }) async {
     final doc = pw.Document();
+    final qrImage = await _loadPaymentQrImage();
 
     if (fullPage) {
       doc.addPage(
@@ -33,20 +34,14 @@ class PdfService {
             includeHeader: includeHeader,
             includeFooter: includeFooter,
             includeGST: includeGST,
+            qrImage: qrImage,
           ),
         ),
       );
     } else {
       final double pageWidth =
           thermalSize == ThermalSize.mm58 ? thermalWidth58mm : thermalWidth80mm;
-      pw.ImageProvider? qrImage;
-      try {
-        final ByteData qrData = await rootBundle.load('assets/tap_and_pay_qr.png');
-        qrImage = pw.MemoryImage(qrData.buffer.asUint8List());
-      } catch (e) {
-        // The QR image is optional; the invoice remains printable without it.
-      }
-      doc.addPage(
+            doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat(
             pageWidth,
@@ -68,7 +63,7 @@ class PdfService {
 
     await Printing.sharePdf(
       bytes: await doc.save(),
-      filename: 'invoice_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
+      filename: '${includeGST && sale.gstEnabled ? 'gst_invoice' : 'invoice'}_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
     );
   }
 
@@ -77,6 +72,7 @@ class PdfService {
     required bool includeHeader,
     required bool includeFooter,
     required bool includeGST,
+    pw.ImageProvider? qrImage,
   }) {
     final settings = Hive.box<dynamic>('app_settings');
     final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
@@ -95,7 +91,7 @@ class PdfService {
         ? sale.taxableAmount
         : (subtotal - sale.discount).clamp(0.0, double.infinity).toDouble();
     final taxTotal = sale.cgstAmount + sale.sgstAmount + sale.igstAmount;
-    final displayGst = sale.gstEnabled;
+    final displayGst = includeGST && sale.gstEnabled;
     final productsBox = Hive.box<Product>(Boxes.products);
     final itemRows = <List<String>>[
       ['#', 'Description', 'HSN/SAC', 'Qty', 'Rate', 'Taxable', 'GST %', 'Tax', 'Line total'],
@@ -106,10 +102,10 @@ class PdfService {
           sale.items[i].hsnCode.isNotEmpty ? sale.items[i].hsnCode : (productsBox.get(sale.items[i].productId)?.hsnCode ?? '-'),
           '${sale.items[i].qty} ${sale.items[i].unitLabel}',
           currency.format(sale.items[i].sellingPrice),
-          currency.format(sale.gstEnabled ? sale.items[i].taxableAmount : sale.items[i].subtotal),
-          sale.gstEnabled ? '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%' : '-',
-          sale.gstEnabled ? currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount) : '-',
-          currency.format((sale.gstEnabled ? sale.items[i].taxableAmount : sale.items[i].subtotal) + sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
+          currency.format(displayGst ? sale.items[i].taxableAmount : sale.items[i].subtotal),
+          displayGst ? '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%' : '-',
+          displayGst ? currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount) : '-',
+          currency.format((displayGst ? sale.items[i].taxableAmount : sale.items[i].subtotal) + (displayGst ? sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount : 0)),
         ],
     ];
 
@@ -145,7 +141,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(displayGst && businessGstin.isNotEmpty ? 'TAX INVOICE' : 'INVOICE', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(displayGst ? 'TAX INVOICE' : 'INVOICE', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 8),
                   pw.Text('Invoice: ${sale.id}'),
                   pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
@@ -248,6 +244,21 @@ class PdfService {
           ),
         ],
       ),
+      if (qrImage != null) ...[
+        pw.SizedBox(height: 18),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            pw.Column(
+              children: [
+                pw.Text('SCAN & PAY', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 4),
+                pw.Image(qrImage, width: 82, height: 82, fit: pw.BoxFit.contain),
+              ],
+            ),
+          ],
+        ),
+      ],
       pw.SizedBox(height: 24),
       pw.Container(
         width: double.infinity,
@@ -262,6 +273,24 @@ class PdfService {
         ),
       ),
     ];
+  }
+
+  static Future<pw.ImageProvider?> _loadPaymentQrImage() async {
+    try {
+      final settings = Hive.box<dynamic>('app_settings');
+      final savedQr = settings.get('payment_qr_base64') as String?;
+      if (savedQr != null && savedQr.isNotEmpty) {
+        return pw.MemoryImage(base64Decode(savedQr));
+      }
+    } catch (_) {
+      // Fall back to the bundled QR asset when settings are not available.
+    }
+    try {
+      final data = await rootBundle.load('assets/tap_and_pay_qr.png');
+      return pw.MemoryImage(data.buffer.asUint8List());
+    } catch (_) {
+      return null;
+    }
   }
 
   static String _amountInWords(double amount) {
