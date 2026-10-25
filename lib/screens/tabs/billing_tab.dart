@@ -36,11 +36,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   final TextEditingController _discountController = TextEditingController();
   final TextEditingController _barcodeInputController = TextEditingController();
   final TextEditingController _customerGstin = TextEditingController();
-  bool _gstAvailable = false;
   bool _applyGst = false;
   bool _interstateSale = false;
   bool _gstInclusive = false;
-  double _gstRate = 0.0;
   AnimationController? _animationController;
   Animation<double>? _fadeAnimation;
 
@@ -52,6 +50,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   double get cost => _cartService.cost;
   double get profit => _cartService.profit;
   int get itemCount => _cartService.itemCount;
+  bool get _gstAvailable => Hive.box<dynamic>('app_settings').get('gst_enabled', defaultValue: false) as bool;
+  double get _gstRate => (Hive.box<dynamic>('app_settings').get('gst_rate', defaultValue: 0.0) as num).toDouble();
   double get _subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
   double _lineGrossAfterDiscount(SaleItem item) {
     if (_subtotal <= 0) return 0.0;
@@ -92,10 +92,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _cartService = CartService();
-    final settings = Hive.box<dynamic>('app_settings');
-    _gstAvailable = settings.get('gst_enabled', defaultValue: false) as bool;
-    _gstRate = (settings.get('gst_rate', defaultValue: 0.0) as num).toDouble();
-    _gstInclusive = settings.get('gst_price_inclusive', defaultValue: false) as bool;
+    _gstInclusive = Hive.box<dynamic>('app_settings').get('gst_price_inclusive', defaultValue: false) as bool;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -551,7 +548,12 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                 title: Text('Apply GST (${_gstRate.toStringAsFixed(2)}%)'),
                                 subtitle: const Text('Tax is calculated after discount.'),
                                 value: _applyGst,
-                                onChanged: (value) => setState(() => _applyGst = value),
+                                onChanged: (value) => setState(() {
+                                  _applyGst = value;
+                                  if (value) {
+                                    _gstInclusive = Hive.box<dynamic>('app_settings').get('gst_price_inclusive', defaultValue: false) as bool;
+                                  }
+                                }),
                               ),
                               if (_applyGst) ...[
                                 CheckboxListTile(
