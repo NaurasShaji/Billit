@@ -203,7 +203,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: _textPrimary,
@@ -474,7 +474,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             'For USB/Bluetooth scanners, focus this field and scan. Most scanners submit the code with Enter.',
                             style: TextStyle(fontSize: 12, color: _textSecondary),
                           ),
@@ -596,7 +596,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                 ),
                               ],
                             ] else
-                              const Text(
+                              Text(
                                 'GST is disabled. An admin can configure it in Invoice & GST Settings.',
                                 style: TextStyle(fontSize: 12, color: _textSecondary),
                               ),
@@ -612,7 +612,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Invoice ID',
                                         style: TextStyle(fontSize: 14, color: _textSecondary),
                                       ),
@@ -693,7 +693,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                       ),
                                       Text(
                                         cur.format(_grandTotal),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.w700,
                                           color: _primaryColor,

@@ -29,7 +29,7 @@ dependencies:
   googleapis_auth: ^1.6.0
   permission_handler: ^11.3.0
   mobile_scanner: ^5.2.3
-  share_plus: ^9.0.0
+  share_plus: 10.0.1
   qr: ^3.0.2
 
 dev_dependencies:

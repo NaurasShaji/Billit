@@ -11,7 +11,8 @@ class BulkImportProductsScreen extends StatefulWidget {
   const BulkImportProductsScreen({super.key});
 
   @override
-  State<BulkImportProductsScreen> createState() => _BulkImportProductsScreenState();
+  State<BulkImportProductsScreen> createState() =>
+      _BulkImportProductsScreenState();
 }
 
 class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
@@ -36,7 +37,8 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
       final file = result.files.single;
       final bytes = file.bytes;
       if (bytes == null || bytes.isEmpty) {
-        _showMessage('Could not read this file. Please select the .xlsx file again.');
+        _showMessage(
+            'Could not read this file. Please select the .xlsx file again.');
         return;
       }
 
@@ -49,7 +51,8 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
 
       final workbook = Excel.decodeBytes(bytes);
       if (workbook.tables.isEmpty) {
-        throw const FormatException('The workbook does not contain a worksheet.');
+        throw const FormatException(
+            'The workbook does not contain a worksheet.');
       }
       final sheet = workbook.tables.values.first;
       final sheetRows = sheet.rows;
@@ -64,26 +67,37 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         throw const FormatException('The worksheet is empty.');
       }
 
-      final headers = sheetRows[headerIndex].map((cell) => _normaliseHeader(_cellText(cell))).toList();
-      final nameColumn = _findColumn(headers, ['name', 'product', 'productname', 'item', 'itemname']);
-      final sellingColumn = _findColumn(headers, ['sellingprice', 'saleprice', 'price', 'unitprice']);
+      final headers = sheetRows[headerIndex]
+          .map((cell) => _normaliseHeader(_cellText(cell)))
+          .toList();
+      final nameColumn = _findColumn(
+          headers, ['name', 'product', 'productname', 'item', 'itemname']);
+      final sellingColumn = _findColumn(
+          headers, ['sellingprice', 'saleprice', 'price', 'unitprice']);
       if (nameColumn == -1 || sellingColumn == -1) {
         throw const FormatException(
           'Required columns not found. The first row must include Product Name and Selling Price.',
         );
       }
 
-      final costColumn = _findColumn(headers, ['costprice', 'purchaseprice', 'cost', 'buyingprice']);
-      final stockColumn = _findColumn(headers, ['stock', 'quantity', 'openingstock', 'openingquantity']);
+      final costColumn = _findColumn(
+          headers, ['costprice', 'purchaseprice', 'cost', 'buyingprice']);
+      final stockColumn = _findColumn(
+          headers, ['stock', 'quantity', 'openingstock', 'openingquantity']);
       final unitColumn = _findColumn(headers, ['unit', 'unittype', 'measure']);
       final categoryColumn = _findColumn(headers, ['category']);
       final subCategoryColumn = _findColumn(headers, ['subcategory', 'subcat']);
-      final barcodeColumn = _findColumn(headers, ['barcode', 'sku', 'productcode']);
+      final barcodeColumn =
+          _findColumn(headers, ['barcode', 'sku', 'productcode']);
       final hsnColumn = _findColumn(headers, ['hsn', 'hsncode']);
-      final gstColumn = _findColumn(headers, ['gstrate', 'gst', 'gstpercent', 'taxrate']);
+      final gstColumn =
+          _findColumn(headers, ['gstrate', 'gst', 'gstpercent', 'taxrate']);
 
       final productBox = Hive.box<Product>(Boxes.products);
-      final existingNames = productBox.values.map((p) => p.name.trim().toLowerCase()).where((v) => v.isNotEmpty).toSet();
+      final existingNames = productBox.values
+          .map((p) => p.name.trim().toLowerCase())
+          .where((v) => v.isNotEmpty)
+          .toSet();
       final existingBarcodes = productBox.values
           .map((p) => (p.barcode ?? '').trim())
           .where((v) => v.isNotEmpty)
@@ -100,9 +114,12 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         final sellingText = _readColumn(row, sellingColumn).trim();
         final costText = _readOptionalColumn(row, costColumn, '0').trim();
         final stockText = _readOptionalColumn(row, stockColumn, '0').trim();
-        final unitText = _readOptionalColumn(row, unitColumn, 'pcs').trim().toLowerCase();
-        final category = _readOptionalColumn(row, categoryColumn, 'General').trim();
-        final subCategory = _readOptionalColumn(row, subCategoryColumn, '').trim();
+        final unitText =
+            _readOptionalColumn(row, unitColumn, 'pcs').trim().toLowerCase();
+        final category =
+            _readOptionalColumn(row, categoryColumn, 'General').trim();
+        final subCategory =
+            _readOptionalColumn(row, subCategoryColumn, '').trim();
         final barcode = _readOptionalColumn(row, barcodeColumn, '').trim();
         final hsn = _readOptionalColumn(row, hsnColumn, '').trim();
         final gstText = _readOptionalColumn(row, gstColumn, '').trim();
@@ -111,7 +128,9 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         final sellingPrice = double.tryParse(sellingText.replaceAll(',', ''));
         final costPrice = double.tryParse(costText.replaceAll(',', ''));
         final stock = double.tryParse(stockText.replaceAll(',', ''));
-        final gstRate = gstText.isEmpty ? null : double.tryParse(gstText.replaceAll('%', '').trim());
+        final gstRate = gstText.isEmpty
+            ? null
+            : double.tryParse(gstText.replaceAll('%', '').trim());
 
         UnitType unit;
         switch (_normaliseHeader(unitText)) {
@@ -142,21 +161,26 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         if (name.isEmpty) {
           error ??= 'Product name is required.';
         } else if (sellingPrice == null || sellingPrice < 0) {
-          error ??= 'Selling price must be a valid number greater than or equal to 0.';
+          error ??=
+              'Selling price must be a valid number greater than or equal to 0.';
         } else if (costPrice == null || costPrice < 0) {
-          error ??= 'Cost price must be a valid number greater than or equal to 0.';
+          error ??=
+              'Cost price must be a valid number greater than or equal to 0.';
         } else if (stock == null || stock < 0) {
           error ??= 'Stock must be a valid number greater than or equal to 0.';
-        } else if (gstText.isNotEmpty && (gstRate == null || gstRate < 0 || gstRate > 100)) {
+        } else if (gstText.isNotEmpty &&
+            (gstRate == null || gstRate < 0 || gstRate > 100)) {
           error ??= 'GST rate must be between 0 and 100.';
         }
 
         final nameKey = name.toLowerCase();
-        if (name.isNotEmpty && (existingNames.contains(nameKey) || !seenNames.add(nameKey))) {
+        if (name.isNotEmpty &&
+            (existingNames.contains(nameKey) || !seenNames.add(nameKey))) {
           error ??= 'A product with this name already exists.';
         }
         if (barcode.isNotEmpty &&
-            (existingBarcodes.contains(barcode) || !seenBarcodes.add(barcode))) {
+            (existingBarcodes.contains(barcode) ||
+                !seenBarcodes.add(barcode))) {
           error ??= 'This barcode/SKU is already assigned.';
         }
 
@@ -190,7 +214,9 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         _isReading = false;
         _rows = [];
       });
-      _showMessage(error is FormatException ? error.message : 'Could not read the Excel file: $error');
+      _showMessage(error is FormatException
+          ? error.message
+          : 'Could not read the Excel file: $error');
     }
   }
 
@@ -258,14 +284,15 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
   String _cellText(Data? cell) {
     final value = cell?.value;
     if (value == null) return '';
-    if (value is TextCellValue) return value.value;
+    if (value is TextCellValue) return value.value.toString();
     if (value is IntCellValue) return value.value.toString();
     if (value is DoubleCellValue) return value.value.toString();
     if (value is BoolCellValue) return value.value.toString();
     return value.toString();
   }
 
-  String _normaliseHeader(String value) => value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  String _normaliseHeader(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
   int _findColumn(List<String> headers, List<String> aliases) {
     for (var i = 0; i < headers.length; i++) {
@@ -309,15 +336,19 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.table_view_outlined, color: theme.colorScheme.primary, size: 30),
+                          Icon(Icons.table_view_outlined,
+                              color: theme.colorScheme.primary, size: 30),
                           const SizedBox(width: 12),
                           const Expanded(
-                            child: Text('Import products from Excel', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                            child: Text('Import products from Excel',
+                                style: TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.w700)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      const Text('Choose an .xlsx workbook. The first non-empty row must contain column headers. Product Name and Selling Price are required; other columns are optional.'),
+                      const Text(
+                          'Choose an .xlsx workbook. The first non-empty row must contain column headers. Product Name and Selling Price are required; other columns are optional.'),
                       const SizedBox(height: 12),
                       const Text(
                         'Supported columns: Product Name, Selling Price, Cost Price, Stock, Unit, Category, Subcategory, Barcode, HSN Code, GST Rate.',
@@ -335,16 +366,21 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           FilledButton.icon(
-                            onPressed: _isReading || _isImporting ? null : _pickExcelFile,
+                            onPressed: _isReading || _isImporting
+                                ? null
+                                : _pickExcelFile,
                             icon: const Icon(Icons.upload_file),
                             label: const Text('Choose Excel file'),
                           ),
                           if (_fileName != null)
                             Chip(
-                              avatar: const Icon(Icons.description_outlined, size: 18),
+                              avatar: const Icon(Icons.description_outlined,
+                                  size: 18),
                               label: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 260),
-                                child: Text(_fileName!, overflow: TextOverflow.ellipsis),
+                                constraints:
+                                    const BoxConstraints(maxWidth: 260),
+                                child: Text(_fileName!,
+                                    overflow: TextOverflow.ellipsis),
                               ),
                             ),
                           if (_isReading) const CircularProgressIndicator(),
@@ -362,9 +398,15 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle_outline, color: theme.colorScheme.onPrimaryContainer),
+                        Icon(Icons.check_circle_outline,
+                            color: theme.colorScheme.onPrimaryContainer),
                         const SizedBox(width: 12),
-                        Expanded(child: Text('$_importedCount products imported successfully.', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600))),
+                        Expanded(
+                            child: Text(
+                                '$_importedCount products imported successfully.',
+                                style: TextStyle(
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w600))),
                         TextButton(
                           onPressed: () => setState(() {
                             _fileName = null;
@@ -386,7 +428,9 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Preview', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                        Text('Preview',
+                            style: theme.textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700)),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
@@ -399,37 +443,57 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                         ),
                         const SizedBox(height: 12),
                         ..._rows.take(100).map((row) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            backgroundColor: row.error == null
-                                ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.errorContainer,
-                            child: Text('${row.spreadsheetRow}', style: const TextStyle(fontSize: 11)),
-                          ),
-                          title: Text(row.name.isEmpty ? '(Unnamed product)' : row.name),
-                          subtitle: Text(
-                            row.error ??
-                                'Selling: ${row.sellingPrice.toStringAsFixed(2)} • Cost: ${row.costPrice.toStringAsFixed(2)} • Stock: ${row.stock} ${row.unit.name}',
-                            style: TextStyle(
-                              color: row.error == null ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.error,
-                            ),
-                          ),
-                          trailing: Icon(
-                            row.error == null ? Icons.check_circle_outline : Icons.error_outline,
-                            color: row.error == null ? Colors.green : theme.colorScheme.error,
-                          ),
-                        )),
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(
+                                backgroundColor: row.error == null
+                                    ? theme.colorScheme.primaryContainer
+                                    : theme.colorScheme.errorContainer,
+                                child: Text('${row.spreadsheetRow}',
+                                    style: const TextStyle(fontSize: 11)),
+                              ),
+                              title: Text(row.name.isEmpty
+                                  ? '(Unnamed product)'
+                                  : row.name),
+                              subtitle: Text(
+                                row.error ??
+                                    'Selling: ${row.sellingPrice.toStringAsFixed(2)} • Cost: ${row.costPrice.toStringAsFixed(2)} • Stock: ${row.stock} ${row.unit.name}',
+                                style: TextStyle(
+                                  color: row.error == null
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : theme.colorScheme.error,
+                                ),
+                              ),
+                              trailing: Icon(
+                                row.error == null
+                                    ? Icons.check_circle_outline
+                                    : Icons.error_outline,
+                                color: row.error == null
+                                    ? Colors.green
+                                    : theme.colorScheme.error,
+                              ),
+                            )),
                         if (_rows.length > 100)
-                          Text('Showing the first 100 of ${_rows.length} rows.', style: theme.textTheme.bodySmall),
+                          Text('Showing the first 100 of ${_rows.length} rows.',
+                              style: theme.textTheme.bodySmall),
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton.icon(
-                            onPressed: _validCount == 0 || _isImporting || _importedCount != null ? null : _importProducts,
+                            onPressed: _validCount == 0 ||
+                                    _isImporting ||
+                                    _importedCount != null
+                                ? null
+                                : _importProducts,
                             icon: _isImporting
-                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
                                 : const Icon(Icons.playlist_add_check),
-                            label: Text(_isImporting ? 'Importing…' : 'Import $_validCount products'),
+                            label: Text(_isImporting
+                                ? 'Importing…'
+                                : 'Import $_validCount products'),
                           ),
                         ),
                       ],

@@ -212,8 +212,9 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                   ],
                 ),
               ),
-            const SizedBox(height: 12),
-            const Card(
+              ),
+              const SizedBox(height: 12),
+              const Card(
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(

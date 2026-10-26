@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
 import '../manage_product_screen.dart';
@@ -372,7 +373,7 @@ class _ProductsTabState extends State<ProductsTab> {
                     children: [
                       Text(
                         '₹${product.sellingPrice.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: Theme.of(context).colorScheme.primary,
