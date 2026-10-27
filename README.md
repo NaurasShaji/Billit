@@ -40,6 +40,7 @@ A Flutter app for managing floral-shop sales, products, and day-to-day business 
 ### Backup, printer, and account tools
 
 - Back up products, sales, expenses, and employee records to Google Drive, browse available backups, and restore a selected backup.
+- Optional Supabase snapshot backup/restore for moving local business data between devices. This is manual snapshot storage, not live or conflict-resolving sync.
 - Configure recurring Google Drive backups by interval. Restoring replaces current business data, so keep a current backup before restoring.
 - Scan paired Bluetooth devices and select a default thermal printer.
 - Change account passwords through the admin account.
@@ -88,6 +89,25 @@ On first launch, the app creates these local accounts:
 | Worker | `worker` | `worker123` |
 
 These are default credentials for a new local installation. Change the admin password after signing in, and do not use these credentials for a shared or production deployment.
+
+## Optional Supabase cloud snapshots
+
+The Supabase integration is optional. Local Hive operation and Google Drive backups remain available when Supabase is not configured.
+
+1. Create a project at the [Supabase dashboard](https://supabase.com/dashboard).
+2. Run [`supabase/setup.sql`](supabase/setup.sql) in the project's SQL Editor. The table uses Row Level Security and Supabase Auth.
+3. Copy the project URL and publishable key. Never put a service-role or secret key in the app.
+4. Run with your values:
+
+   ```bash
+   flutter pub get
+   flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+   ```
+
+5. Enable email/password in Supabase Auth and sign in from **Archive → Backup & Restore → Supabase Cloud Sync**. The app's local admin/worker accounts are separate from Supabase accounts.
+6. Upload local data to create/replace a cloud snapshot, or restore it on another device. Restore replaces local products, sales, expenses, employees, and app settings. Back up first.
+
+The free plan has limits and projects may pause after inactivity; check [current pricing](https://supabase.com/pricing). Test with disposable data first. This integration has not yet been compiled or tested against a live Supabase project.
 
 ## Development
 
