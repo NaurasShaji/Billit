@@ -25,7 +25,9 @@ class SupabaseCloudService {
 
   bool get isConfigured => _url.startsWith('https://') &&
       _publishableKey.isNotEmpty;
-  bool get isAvailable => _initialized && Supabase.instance.client.auth.currentUser != null;
+  bool get isAvailable => _initialized; 
+  bool get hasSignedInUser =>
+      _initialized && Supabase.instance.client.auth.currentUser != null;
   bool get isInitialized => _initialized;
   String? get initializationError => _initializationError;
 
