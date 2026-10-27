@@ -41,6 +41,7 @@ Future<void> main() async {
   await Hive.openBox<Expense>(Boxes.expenses);
   await Hive.openBox<Employee>(Boxes.employees);
   await Hive.openBox('session');
+  await Hive.openBox<dynamic>('app_settings');
     
   // Initialize services
   final auth = AuthService();
