@@ -40,6 +40,7 @@ A Flutter app for managing floral-shop sales, products, and day-to-day business 
 ### Backup, printer, and account tools
 
 - Back up products, sales, expenses, and employee records to Google Drive, browse available backups, and restore a selected backup.
+- Optional Supabase snapshot backup/restore for moving the local business data between devices. This is a manual snapshot workflow, not live or conflict-resolving sync.
 - Configure recurring Google Drive backups by interval. Restoring replaces current business data, so keep a current backup before restoring.
 - Scan paired Bluetooth devices and select a default thermal printer.
 - Change account passwords through the admin account.
@@ -88,6 +89,26 @@ On first launch, the app creates these local accounts:
 | Worker | `worker` | `worker123` |
 
 These are default credentials for a new local installation. Change the admin password after signing in, and do not use these credentials for a shared or production deployment.
+
+## Optional Supabase cloud snapshots
+
+The Supabase integration is optional. Local Hive operation and the existing Google Drive workflow remain available when Supabase is not configured.
+
+1. Create a Supabase project on the [Supabase dashboard](https://supabase.com/dashboard).
+2. In **SQL Editor**, run [`supabase/setup.sql`](supabase/setup.sql). The table is protected by Row Level Security and expects Supabase Auth users.
+3. Copy the Project URL and **publishable key** from Project Settings / API Keys. Never put a service-role or secret key in the app.
+4. Build/run with your own values, for example:
+
+   ```bash
+   flutter pub get
+   flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+   ```
+
+   Keep actual keys out of source control. The `.env.example` file is a reference only; Flutter's `--dart-define-from-file` requires a JSON-formatted file, so create a local untracked `.env.json` with `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` if you prefer that approach.
+5. Enable an appropriate Supabase Auth sign-in method and sign in with a Supabase account before uploading/restoring. Floral Bill's existing local `admin`/`worker` login is not a Supabase identity.
+6. Open **Archive → Backup & Restore → Supabase Cloud Sync**. Upload local data creates/replaces that account's cloud snapshot; Restore replaces local products, sales, expenses, employees, and app settings. Make a backup first.
+
+The free Supabase plan currently includes 500 MB of database size and 5 GB egress, and free projects may pause after a week of inactivity; check [current limits](https://supabase.com/pricing) before relying on it. The integration is not yet tested with a real Supabase project, and restore should be tested with disposable data before using it for live business records.
 
 ## Development
 
