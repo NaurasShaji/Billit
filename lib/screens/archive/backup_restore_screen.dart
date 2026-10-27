@@ -42,6 +42,10 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
   bool _isCloudSyncing = false;
   String? _cloudStatus;
   String? _cloudError;
+  bool _showCloudAuth = false;
+  bool _isCloudSigningIn = false;
+  final TextEditingController _cloudEmailController = TextEditingController();
+  final TextEditingController _cloudPasswordController = TextEditingController();
   List<DriveFileEntry> _driveBackups = [];
   int _autoBackupDays = 0;
   late AnimationController _slideController;
@@ -79,6 +83,8 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
   @override
   void dispose() {
     _slideController.dispose();
+    _cloudEmailController.dispose();
+    _cloudPasswordController.dispose();
     super.dispose();
   }
 
@@ -368,24 +374,85 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               const Text('Supabase is configured, but this app is not signed in to Supabase Auth. Local admin/worker accounts are separate.'),
             ],
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                FilledButton.icon(
-                  onPressed: _isCloudSyncing ? null : _syncToSupabase,
-                  icon: _isCloudSyncing
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.cloud_upload_outlined),
-                  label: Text(_isCloudSyncing ? 'Syncing…' : 'Upload local data'),
+            if (SupabaseCloudService.instance.isAvailable &&
+                !SupabaseCloudService.instance.hasSignedInUser) ...[
+              const SizedBox(height: 12),
+              const Text('Supabase is configured, but this app is not signed in to Supabase Auth. Local admin/worker accounts are separate.'),
+            ],
+            if (SupabaseCloudService.instance.hasSignedInUser) ...[
+              const SizedBox(height: 12),
+              const Text('Signed in to Supabase.'),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _isCloudSigningIn ? null : _signOutCloud,
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Sign out of Supabase'),
                 ),
-                OutlinedButton.icon(
-                  onPressed: _isCloudSyncing ? null : _downloadFromSupabase,
-                  icon: const Icon(Icons.cloud_download_outlined),
-                  label: const Text('Restore cloud data'),
+              ),
+            ],
+            if (SupabaseCloudService.instance.isAvailable &&
+                !SupabaseCloudService.instance.hasSignedInUser) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _showCloudAuth = !_showCloudAuth),
+                  icon: const Icon(Icons.account_circle_outlined),
+                  label: Text(_showCloudAuth ? 'Hide cloud sign-in' : 'Sign in / create cloud account'),
+                ),
+              ),
+              if (_showCloudAuth) ...[
+                TextField(
+                  controller: _cloudEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(labelText: 'Supabase email'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _cloudPasswordController,
+                  obscureText: true,
+                  autofillHints: const [AutofillHints.password],
+                  decoration: const InputDecoration(labelText: 'Password (minimum 6 characters)'),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton(
+                      onPressed: _isCloudSigningIn ? null : _signInCloud,
+                      child: Text(_isCloudSigningIn ? 'Signing in…' : 'Sign in'),
+                    ),
+                    OutlinedButton(
+                      onPressed: _isCloudSigningIn ? null : _signUpCloud,
+                      child: const Text('Create account'),
+                    ),
+                  ],
                 ),
               ],
-            ),
+            ],
+            if (SupabaseCloudService.instance.hasSignedInUser) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _isCloudSyncing ? null : _syncToSupabase,
+                    icon: _isCloudSyncing
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.cloud_upload_outlined),
+                    label: Text(_isCloudSyncing ? 'Syncing…' : 'Upload local data'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _isCloudSyncing ? null : _downloadFromSupabase,
+                    icon: const Icon(Icons.cloud_download_outlined),
+                    label: const Text('Restore cloud data'),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 10),
             Text(
               'Restore replaces the current local business records. Back up first. Configure Supabase URL/key and apply the SQL setup in the repository before use.',
@@ -395,6 +462,56 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
         ),
       ),
     );
+  }
+
+  Future<void> _signInCloud() async {
+    await _runCloudAuth(() => SupabaseCloudService.instance.signIn(
+      email: _cloudEmailController.text,
+      password: _cloudPasswordController.text,
+    ), successMessage: 'Signed in to Supabase.');
+  }
+
+  Future<void> _signUpCloud() async {
+    if (_cloudPasswordController.text.trim().length < 6) {
+      setState(() => _cloudError = 'Use a password with at least 6 characters.');
+      return;
+    }
+    await _runCloudAuth(() => SupabaseCloudService.instance.signUp(
+      email: _cloudEmailController.text,
+      password: _cloudPasswordController.text,
+    ), successMessage: 'Sign-up request sent. If email confirmation is enabled, confirm your email before syncing.');
+  }
+
+  Future<void> _signOutCloud() async {
+    await _runCloudAuth(
+      () => SupabaseCloudService.instance.signOut(),
+      successMessage: 'Signed out of Supabase.',
+    );
+  }
+
+  Future<void> _runCloudAuth(
+    Future<void> Function() action, {
+    required String successMessage,
+  }) async {
+    if (_isCloudSigningIn) return;
+    setState(() {
+      _isCloudSigningIn = true;
+      _cloudError = null;
+      _cloudStatus = null;
+    });
+    try {
+      await action();
+      if (!mounted) return;
+      setState(() {
+        _cloudStatus = successMessage;
+        _showCloudAuth = !SupabaseCloudService.instance.hasSignedInUser;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _cloudError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isCloudSigningIn = false);
+    }
   }
 
   Future<void> _syncToSupabase() async {
