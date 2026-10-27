@@ -7,13 +7,14 @@ import '../archive/payroll/monthly_salary_screen.dart';
 import '../archive/backup_restore_screen.dart';
 import '../archive/change_password_screen.dart';
 import '../archive/customer_lookup_screen.dart';
+import '../archive/bulk_product_import_screen.dart';
 
 class ArchiveTab extends StatelessWidget {
   const ArchiveTab({Key? key}) : super(key: key);
 
   void _navigate(BuildContext context, Widget screen) {
     Navigator.push(
-      context, 
+      context,
       MaterialPageRoute(
         builder: (_) => screen,
       ),
@@ -23,7 +24,7 @@ class ArchiveTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -114,6 +115,27 @@ class ArchiveTab extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // Product Import Section
+            _buildSection(
+              context,
+              title: 'Product Management',
+              subtitle: 'Add many products from a spreadsheet',
+              icon: Icons.inventory_2_outlined,
+              color: Colors.teal,
+              items: [
+                _MenuItem(
+                  icon: Icons.table_view_outlined,
+                  title: 'Bulk Add Products (Excel)',
+                  subtitle:
+                      'Import product names, prices, stock, barcodes and GST',
+                  onTap: () =>
+                      _navigate(context, const BulkProductImportScreen()),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
             // Data Management Section
             _buildSection(
               context,
@@ -173,7 +195,7 @@ class ArchiveTab extends StatelessWidget {
     required List<_MenuItem> items,
   }) {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -246,7 +268,7 @@ class ArchiveTab extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Section Items
           Padding(
             padding: const EdgeInsets.all(8),
@@ -255,11 +277,11 @@ class ArchiveTab extends StatelessWidget {
                 final index = entry.key;
                 final item = entry.value;
                 final isLast = index == items.length - 1;
-                
+
                 return Column(
                   children: [
                     _buildMenuItem(context, item, color),
-                    if (!isLast) 
+                    if (!isLast)
                       Divider(
                         height: 1,
                         thickness: 0.5,
@@ -277,9 +299,11 @@ class ArchiveTab extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, _MenuItem item, MaterialColor sectionColor) { // Changed to MaterialColor
+  Widget _buildMenuItem(
+      BuildContext context, _MenuItem item, MaterialColor sectionColor) {
+    // Changed to MaterialColor
     final theme = Theme.of(context);
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       decoration: BoxDecoration(

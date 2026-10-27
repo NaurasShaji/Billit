@@ -44,7 +44,7 @@ class InvoiceService {
     bool useThermalPrinter = false,
     bool includeHeader = true,
     bool includeFooter = true,
-    bool includeGST = false,
+    bool includeGST = true,
     ThermalSize thermalSize = ThermalSize.mm80,
   }) async {
     if (useThermalPrinter) {
@@ -73,7 +73,7 @@ class InvoiceService {
     ThermalSize thermalSize = ThermalSize.mm80,
     bool includeHeader = true,
     bool includeFooter = true,
-    bool includeGST = false,
+    bool includeGST = true,
   }) async {
     await PdfService.generateInvoice(
       sale,

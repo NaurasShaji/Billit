@@ -1,11 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'tabs/billing_tab.dart';
+import 'tabs/dashboard_tab.dart';
 import 'tabs/products_tab.dart';
 import 'tabs/reports_tab.dart';
 import 'tabs/archive_tab.dart';
 import 'printer_settings_screen.dart';
+import 'invoice_settings_screen.dart';
+import 'gst_settings_screen.dart';
+import 'appearance_settings_screen.dart';
+import '../widgets/responsive_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -346,17 +353,26 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final bool isAdmin = _authService.isAdmin;
 
-    final List<Widget> tabs = isAdmin
-        ? const [BillingTab(), ProductsTab(), ReportsTab(), ArchiveTab()]
-        : const [BillingTab(), ProductsTab(), ReportsTab()];
-
     final List<String> labels = isAdmin
-        ? ['Billing', 'Products', 'Reports', 'Archive']
-        : ['Billing', 'Products', 'Reports'];
+        ? ['Overview', 'Billing', 'Products', 'Reports', 'Archive']
+        : ['Overview', 'Billing', 'Products', 'Reports'];
 
     final List<IconData> icons = isAdmin
-        ? [Icons.receipt_long, Icons.local_florist, Icons.bar_chart, Icons.archive]
-        : [Icons.receipt_long, Icons.local_florist, Icons.bar_chart];
+        ? [Icons.dashboard_outlined, Icons.receipt_long, Icons.local_florist, Icons.bar_chart, Icons.archive]
+        : [Icons.dashboard_outlined, Icons.receipt_long, Icons.local_florist, Icons.bar_chart];
+
+    final List<Widget> tabs = [
+      DashboardTab(
+        showFinancials: isAdmin,
+        onOpenBilling: () => setState(() => _index = 1),
+        onOpenProducts: () => setState(() => _index = 2),
+        onOpenReports: () => setState(() => _index = 3),
+      ),
+      const BillingTab(),
+      const ProductsTab(),
+      const ReportsTab(),
+      if (isAdmin) const ArchiveTab(),
+    ];
 
     // Ensure _index is within bounds for worker
     if (!isAdmin && _index >= tabs.length) {
@@ -365,39 +381,127 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         centerTitle: true,
-        title: Text(labels[_index]),
+        title: ValueListenableBuilder<Box<dynamic>>(
+          valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+          builder: (context, settings, _) {
+            final appName = settings.get('app_name', defaultValue: 'Floral Bill').toString();
+            final logoBase64 = settings.get('app_logo_base64') as String?;
+            Widget? logo;
+            if (logoBase64 != null && logoBase64.isNotEmpty) {
+              try {
+                logo = ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.memory(base64Decode(logoBase64), width: 32, height: 32, fit: BoxFit.contain),
+                );
+              } catch (_) {
+                logo = null;
+              }
+            }
+            return Row(
+              children: [
+                if (logo != null) ...[logo, const SizedBox(width: 8)],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(appName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      Text(labels[_index], maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               if (value == 'help_faq') {
                 _showHelpFaqDialog();
+              } else if (value == 'gst_settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GstSettingsScreen()),
+                );
+              } else if (value == 'appearance_settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AppearanceSettingsScreen()),
+                );
               } else if (value == 'printer_settings') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
                 );
+              } else if (value == 'invoice_settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const InvoiceSettingsScreen()),
+                );
               } else if (value == 'logout') {
                 context.read<AuthService>().logout();
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem<String>(value: 'printer_settings', child: Text('Printer Settings')),
-              PopupMenuItem<String>(value: 'help_faq', child: Text('Help & FAQ')),
-              PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
+            itemBuilder: (context) => [
+              if (isAdmin) ...[
+                const PopupMenuItem<String>(value: 'invoice_settings', child: Text('App & Invoice Settings')),
+                const PopupMenuItem<String>(value: 'gst_settings', child: Text('GST Settings')),
+              ],
+              const PopupMenuItem<String>(value: 'appearance_settings', child: Text('Appearance & Personalisation')),
+              const PopupMenuItem<String>(value: 'printer_settings', child: Text('Printer Settings')),
+              const PopupMenuItem<String>(value: 'help_faq', child: Text('Help & FAQ')),
+              const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
             ],
           )
         ],
       ),
-      body: tabs[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i)=>setState(()=>_index=i),
-        destinations: [for (var i=0;i<labels.length;i++) NavigationDestination(icon: Icon(icons[i]), label: labels[i])],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= ResponsiveBreakpoints.desktop) {
+            return Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: _index,
+                  onDestinationSelected: (i) => setState(() => _index = i),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: [
+                    for (var i = 0; i < labels.length; i++)
+                      NavigationRailDestination(
+                        icon: Icon(icons[i]),
+                        label: Text(labels[i]),
+                      ),
+                  ],
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: ResponsivePage(
+                    maxWidth: 1600,
+                    child: tabs[_index],
+                  ),
+                ),
+              ],
+            );
+          }
+          return tabs[_index];
+        },
       ),
+      bottomNavigationBar: MediaQuery.sizeOf(context).width < ResponsiveBreakpoints.desktop
+          ? NavigationBar(
+              selectedIndex: _index,
+              onDestinationSelected: (i) => setState(() => _index = i),
+              destinations: [
+                for (var i = 0; i < labels.length; i++)
+                  NavigationDestination(icon: Icon(icons[i]), label: labels[i]),
+              ],
+            )
+          : null,
     );
   }
 }
