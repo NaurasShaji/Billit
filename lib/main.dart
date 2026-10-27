@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart' as pp;
 import 'services/supabase_cloud_service.dart';
+import 'services/supabase_cloud_service.dart';
 
 import 'models/models.dart';
 import 'services/boxes.dart';
@@ -15,6 +16,7 @@ import 'screens/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseCloudService.instance.initializeFromBuildConfig();
   await SupabaseCloudService.instance.initializeFromBuildConfig();
   if (kIsWeb) {
     await Hive.initFlutter();
