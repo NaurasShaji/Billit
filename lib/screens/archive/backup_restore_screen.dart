@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
 import '../../services/drive_backup_service.dart';
+import '../../services/supabase_cloud_service.dart';
 
 class BackupRestoreScreen extends StatelessWidget {
   const BackupRestoreScreen({super.key});
@@ -38,6 +39,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
   bool _isBackingUp = false;
   bool _isRestoring = false;
   bool _isSigningIn = false;
+  bool _isCloudSyncing = false;
+  String? _cloudStatus;
+  String? _cloudError;
   List<DriveFileEntry> _driveBackups = [];
   int _autoBackupDays = 0;
   late AnimationController _slideController;
@@ -280,7 +284,10 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Google Drive Section
+              // Supabase Cloud section
+              _buildSupabaseCloudCard(theme, isTablet),
+              const SizedBox(height: 24),
+              // Existing Google Drive backup section
               _buildGoogleDriveCard(theme, isTablet),
               const SizedBox(height: 24),
               
@@ -309,6 +316,126 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
         ),
       ),
     );
+  }
+
+  Widget _buildSupabaseCloudCard(ThemeData theme, bool isTablet) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 28 : 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(Icons.cloud_sync_outlined, color: theme.colorScheme.onPrimaryContainer, size: 28),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Supabase Cloud Sync', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 4),
+                  Text('Sync products, sales, expenses and employees across devices'),
+                ],
+              )),
+            ]),
+            const SizedBox(height: 12),
+            Text(
+              'Uses your Supabase project. Local Hive data remains the working copy; cloud sync is manual.',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            if (_cloudStatus != null) ...[
+              const SizedBox(height: 12),
+              Text(_cloudStatus!, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w600)),
+            ],
+            if (_cloudError != null) ...[
+              const SizedBox(height: 8),
+              Text(_cloudError!, style: TextStyle(color: theme.colorScheme.error)),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.icon(
+                  onPressed: _isCloudSyncing ? null : _syncToSupabase,
+                  icon: _isCloudSyncing
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.cloud_upload_outlined),
+                  label: Text(_isCloudSyncing ? 'Syncing…' : 'Upload local data'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _isCloudSyncing ? null : _downloadFromSupabase,
+                  icon: const Icon(Icons.cloud_download_outlined),
+                  label: const Text('Restore cloud data'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Restore replaces the current local business records. Back up first. Configure Supabase URL/key and apply the SQL setup in the repository before use.',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _syncToSupabase() async {
+    setState(() {
+      _isCloudSyncing = true;
+      _cloudError = null;
+      _cloudStatus = null;
+    });
+    try {
+      await SupabaseCloudService.instance.uploadCurrentData();
+      if (!mounted) return;
+      setState(() => _cloudStatus = 'Local business data uploaded successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _cloudError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isCloudSyncing = false);
+    }
+  }
+
+  Future<void> _downloadFromSupabase() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restore cloud data?'),
+        content: const Text('This replaces the current local products, sales, expenses, employees and app settings with the latest cloud snapshot. Create a backup first.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Restore')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _isCloudSyncing = true;
+      _cloudError = null;
+      _cloudStatus = null;
+    });
+    try {
+      await SupabaseCloudService.instance.restoreCurrentData();
+      if (!mounted) return;
+      setState(() => _cloudStatus = 'Cloud snapshot restored. Reopen this screen if other views do not refresh.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _cloudError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isCloudSyncing = false);
+    }
   }
 
   Widget _buildGoogleDriveCard(ThemeData theme, bool isTablet) {
