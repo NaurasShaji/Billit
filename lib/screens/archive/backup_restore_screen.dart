@@ -369,16 +369,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               const SizedBox(height: 12),
               const Text('Not configured yet. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY with --dart-define when building the app.'),
             ],
-            if (SupabaseCloudService.instance.isAvailable && !SupabaseCloudService.instance.hasSignedInUser) ...[
-              const SizedBox(height: 12),
-              const Text('Supabase is configured, but this app is not signed in to Supabase Auth. Local admin/worker accounts are separate.'),
-            ],
-            const SizedBox(height: 12),
             if (SupabaseCloudService.instance.isAvailable &&
                 !SupabaseCloudService.instance.hasSignedInUser) ...[
               const SizedBox(height: 12),
               const Text('Supabase is configured, but this app is not signed in to Supabase Auth. Local admin/worker accounts are separate.'),
             ],
+            const SizedBox(height: 12),
             if (SupabaseCloudService.instance.hasSignedInUser) ...[
               const SizedBox(height: 12),
               const Text('Signed in to Supabase.'),
