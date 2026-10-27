@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -28,6 +25,7 @@ class SupabaseCloudService {
 
   bool get isConfigured => _url.startsWith('https://') &&
       _publishableKey.isNotEmpty;
+  bool get isAvailable => _initialized && Supabase.instance.client.auth.currentUser != null;
   bool get isInitialized => _initialized;
   String? get initializationError => _initializationError;
 
@@ -82,8 +80,8 @@ class SupabaseCloudService {
     final user = client.auth.currentUser;
     if (user == null) {
       throw StateError(
-        'Sign in with Supabase before syncing. Use the Supabase Auth panel '
-        'or add a sign-in flow before enabling this feature.',
+        'No Supabase user is signed in. Complete Supabase sign-in first; '
+        'your existing local admin/worker login is not a Supabase account.',
       );
     }
     final snapshot = _exportSnapshot();
