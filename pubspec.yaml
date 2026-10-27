@@ -28,6 +28,7 @@ dependencies:
   googleapis_auth: ^1.6.0
   permission_handler: ^11.3.0
   supabase_flutter: ^2.14.2
+  supabase_flutter: ^2.14.2
 
 dev_dependencies:
   flutter_test:
