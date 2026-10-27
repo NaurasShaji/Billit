@@ -55,6 +55,25 @@ class SupabaseCloudService {
     return Supabase.instance.client;
   }
 
+
+  Future<void> signIn({required String email, required String password}) async {
+    await _client.auth.signInWithPassword(
+      email: email.trim(),
+      password: password,
+    );
+  }
+
+  Future<void> signUp({required String email, required String password}) async {
+    await _client.auth.signUp(
+      email: email.trim(),
+      password: password,
+    );
+  }
+
+  Future<void> signOut() async {
+    if (_initialized) await Supabase.instance.client.auth.signOut();
+  }
+
   Box<T> _box<T>(String name) => Hive.box<T>(name);
 
   Map<String, dynamic> _exportSnapshot() {
