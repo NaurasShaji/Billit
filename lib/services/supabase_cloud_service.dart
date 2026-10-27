@@ -144,6 +144,13 @@ class SupabaseCloudService {
       throw const FormatException('Unsupported cloud snapshot version.');
     }
 
+    if (products.map((item) => item.id).toSet().length != products.length ||
+        sales.map((item) => item.id).toSet().length != sales.length ||
+        expenses.map((item) => item.id).toSet().length != expenses.length ||
+        employees.map((item) => item.id).toSet().length != employees.length) {
+      throw const FormatException('Cloud snapshot contains duplicate record IDs.');
+    }
+
     // Parse and validate everything before clearing local data.
     final products = _listOfMaps(payload['products'])
         .map(Product.fromJson).toList();
