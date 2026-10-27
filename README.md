@@ -89,6 +89,26 @@ On first launch, the app creates these local accounts:
 
 These are default credentials for a new local installation. Change the admin password after signing in, and do not use these credentials for a shared or production deployment.
 
+## Optional Supabase cloud snapshots
+
+The Supabase integration is optional. Local Hive operation and the existing Google Drive workflow remain available when Supabase is not configured.
+
+1. Create a Supabase project on the [Supabase dashboard](https://supabase.com/dashboard).
+2. In **SQL Editor**, run [`supabase/setup.sql`](supabase/setup.sql). The table is protected by Row Level Security and expects Supabase Auth users.
+3. Copy the Project URL and **publishable key** from Project Settings / API Keys. Never put a service-role or secret key in the app.
+4. Build/run with your own values, for example:
+
+   ```bash
+   flutter pub get
+   flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+   ```
+
+   Keep actual keys out of source control. The `.env.example` file is a reference only; Flutter's `--dart-define-from-file` requires a JSON-formatted file, so create a local untracked `.env.json` with `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` if you prefer that approach.
+5. Enable email/password in Supabase Auth. If email confirmation is enabled, confirm the account before syncing. Floral Bill's existing local `admin`/`worker` login is not a Supabase identity.
+6. Open **Archive → Backup & Restore → Supabase Cloud Sync**. Upload local data creates/replaces that account's cloud snapshot; Restore replaces local products, sales, expenses, employees, and app settings. Make a backup first.
+
+This is manual snapshot backup/restore, not real-time synchronization or conflict resolution. Test with disposable sample data before using live business records. Check [current Supabase pricing and limits](https://supabase.com/pricing) before relying on the free plan.
+
 ## Development
 
 Hive adapters are checked into `lib/models/`. After changing a Hive model, regenerate the adapters:
