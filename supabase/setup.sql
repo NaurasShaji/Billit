@@ -4,10 +4,11 @@
 -- Row Level Security is mandatory; do not expose the table anonymously.
 
 create table if not exists public.floral_bill_snapshots (
-  snapshot_id text primary key default 'default',
+  snapshot_id text not null default 'default',
   owner_id uuid not null references auth.users(id) on delete cascade,
   payload jsonb not null,
   updated_at timestamptz not null default now(),
+  primary key (owner_id, snapshot_id),
   constraint floral_bill_snapshot_fixed_id check (snapshot_id = 'default')
 );
 
