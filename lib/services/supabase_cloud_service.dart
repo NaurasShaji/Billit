@@ -111,7 +111,7 @@ class SupabaseCloudService {
       'owner_id': user.id,
       'payload': snapshot,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }, onConflict: 'snapshot_id');
+    }, onConflict: 'owner_id,snapshot_id');
   }
 
   /// Restore only after confirmation in the UI. Snapshot belongs to the
