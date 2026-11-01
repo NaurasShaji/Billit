@@ -37,7 +37,7 @@ class InvoiceTemplateService {
       'showQr': true,
       'showAmountInWords': !compact,
       'showTableBorders': !compact,
-      'headerAlignment': 'center',
+      'headerAlignment': compact ? 'center' : 'left',
       'footerAlignment': 'center',
       'fontSize': size == '58mm'
           ? 7.0
@@ -46,10 +46,11 @@ class InvoiceTemplateService {
               : 9.0,
       'marginMm': compact ? 2.0 : 10.0,
       'accent': 'blue',
+      // Default thermal layout preserves the original ITEM / PRICE / QTY / AMT order.
       'columns': size == '58mm'
           ? ['product', 'quantity', 'amount']
           : size == '80mm'
-              ? ['product', 'quantity', 'rate', 'amount']
+              ? ['product', 'rate', 'quantity', 'amount']
               : size == 'A5'
                   ? [
                       'serial',
