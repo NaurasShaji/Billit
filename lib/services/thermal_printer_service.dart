@@ -306,11 +306,20 @@ class ThermalPrinterService {
       'unit':'UNIT', 'rate':'RATE', 'discount':'DISC', 'gst_rate':'GST%',
       'tax':'TAX', 'amount':'AMOUNT',
     };
-    final columnWidth = configuredColumns.isEmpty ? 48 : (48 ~/ configuredColumns.length);
-    final widths = <int>[
-      for (var i = 0; i < configuredColumns.length; i++)
-        i == configuredColumns.length - 1 ? 48 - columnWidth * (configuredColumns.length - 1) : columnWidth,
-    ];
+    const preferredWidths = {'serial':3,'product':20,'hsn':7,'quantity':5,'unit':4,'rate':9,'discount':7,'gst_rate':5,'tax':8,'amount':10};
+    final widths = <int>[];
+    for (final id in configuredColumns) {
+      widths.add(preferredWidths[id] ?? 6);
+    }
+    final preferredTotal = widths.fold<int>(0,(sum,width)=>sum+width);
+    if (preferredTotal > 48) {
+      for (var i = 0; i < widths.length; i++) {
+        widths[i] = (widths[i] * 48 / preferredTotal).floor().clamp(3,48);
+      }
+    } else if (widths.isNotEmpty) {
+      final productIndex = configuredColumns.indexOf('product');
+      widths[productIndex >= 0 ? productIndex : widths.length - 1] += 48 - widths.fold<int>(0,(sum,width)=>sum+width);
+    }
     String fitCell(String value, int width, {bool left = false}) {
       final text = value.length > width ? value.substring(0, width) : value;
       return left ? text.padRight(width) : text.padLeft(width);
