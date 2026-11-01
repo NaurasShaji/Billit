@@ -195,9 +195,10 @@ class WindowsGoogleDriveAuth {
         _account = WindowsDriveAccount(email);
         await _storage.write(key: _emailKey, value: email);
       }
-    } else {
+    }
+    if (_account == null) {
       final savedEmail = await _storage.read(key: _emailKey);
-      if (savedEmail != null) _account = WindowsDriveAccount(savedEmail);
+      _account = WindowsDriveAccount(savedEmail ?? 'Google account');
     }
   }
 
