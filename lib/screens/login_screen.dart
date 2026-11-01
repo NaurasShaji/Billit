@@ -36,39 +36,33 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final appColors = Theme.of(context).colorScheme;
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
+      backgroundColor: appColors.surface,
+      body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              appColors.primaryContainer.withOpacity(0.25),
-              Colors.blue[50]!,
+              appColors.primaryContainer.withOpacity(0.22),
+              appColors.surface,
             ],
           ),
         ),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
-              padding: EdgeInsets.only(bottom: viewInsets.bottom + 16),
+              padding: EdgeInsets.fromLTRB(24, 28, 24, viewInsets.bottom + 28),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 500),
-                  child: Card(
-                    margin: const EdgeInsets.all(24),
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                         // Header Section
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: appColors.primaryContainer.withOpacity(0.35),
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                            color: Colors.transparent,
                           ),
                           child: Column(
                             children: [
@@ -76,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: appColors.surfaceContainerHighest,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
@@ -105,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               Text(
                                 'Retail management, simplified.',
                                 style: TextStyle(
-                                  color: Colors.green[600],
+                                  color: appColors.primary,
                                   fontSize: 14,
                                 ),
                               ),
@@ -124,14 +118,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: _selectedRole == UserType.worker 
-                                        ? Colors.blue[50] 
-                                        : Colors.orange[50],
+                                    color: _selectedRole == UserType.worker
+                                        ? appColors.secondaryContainer
+                                        : appColors.tertiaryContainer,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: _selectedRole == UserType.worker 
-                                          ? Colors.blue[200]! 
-                                          : Colors.orange[200]!,
+                                      color: _selectedRole == UserType.worker
+                                          ? appColors.secondary.withOpacity(0.45)
+                                          : appColors.tertiary.withOpacity(0.45),
                                     ),
                                   ),
                                   child: Row(
@@ -141,8 +135,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                             ? Icons.person 
                                             : Icons.admin_panel_settings,
                                         color: _selectedRole == UserType.worker 
-                                            ? Colors.blue[600] 
-                                            : Colors.orange[600],
+                                            ? appColors.onSecondaryContainer
+                                            : appColors.onTertiaryContainer,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 8),
@@ -153,8 +147,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                               : 'Admin Login - Full system access',
                                           style: TextStyle(
                                             color: _selectedRole == UserType.worker 
-                                                ? Colors.blue[700] 
-                                                : Colors.orange[700],
+                                                ? appColors.onSecondaryContainer
+                                                : appColors.onTertiaryContainer,
                                             fontWeight: FontWeight.w500,
                                             fontSize: 13,
                                           ),
@@ -175,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     filled: true,
-                                    fillColor: Colors.grey[50],
+                                    fillColor: appColors.surfaceContainerHighest,
                                   ),
                                   items: const [
                                     DropdownMenuItem(
@@ -249,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                         child: Text(
                                           'Forgot Password?',
                                           style: TextStyle(
-                                            color: Colors.orange[600],
+                                            color: appColors.tertiary,
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -267,9 +261,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   child: ElevatedButton(
                                     onPressed: _loading ? null : _handleLogin,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: _selectedRole == UserType.worker 
-                                          ? Colors.blue[600] 
-                                          : Colors.orange[600],
+                                      backgroundColor: _selectedRole == UserType.worker
+                                          ? appColors.primary
+                                          : appColors.tertiary,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
@@ -305,8 +299,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -357,9 +350,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   Container(
                     padding: const EdgeInsets.all(12), // Reduced padding
                     decoration: BoxDecoration(
-                      color: Colors.orange[50],
+                      color: Theme.of(context).colorScheme.tertiaryContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange[200]!),
+                      border: Border.all(color: Theme.of(context).colorScheme.tertiary.withOpacity(0.45)),
                     ),
                     child: Row(
                       children: [
@@ -376,7 +369,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               Text(
                                 'Security Question:',
                                 style: TextStyle(
-                                  color: Colors.orange[700],
+                                  color: Theme.of(context).colorScheme.tertiary,
                                   fontSize: 12, // Reduced font size
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -477,15 +470,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   Container(
                     padding: const EdgeInsets.all(10), // Reduced padding
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: Theme.of(context).colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[200]!),
+                      border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.45)),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Colors.blue[600],
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
                           size: 18, // Reduced size
                         ),
                         const SizedBox(width: 6), // Reduced spacing
@@ -493,7 +486,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           child: Text(
                             'Answer the security question correctly to reset your admin password.',
                             style: TextStyle(
-                              color: Colors.blue[700],
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
                               fontSize: 12, // Reduced font size
                             ),
                           ),
