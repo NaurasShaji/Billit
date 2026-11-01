@@ -189,6 +189,55 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
     ),
+    listTileTheme: ListTileThemeData(
+      iconColor: scheme.onSurfaceVariant,
+      textColor: scheme.onSurface,
+      subtitleTextStyle: TextStyle(color: scheme.onSurfaceVariant),
+      selectedColor: scheme.primary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: MaterialStateProperty.resolveWith((states) =>
+          states.contains(MaterialState.selected) ? scheme.onSecondaryContainer : scheme.onSurfaceVariant),
+        backgroundColor: MaterialStateProperty.resolveWith((states) =>
+          states.contains(MaterialState.selected) ? scheme.secondaryContainer : scheme.surface),
+        side: MaterialStateProperty.all(BorderSide(color: scheme.outlineVariant)),
+        shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius))),
+      ),
+    ),
+    sliderTheme: SliderThemeData(
+      activeTrackColor: scheme.primary,
+      inactiveTrackColor: scheme.surfaceContainerHighest,
+      thumbColor: scheme.primary,
+      overlayColor: scheme.primary.withOpacity(0.12),
+      valueIndicatorColor: scheme.inverseSurface,
+      valueIndicatorTextStyle: TextStyle(color: scheme.onInverseSurface),
+    ),
+    radioTheme: RadioThemeData(
+      fillColor: MaterialStateProperty.resolveWith((states) =>
+        states.contains(MaterialState.selected) ? scheme.primary : scheme.onSurfaceVariant),
+    ),
+    checkboxTheme: CheckboxThemeData(
+      fillColor: MaterialStateProperty.resolveWith((states) =>
+        states.contains(MaterialState.selected) ? scheme.primary : Colors.transparent),
+      checkColor: MaterialStateProperty.all(scheme.onPrimary),
+      side: BorderSide(color: scheme.outline),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: MaterialStateProperty.resolveWith((states) =>
+        states.contains(MaterialState.selected) ? scheme.onPrimary : scheme.onSurfaceVariant),
+      trackColor: MaterialStateProperty.resolveWith((states) =>
+        states.contains(MaterialState.selected) ? scheme.primary : scheme.surfaceContainerHighest),
+    ),
+    dropdownMenuTheme: DropdownMenuThemeData(
+      textStyle: TextStyle(color: scheme.onSurface),
+      menuStyle: MenuStyle(
+        backgroundColor: MaterialStateProperty.all(scheme.surface),
+        surfaceTintColor: MaterialStateProperty.all(Colors.transparent),
+      ),
+    ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: dark ? const Color(0xFF171D22) : scheme.surface,
       surfaceTintColor: Colors.transparent,
@@ -294,7 +343,7 @@ class AppWrapper extends StatelessWidget {
             children: [
               Icon(
                 Icons.exit_to_app,
-                color: Colors.orange.shade600,
+                color: scheme.tertiary,
                 size: 28,
               ),
               const SizedBox(width: 12),
@@ -315,7 +364,7 @@ class AppWrapper extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               style: TextButton.styleFrom(
-                foregroundColor: Colors.grey.shade600,
+                foregroundColor: scheme.onSurfaceVariant,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
               child: const Text(
@@ -329,8 +378,8 @@ class AppWrapper extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
+                backgroundColor: scheme.error,
+                foregroundColor: scheme.onError,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
