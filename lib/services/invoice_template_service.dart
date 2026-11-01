@@ -63,8 +63,10 @@ class InvoiceTemplateService {
     final size = value['paperSize'].toString();
     final compact = size == '58mm' || size == '80mm';
     final selected = (value['columns'] as List?)?.cast<String>() ?? <String>[];
-    const widths = {'serial':4,'product':22,'hsn':10,'quantity':8,'unit':6,'rate':12,'discount':10,'gst_rate':8,'tax':12,'amount':13};
-    final used = selected.fold<int>(0,(sum,id)=>sum+(widths[id]??8));
+    const widths58 = {'serial':2,'product':14,'hsn':6,'quantity':5,'unit':4,'rate':7,'discount':6,'gst_rate':5,'tax':7,'amount':10};
+    const widths80 = {'serial':3,'product':20,'hsn':7,'quantity':5,'unit':4,'rate':9,'discount':7,'gst_rate':5,'tax':8,'amount':10};
+    final widths = size == '58mm' ? widths58 : widths80;
+    final used = selected.fold<int>(0,(sum,id)=>sum+(widths[id]??6));
     final limit = size == '58mm' ? 32 : size == '80mm' ? 48 : 999;
     final warnings = <String>[];
     if (selected.isEmpty) warnings.add('Add at least one table column.');
