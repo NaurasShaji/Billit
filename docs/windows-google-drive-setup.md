@@ -16,13 +16,13 @@ Pass the desktop client ID and client secret at build time:
 
 ```powershell
 flutter pub get
-flutter run -d windows \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_SECRET=YOUR_DESKTOP_CLIENT_SECRET
+flutter run -d windows --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID --dart-define=GOOGLE_DESKTOP_CLIENT_SECRET=YOUR_DESKTOP_CLIENT_SECRET
 ```
 
 For a release build:
 
 ```powershell
-flutter build windows --release \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_SECRET=YOUR_DESKTOP_CLIENT_SECRET
+flutter build windows --release --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID --dart-define=GOOGLE_DESKTOP_CLIENT_SECRET=YOUR_DESKTOP_CLIENT_SECRET
 ```
 
 The Windows flow opens the system browser, uses an ephemeral localhost callback and PKCE, then stores the refresh token using `flutter_secure_storage`. The app requests the Drive `drive.file` scope plus basic account identity.
