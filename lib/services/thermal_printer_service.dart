@@ -228,22 +228,24 @@ class ThermalPrinterService {
     }
     final configuredTitle = template['headerTitle']?.toString().trim() ?? '';
     final invoiceHeading = configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && sale.gstEnabled) ? (sale.gstEnabled ? 'TAX INVOICE' : 'INVOICE') : configuredTitle;
+    final headerPosAlignment = template['headerAlignment'] == 'left' ? PosAlign.left : template['headerAlignment'] == 'right' ? PosAlign.right : PosAlign.center;
+    final footerPosAlignment = template['footerAlignment'] == 'left' ? PosAlign.left : template['footerAlignment'] == 'right' ? PosAlign.right : PosAlign.center;
 
     if (is58mm) {
       if (invoiceLogo != null) bytes += generator.image(invoiceLogo);
-      if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2));
-      if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: PosAlign.center));
+      if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: headerPosAlignment, bold: true, height: PosTextSize.size2));
+      if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: headerPosAlignment));
       if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text(businessPhone, styles: PosStyles(align: PosAlign.center));
       if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: PosAlign.center));
       if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
-      bytes += generator.text(invoiceHeading, styles: PosStyles(align: PosAlign.center, bold: true));
+      bytes += generator.text(invoiceHeading, styles: PosStyles(align: headerPosAlignment, bold: true));
       bytes += generator.text('ID: ${sale.id}');
       bytes += generator.text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())}');
       if (sale.customerName.isNotEmpty) bytes += generator.text('Customer: ${sale.customerName}');
       if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty) bytes += generator.text('GSTIN: ${sale.customerGstin}');
       if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) bytes += generator.text('Phone: ${sale.customerPhone}');
       if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
-      bytes += generator.text('--------------------------------');
+      if (template['showTableBorders'] == true) bytes += generator.text('--------------------------------');
       final receiptColumns = (template['columns'] as List).cast<String>();
       const receiptLabels = {'serial':'#','product':'Item','hsn':'HSN','quantity':'Qty','unit':'Unit','rate':'Rate','discount':'Discount','gst_rate':'GST','tax':'Tax','amount':'Amount'};
       for (var i = 0; i < sale.items.length; i++) {
@@ -267,7 +269,7 @@ class ThermalPrinterService {
         }
         if (template['showTableBorders'] == true) bytes += generator.text('--------------------------------');
       }
-      bytes += generator.text('--------------------------------');
+      if (template['showTableBorders'] == true) bytes += generator.text('--------------------------------');
       final subtotal = sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
       bytes += generator.text('Subtotal: ${_formatRupees(subtotal)}');
       if (sale.discount > 0) bytes += generator.text('Discount: -${_formatRupees(sale.discount)}');
@@ -284,7 +286,7 @@ class ThermalPrinterService {
           if (qrBytes != null) { final qr = img.decodeImage(qrBytes); if (qr != null) { bytes += generator.text('SCAN & PAY', styles: PosStyles(align: PosAlign.center, bold: true)); bytes += generator.image(qr); } }
         } catch (e) { print('Error generating payment QR: $e'); }
       }
-      if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: PosAlign.center));
+      if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: footerPosAlignment));
       bytes += generator.feed(3);
       bytes += <int>[0x1D, 0x56, 0x00];
       return bytes;
@@ -440,7 +442,7 @@ class ThermalPrinterService {
     // Footer
     if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: PosAlign.center));
     final terms = template['termsText']?.toString() ?? '';
-    if (terms.isNotEmpty) bytes += generator.text(terms, styles: PosStyles(align: PosAlign.center));
+    if (terms.isNotEmpty) bytes += generator.text(terms, styles: PosStyles(align: footerPosAlignment));
     bytes += generator.text('');
     // bytes += generator.text('      Royal Garden',
     //     styles: PosStyles(align: PosAlign.center));
