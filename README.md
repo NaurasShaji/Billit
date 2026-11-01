@@ -1,8 +1,8 @@
-# Ventro
+# Billit
 
-Ventro is a point-of-sale and retail management app for billing, inventory, GST, reporting, backups, and printer workflows. It uses Hive for local data storage and includes billing, inventory, reporting, backup, and printer workflows.
+Billit is a point-of-sale and retail management app for billing, inventory, GST, reporting, backups, and printer workflows. It uses Hive for local data storage and includes billing, inventory, reporting, backup, and printer workflows.
 
-![Ventro app logo](assets/icon/ventro_logo.svg)
+![Billit app logo](assets/icon/billit_logo.svg)
 
 ## Features
 
