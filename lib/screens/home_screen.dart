@@ -595,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
           valueListenable: Hive.box<dynamic>('app_settings').listenable(),
           builder: (context, settings, _) {
             final appName = settings
-                .get('app_name', defaultValue: 'Floral Bill')
+                .get('app_name', defaultValue: 'Billit')
                 .toString();
             final logoBase64 = settings.get('app_logo_base64') as String?;
             Widget? logo;
