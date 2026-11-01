@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:floralbill/models/sale.dart';
@@ -220,10 +221,16 @@ class ThermalPrinterService {
     final businessEmail = settings.get('business_email', defaultValue: '').toString();
     final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
     final footerText = template['footerText']?.toString() ?? 'Thank you for your business.';
+    final logoBase64 = settings.get('business_logo_base64') as String?;
+    img.Image? invoiceLogo;
+    if (template['showLogo'] == true && logoBase64 != null && logoBase64.isNotEmpty) {
+      try { invoiceLogo = img.decodeImage(base64Decode(logoBase64)); } catch (_) { invoiceLogo = null; }
+    }
     final configuredTitle = template['headerTitle']?.toString().trim() ?? '';
     final invoiceHeading = configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && sale.gstEnabled) ? (sale.gstEnabled ? 'TAX INVOICE' : 'INVOICE') : configuredTitle;
 
     if (is58mm) {
+      if (invoiceLogo != null) bytes += generator.image(invoiceLogo);
       if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2));
       if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: PosAlign.center));
       if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text(businessPhone, styles: PosStyles(align: PosAlign.center));
@@ -287,6 +294,8 @@ class ThermalPrinterService {
     const String currencySymbol =
         'Rs.'; // Changed to Rs. to avoid encoding errors
 
+    // Render the configured logo before the business name.
+    if (invoiceLogo != null) bytes += generator.image(invoiceLogo);
     // Replace logo with bold, bigger "Royal Garden" heading
     if (template['showBusinessName'] == true) bytes += generator.text(
       businessName,
