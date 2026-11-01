@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - chore/analyzer-cleanup
+      - feature/realistic-invoice-usb-printing
 
 permissions:
   contents: read
