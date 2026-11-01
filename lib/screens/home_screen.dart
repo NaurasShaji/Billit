@@ -347,6 +347,44 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  List<IconData> _navigationIcons({
+    required bool isAdmin,
+    required String style,
+  }) {
+    final isFilled = style == 'filled';
+    final isRounded = style == 'rounded';
+
+    final overview = isFilled
+        ? Icons.dashboard
+        : isRounded
+            ? Icons.dashboard_rounded
+            : Icons.dashboard_outlined;
+    final billing = isFilled
+        ? Icons.receipt
+        : isRounded
+            ? Icons.receipt_rounded
+            : Icons.receipt_long_outlined;
+    final inventory = isFilled
+        ? Icons.inventory
+        : isRounded
+            ? Icons.inventory_2_rounded
+            : Icons.inventory_2_outlined;
+    final reports = isFilled
+        ? Icons.bar_chart
+        : isRounded
+            ? Icons.bar_chart_rounded
+            : Icons.bar_chart_outlined;
+    final archive = isFilled
+        ? Icons.archive
+        : isRounded
+            ? Icons.archive_rounded
+            : Icons.archive_outlined;
+
+    return isAdmin
+        ? [overview, billing, inventory, reports, archive]
+        : [overview, billing, inventory, reports];
+  }
+
   Widget _buildBottomNavigation({
     required List<String> labels,
     required List<IconData> icons,
@@ -444,9 +482,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ? ['Overview', 'Billing', 'Inventory', 'Reports', 'Archive']
         : ['Overview', 'Billing', 'Inventory', 'Reports'];
 
-    final List<IconData> icons = isAdmin
-        ? [Icons.dashboard_outlined, Icons.receipt_long, Icons.local_florist, Icons.bar_chart, Icons.archive]
-        : [Icons.dashboard_outlined, Icons.receipt_long, Icons.local_florist, Icons.bar_chart];
+    final settingsBox = Hive.box<dynamic>('app_settings');
+    final navigationIconStyle =
+        settingsBox.get('navigation_icon_style', defaultValue: 'outlined').toString();
+
+    final List<IconData> icons = _navigationIcons(
+      isAdmin: isAdmin,
+      style: navigationIconStyle,
+    );
 
     final List<Widget> tabs = [
       DashboardTab(
