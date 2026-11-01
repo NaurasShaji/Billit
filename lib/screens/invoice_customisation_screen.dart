@@ -362,66 +362,6 @@ class TemplatePreview extends StatelessWidget {
     }
   }
 
-  Widget _businessHeader({required bool compact}) {
-    final align = value['headerAlignment'] == 'left'
-        ? TextAlign.left
-        : value['headerAlignment'] == 'right'
-            ? TextAlign.right
-            : TextAlign.center;
-    final businessDetails = <Widget>[
-      if (value['showLogo'] == true && !compact)
-        const Icon(Icons.storefront, size: 34, color: Colors.black87),
-      if (value['showBusinessName'] == true)
-        const Text('FLORAL & CO.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (value['showAddress'] == true)
-        const Text('MG Road, Kothamangalam, Kerala - 686691',
-            textAlign: TextAlign.center),
-      if (value['showPhone'] == true)
-        const Text('Phone: +91 98765 43210', textAlign: TextAlign.center),
-      if (value['showEmail'] == true && !compact)
-        const Text('Email: billing@floralandco.in',
-            textAlign: TextAlign.center),
-      if (value['showBusinessGstin'] == true)
-        const Text('GSTIN: 32ABCDE1234F1Z5',
-            textAlign: TextAlign.center),
-    ];
-    if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (final child in businessDetails)
-            DefaultTextStyle.merge(
-              style: const TextStyle(fontSize: 10, color: Colors.black),
-              child: child,
-            ),
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (value['showLogo'] == true)
-          const Icon(Icons.storefront, size: 34, color: Colors.black87),
-        if (value['showBusinessName'] == true)
-          Text('FLORAL & CO.',
-              textAlign: align,
-              style:
-                  const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-        if (value['showAddress'] == true)
-          const Text('MG Road, Kothamangalam, Kerala - 686691'),
-        if (value['showPhone'] == true)
-          const Text('Phone: +91 98765 43210'),
-        if (value['showEmail'] == true)
-          const Text('Email: billing@floralandco.in'),
-        if (value['showBusinessGstin'] == true)
-          const Text('GSTIN: 32ABCDE1234F1Z5',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-
   Widget _thermalPreview(BuildContext context, double width) {
     final columns = (value['columns'] as List).cast<String>();
     final visibleColumns =
