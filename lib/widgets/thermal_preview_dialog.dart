@@ -119,60 +119,38 @@ class ThermalPreviewDialog extends StatelessWidget {
   }
 
   Widget _buildThermalPreview(bool isSmallScreen) {
+    final settings = Hive.box<dynamic>('app_settings');
+    final businessName =
+        settings.get('business_name', defaultValue: '').toString().trim();
+    final businessAddress =
+        settings.get('business_address', defaultValue: '').toString().trim();
+    final businessPhone =
+        settings.get('business_phone', defaultValue: '').toString().trim();
+    final businessEmail =
+        settings.get('business_email', defaultValue: '').toString().trim();
+    final businessGstin =
+        settings.get('business_gstin', defaultValue: '').toString().trim();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Bigger, bold "Royal Garden" heading replacing logo image
-        Column(
-          children: [
-            Text(
-              'Royal',
-              style: TextStyle(
-                fontSize: isSmallScreen ? 22 : 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2.0,
-              ),
-              textAlign: TextAlign.center,
+        if (businessName.isNotEmpty)
+          Text(
+            businessName,
+            style: TextStyle(
+              fontSize: isSmallScreen ? 22 : 28,
+              fontWeight: FontWeight.bold,
             ),
-            Text(
-              'Garden',
-              style: TextStyle(
-                fontSize: isSmallScreen ? 18 : 22,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-
-        SizedBox(height: isSmallScreen ? 4 : 6),
-
-        // Business contact info
-        Text(
-          '+91 9562291843,+91 9446932750',
-          style: TextStyle(
-            fontSize: isSmallScreen ? 8 : 9,
-            color: Colors.black87,
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-        Text(
-          'Four Lane Byepass, Mangattukavala',
-          style: TextStyle(
-            fontSize: isSmallScreen ? 8 : 9,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        Text(
-          'Thodupuzha, 685585',
-          style: TextStyle(
-            fontSize: isSmallScreen ? 8 : 9,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-        ),
+        if (businessAddress.isNotEmpty)
+          Text(businessAddress, textAlign: TextAlign.center),
+        if (businessPhone.isNotEmpty)
+          Text('Phone: $businessPhone', textAlign: TextAlign.center),
+        if (businessEmail.isNotEmpty)
+          Text('Email: $businessEmail', textAlign: TextAlign.center),
+        if (businessGstin.isNotEmpty)
+          Text('GSTIN: $businessGstin', textAlign: TextAlign.center),
 
         SizedBox(height: isSmallScreen ? 6 : 8),
 
