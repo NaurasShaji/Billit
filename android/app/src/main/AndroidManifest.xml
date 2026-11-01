@@ -9,9 +9,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     
     <application
-        android:label="FloralBill"
+        android:label="Ventro"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@drawable/ventro_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
