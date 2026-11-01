@@ -40,22 +40,40 @@ class AppearanceSettingsScreen extends StatelessWidget {
     return ValueListenableBuilder<Box<dynamic>>(
       valueListenable: settings.listenable(),
       builder: (context, box, _) {
-        final selectedTheme = box.get('app_theme', defaultValue: 'green').toString();
-        final themeMode = box.get('theme_mode', defaultValue: 'system').toString();
-        final density = box.get('ui_density', defaultValue: 'comfortable').toString();
-        final productView = box.get('product_view', defaultValue: 'list').toString();
-        final textScale = (box.get('text_scale', defaultValue: 1.0) as num).toDouble();
-        final radius = (box.get('corner_radius', defaultValue: 16.0) as num).toDouble();
-        final lowStockThreshold = (box.get('low_stock_threshold', defaultValue: 10) as num).toDouble();
-        final navigationStyle = box.get('navigation_style', defaultValue: 'classic').toString();
-        final navigationIconStyle = box.get('navigation_icon_style', defaultValue: 'outlined').toString();
-        final surfaceStyle = box.get('surface_style', defaultValue: 'outlined').toString();
-        final appBarStyle = box.get('app_bar_style', defaultValue: 'surface').toString();
-        final fontStyle = box.get('font_style', defaultValue: 'system').toString();
-        final backgroundStyle = box.get('background_style', defaultValue: 'tinted').toString();
-        final inputStyle = box.get('input_style', defaultValue: 'filled').toString();
-        final buttonStyle = box.get('button_style', defaultValue: 'filled').toString();
-        final navigationIconOverridesRaw = box.get('navigation_icon_overrides', defaultValue: <String, String>{});
+        final selectedTheme =
+            box.get('app_theme', defaultValue: 'green').toString();
+        final themeMode =
+            box.get('theme_mode', defaultValue: 'system').toString();
+        final density =
+            box.get('ui_density', defaultValue: 'comfortable').toString();
+        final productView =
+            box.get('product_view', defaultValue: 'list').toString();
+        final textScale =
+            (box.get('text_scale', defaultValue: 1.0) as num).toDouble();
+        final radius =
+            (box.get('corner_radius', defaultValue: 16.0) as num).toDouble();
+        final lowStockThreshold =
+            (box.get('low_stock_threshold', defaultValue: 10) as num)
+                .toDouble();
+        final navigationStyle =
+            box.get('navigation_style', defaultValue: 'classic').toString();
+        final navigationIconStyle = box
+            .get('navigation_icon_style', defaultValue: 'outlined')
+            .toString();
+        final surfaceStyle =
+            box.get('surface_style', defaultValue: 'outlined').toString();
+        final appBarStyle =
+            box.get('app_bar_style', defaultValue: 'surface').toString();
+        final fontStyle =
+            box.get('font_style', defaultValue: 'system').toString();
+        final backgroundStyle =
+            box.get('background_style', defaultValue: 'tinted').toString();
+        final inputStyle =
+            box.get('input_style', defaultValue: 'filled').toString();
+        final buttonStyle =
+            box.get('button_style', defaultValue: 'filled').toString();
+        final navigationIconOverridesRaw = box
+            .get('navigation_icon_overrides', defaultValue: <String, String>{});
         final navigationIconOverrides = navigationIconOverridesRaw is Map
             ? Map<String, String>.from(navigationIconOverridesRaw)
             : <String, String>{};
@@ -80,25 +98,38 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.palette_outlined, color: Theme.of(context).colorScheme.onPrimaryContainer, size: 30),
+                        Icon(Icons.palette_outlined,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                            size: 30),
                         const SizedBox(height: 12),
                         Text(
                           'Make Billit yours',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           '${_paletteNames[selectedTheme] ?? 'Garden Green'} · ${themeMode[0].toUpperCase()}${themeMode.substring(1)} mode',
-                          style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _sectionTitle(context, 'Colour theme', 'Choose an accent colour for navigation and controls.'),
+                  _sectionTitle(context, 'Colour theme',
+                      'Choose an accent colour for navigation and controls.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -119,12 +150,19 @@ class AppearanceSettingsScreen extends StatelessWidget {
                                   color: entry.value,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                                    color: selected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Colors.transparent,
                                     width: selected ? 3 : 0,
                                   ),
                                 ),
                                 child: selected
-                                    ? Icon(Icons.check, color: entry.value.computeLuminance() > 0.55 ? Colors.black87 : Colors.white, size: 21)
+                                    ? Icon(Icons.check,
+                                        color: entry.value.computeLuminance() >
+                                                0.55
+                                            ? Colors.black87
+                                            : Colors.white,
+                                        size: 21)
                                     : null,
                               ),
                             ),
@@ -134,24 +172,36 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Light and dark mode', 'Follow your device or set a mode manually.'),
+                  _sectionTitle(context, 'Light and dark mode',
+                      'Follow your device or set a mode manually.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(value: 'system', icon: Icon(Icons.settings_brightness), label: Text('System')),
-                          ButtonSegment(value: 'light', icon: Icon(Icons.light_mode_outlined), label: Text('Light')),
-                          ButtonSegment(value: 'dark', icon: Icon(Icons.dark_mode_outlined), label: Text('Dark')),
+                          ButtonSegment(
+                              value: 'system',
+                              icon: Icon(Icons.settings_brightness),
+                              label: Text('System')),
+                          ButtonSegment(
+                              value: 'light',
+                              icon: Icon(Icons.light_mode_outlined),
+                              label: Text('Light')),
+                          ButtonSegment(
+                              value: 'dark',
+                              icon: Icon(Icons.dark_mode_outlined),
+                              label: Text('Dark')),
                         ],
                         selected: {themeMode},
-                        onSelectionChanged: (values) => _save('theme_mode', values.first),
+                        onSelectionChanged: (values) =>
+                            _save('theme_mode', values.first),
                         showSelectedIcon: false,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Navigation icon skin', 'Choose a neutral icon family for Overview, Billing, Inventory and Reports.'),
+                  _sectionTitle(context, 'Navigation icon skin',
+                      'Choose a neutral icon family for Overview, Billing, Inventory and Reports.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -163,7 +213,10 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             title: const Text('Outlined'),
                             subtitle: const Text('Light, clean line icons.'),
                             secondary: const Icon(Icons.dashboard_outlined),
-                            onChanged: (value) { if (value != null) _save('navigation_icon_style', value); },
+                            onChanged: (value) {
+                              if (value != null)
+                                _save('navigation_icon_style', value);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'rounded',
@@ -171,7 +224,10 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             title: const Text('Rounded'),
                             subtitle: const Text('Soft rounded icon shapes.'),
                             secondary: const Icon(Icons.dashboard_rounded),
-                            onChanged: (value) { if (value != null) _save('navigation_icon_style', value); },
+                            onChanged: (value) {
+                              if (value != null)
+                                _save('navigation_icon_style', value);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'filled',
@@ -179,33 +235,60 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             title: const Text('Filled'),
                             subtitle: const Text('Bold solid icons.'),
                             secondary: const Icon(Icons.dashboard),
-                            onChanged: (value) { if (value != null) _save('navigation_icon_style', value); },
+                            onChanged: (value) {
+                              if (value != null)
+                                _save('navigation_icon_style', value);
+                            },
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Individual navigation icons', 'Choose a separate icon for each destination. Changes apply immediately.'),
+                  _sectionTitle(context, 'Individual navigation icons',
+                      'Choose a separate icon for each destination. Changes apply immediately.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          _navigationIconPicker(context, 'Overview', 'overview', Icons.dashboard_outlined, navigationIconOverrides),
+                          _navigationIconPicker(
+                              context,
+                              'Overview',
+                              'overview',
+                              Icons.dashboard_outlined,
+                              navigationIconOverrides),
                           const Divider(height: 24),
-                          _navigationIconPicker(context, 'Billing', 'billing', Icons.receipt_long_outlined, navigationIconOverrides),
+                          _navigationIconPicker(
+                              context,
+                              'Billing',
+                              'billing',
+                              Icons.receipt_long_outlined,
+                              navigationIconOverrides),
                           const Divider(height: 24),
-                          _navigationIconPicker(context, 'Inventory', 'inventory', Icons.inventory_2_outlined, navigationIconOverrides),
+                          _navigationIconPicker(
+                              context,
+                              'Inventory',
+                              'inventory',
+                              Icons.inventory_2_outlined,
+                              navigationIconOverrides),
                           const Divider(height: 24),
-                          _navigationIconPicker(context, 'Reports', 'reports', Icons.bar_chart_outlined, navigationIconOverrides),
+                          _navigationIconPicker(
+                              context,
+                              'Reports',
+                              'reports',
+                              Icons.bar_chart_outlined,
+                              navigationIconOverrides),
                           const Divider(height: 24),
-                          _navigationIconPicker(context, 'Archive', 'archive', Icons.archive_outlined, navigationIconOverrides),
+                          _navigationIconPicker(context, 'Archive', 'archive',
+                              Icons.archive_outlined, navigationIconOverrides),
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton.icon(
-                              onPressed: () => _save('navigation_icon_overrides', <String, String>{}),
+                              onPressed: () => _save(
+                                  'navigation_icon_overrides',
+                                  <String, String>{}),
                               icon: const Icon(Icons.restart_alt),
                               label: const Text('Reset custom icons'),
                             ),
@@ -214,7 +297,8 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _sectionTitle(context, 'Navigation bar style', 'Choose how the main navigation looks on phones and tablets.'),
+                  _sectionTitle(context, 'Navigation bar style',
+                      'Choose how the main navigation looks on phones and tablets.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -224,56 +308,82 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             value: 'classic',
                             groupValue: navigationStyle,
                             title: const Text('Classic'),
-                            subtitle: const Text('Standard Material navigation bar.'),
+                            subtitle:
+                                const Text('Standard Material navigation bar.'),
                             secondary: const Icon(Icons.view_day_outlined),
-                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                            onChanged: (value) {
+                              if (value != null)
+                                _save('navigation_style', value);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'floating',
                             groupValue: navigationStyle,
                             title: const Text('Floating'),
-                            subtitle: const Text('Rounded bar with a selected-item highlight.'),
-                            secondary: const Icon(Icons.space_dashboard_outlined),
-                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                            subtitle: const Text(
+                                'Rounded bar with a selected-item highlight.'),
+                            secondary:
+                                const Icon(Icons.space_dashboard_outlined),
+                            onChanged: (value) {
+                              if (value != null)
+                                _save('navigation_style', value);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'underline',
                             groupValue: navigationStyle,
                             title: const Text('Underline'),
-                            subtitle: const Text('Clean layout with a slim active indicator.'),
+                            subtitle: const Text(
+                                'Clean layout with a slim active indicator.'),
                             secondary: const Icon(Icons.horizontal_rule),
-                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                            onChanged: (value) {
+                              if (value != null)
+                                _save('navigation_style', value);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'minimal',
                             groupValue: navigationStyle,
                             title: const Text('Minimal'),
-                            subtitle: const Text('Simple icons and labels without a selected background.'),
+                            subtitle: const Text(
+                                'Simple icons and labels without a selected background.'),
                             secondary: const Icon(Icons.more_horiz),
-                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                            onChanged: (value) {
+                              if (value != null)
+                                _save('navigation_style', value);
+                            },
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'App bar appearance', 'Choose between a subtle surface header or a strong brand-colour header.'),
+                  _sectionTitle(context, 'App bar appearance',
+                      'Choose between a subtle surface header or a strong brand-colour header.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(value: 'surface', icon: Icon(Icons.view_agenda_outlined), label: Text('Surface')),
-                          ButtonSegment(value: 'brand', icon: Icon(Icons.color_lens_outlined), label: Text('Brand')),
+                          ButtonSegment(
+                              value: 'surface',
+                              icon: Icon(Icons.view_agenda_outlined),
+                              label: Text('Surface')),
+                          ButtonSegment(
+                              value: 'brand',
+                              icon: Icon(Icons.color_lens_outlined),
+                              label: Text('Brand')),
                         ],
                         selected: {appBarStyle},
-                        onSelectionChanged: (values) => _save('app_bar_style', values.first),
+                        onSelectionChanged: (values) =>
+                            _save('app_bar_style', values.first),
                         showSelectedIcon: false,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Card and panel style', 'Control the depth and borders used across the interface.'),
+                  _sectionTitle(context, 'Card and panel style',
+                      'Control the depth and borders used across the interface.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -283,32 +393,42 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             value: 'outlined',
                             groupValue: surfaceStyle,
                             title: const Text('Outlined'),
-                            subtitle: const Text('Defined panels with subtle borders.'),
+                            subtitle: const Text(
+                                'Defined panels with subtle borders.'),
                             secondary: const Icon(Icons.crop_square),
-                            onChanged: (v) { if (v != null) _save('surface_style', v); },
+                            onChanged: (v) {
+                              if (v != null) _save('surface_style', v);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'elevated',
                             groupValue: surfaceStyle,
                             title: const Text('Elevated'),
-                            subtitle: const Text('Soft shadows and raised cards.'),
+                            subtitle:
+                                const Text('Soft shadows and raised cards.'),
                             secondary: const Icon(Icons.layers_outlined),
-                            onChanged: (v) { if (v != null) _save('surface_style', v); },
+                            onChanged: (v) {
+                              if (v != null) _save('surface_style', v);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'flat',
                             groupValue: surfaceStyle,
                             title: const Text('Flat'),
-                            subtitle: const Text('Minimal surfaces without shadows or borders.'),
+                            subtitle: const Text(
+                                'Minimal surfaces without shadows or borders.'),
                             secondary: const Icon(Icons.rectangle_outlined),
-                            onChanged: (v) { if (v != null) _save('surface_style', v); },
+                            onChanged: (v) {
+                              if (v != null) _save('surface_style', v);
+                            },
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Typography', 'Choose the overall typeface style used throughout the app.'),
+                  _sectionTitle(context, 'Typography',
+                      'Choose the overall typeface style used throughout the app.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -316,48 +436,67 @@ class AppearanceSettingsScreen extends StatelessWidget {
                         segments: const [
                           ButtonSegment(value: 'system', label: Text('System')),
                           ButtonSegment(value: 'serif', label: Text('Serif')),
-                          ButtonSegment(value: 'monospace', label: Text('Mono')),
+                          ButtonSegment(
+                              value: 'monospace', label: Text('Mono')),
                         ],
                         selected: {fontStyle},
-                        onSelectionChanged: (values) => _save('font_style', values.first),
+                        onSelectionChanged: (values) =>
+                            _save('font_style', values.first),
                         showSelectedIcon: false,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Page background', 'Choose the overall canvas behind cards and content.'),
+                  _sectionTitle(context, 'Page background',
+                      'Choose the overall canvas behind cards and content.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(value: 'tinted', icon: Icon(Icons.gradient), label: Text('Tinted')),
-                          ButtonSegment(value: 'plain', icon: Icon(Icons.crop_square), label: Text('Plain')),
+                          ButtonSegment(
+                              value: 'tinted',
+                              icon: Icon(Icons.gradient),
+                              label: Text('Tinted')),
+                          ButtonSegment(
+                              value: 'plain',
+                              icon: Icon(Icons.crop_square),
+                              label: Text('Plain')),
                         ],
                         selected: {backgroundStyle},
-                        onSelectionChanged: (values) => _save('background_style', values.first),
+                        onSelectionChanged: (values) =>
+                            _save('background_style', values.first),
                         showSelectedIcon: false,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Input field appearance', 'Choose filled fields or a cleaner transparent outlined style.'),
+                  _sectionTitle(context, 'Input field appearance',
+                      'Choose filled fields or a cleaner transparent outlined style.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(value: 'filled', icon: Icon(Icons.format_color_fill), label: Text('Filled')),
-                          ButtonSegment(value: 'outlined', icon: Icon(Icons.border_outer), label: Text('Outlined')),
+                          ButtonSegment(
+                              value: 'filled',
+                              icon: Icon(Icons.format_color_fill),
+                              label: Text('Filled')),
+                          ButtonSegment(
+                              value: 'outlined',
+                              icon: Icon(Icons.border_outer),
+                              label: Text('Outlined')),
                         ],
                         selected: {inputStyle},
-                        onSelectionChanged: (values) => _save('input_style', values.first),
+                        onSelectionChanged: (values) =>
+                            _save('input_style', values.first),
                         showSelectedIcon: false,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Button appearance', 'Set the emphasis used by primary action buttons.'),
+                  _sectionTitle(context, 'Button appearance',
+                      'Set the emphasis used by primary action buttons.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -367,32 +506,42 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             value: 'filled',
                             groupValue: buttonStyle,
                             title: const Text('Filled'),
-                            subtitle: const Text('Strong accent-colour buttons.'),
+                            subtitle:
+                                const Text('Strong accent-colour buttons.'),
                             secondary: const Icon(Icons.smart_button),
-                            onChanged: (v) { if (v != null) _save('button_style', v); },
+                            onChanged: (v) {
+                              if (v != null) _save('button_style', v);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'tonal',
                             groupValue: buttonStyle,
                             title: const Text('Tonal'),
-                            subtitle: const Text('Softer colour-filled buttons.'),
+                            subtitle:
+                                const Text('Softer colour-filled buttons.'),
                             secondary: const Icon(Icons.rectangle_rounded),
-                            onChanged: (v) { if (v != null) _save('button_style', v); },
+                            onChanged: (v) {
+                              if (v != null) _save('button_style', v);
+                            },
                           ),
                           RadioListTile<String>(
                             value: 'minimal',
                             groupValue: buttonStyle,
                             title: const Text('Minimal'),
-                            subtitle: const Text('Low-emphasis buttons with no elevation.'),
+                            subtitle: const Text(
+                                'Low-emphasis buttons with no elevation.'),
                             secondary: const Icon(Icons.border_clear),
-                            onChanged: (v) { if (v != null) _save('button_style', v); },
+                            onChanged: (v) {
+                              if (v != null) _save('button_style', v);
+                            },
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Display density', 'Choose a more compact view or extra breathing room.'),
+                  _sectionTitle(context, 'Display density',
+                      'Choose a more compact view or extra breathing room.'),
                   Card(
                     child: Column(
                       children: [
@@ -400,40 +549,56 @@ class AppearanceSettingsScreen extends StatelessWidget {
                           value: 'comfortable',
                           groupValue: density,
                           title: const Text('Comfortable'),
-                          subtitle: const Text('More spacing; easier to tap on phones.'),
+                          subtitle: const Text(
+                              'More spacing; easier to tap on phones.'),
                           secondary: const Icon(Icons.space_dashboard_outlined),
-                          onChanged: (value) { if (value != null) _save('ui_density', value); },
+                          onChanged: (value) {
+                            if (value != null) _save('ui_density', value);
+                          },
                         ),
                         const Divider(height: 1),
                         RadioListTile<String>(
                           value: 'compact',
                           groupValue: density,
                           title: const Text('Compact'),
-                          subtitle: const Text('Fits more rows on smaller screens.'),
-                          secondary: const Icon(Icons.view_compact_alt_outlined),
-                          onChanged: (value) { if (value != null) _save('ui_density', value); },
+                          subtitle:
+                              const Text('Fits more rows on smaller screens.'),
+                          secondary:
+                              const Icon(Icons.view_compact_alt_outlined),
+                          onChanged: (value) {
+                            if (value != null) _save('ui_density', value);
+                          },
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Product catalogue layout', 'Choose how inventory items are displayed.'),
+                  _sectionTitle(context, 'Product catalogue layout',
+                      'Choose how inventory items are displayed.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(value: 'list', icon: Icon(Icons.view_list_outlined), label: Text('List')),
-                          ButtonSegment(value: 'grid', icon: Icon(Icons.grid_view_rounded), label: Text('Grid')),
+                          ButtonSegment(
+                              value: 'list',
+                              icon: Icon(Icons.view_list_outlined),
+                              label: Text('List')),
+                          ButtonSegment(
+                              value: 'grid',
+                              icon: Icon(Icons.grid_view_rounded),
+                              label: Text('Grid')),
                         ],
                         selected: {productView},
-                        onSelectionChanged: (values) => _save('product_view', values.first),
+                        onSelectionChanged: (values) =>
+                            _save('product_view', values.first),
                         showSelectedIcon: false,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Text size', 'Adjust app text for readability.'),
+                  _sectionTitle(
+                      context, 'Text size', 'Adjust app text for readability.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -444,7 +609,11 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             children: [
                               const Text('Small'),
                               const Spacer(),
-                              Text('${(textScale * 100).round()}%', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                              Text('${(textScale * 100).round()}%',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
                               const Spacer(),
                               const Text('Large'),
                             ],
@@ -457,13 +626,15 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             label: '${(textScale * 100).round()}%',
                             onChanged: (value) => _save('text_scale', value),
                           ),
-                          Text('Sample text · Invoice total ₹1,250.00', style: TextStyle(fontSize: 14)),
+                          const Text('Sample text · Invoice total ₹1,250.00',
+                              style: TextStyle(fontSize: 14)),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Inventory alerts', 'Choose when a product should be flagged as low stock.'),
+                  _sectionTitle(context, 'Inventory alerts',
+                      'Choose when a product should be flagged as low stock.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -474,28 +645,42 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             children: [
                               const Icon(Icons.inventory_2_outlined),
                               const SizedBox(width: 10),
-                              const Expanded(child: Text('Low-stock threshold')),
-                              Text('${lowStockThreshold.round()} units', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                              const Expanded(
+                                  child: Text('Low-stock threshold')),
+                              Text('${lowStockThreshold.round()} units',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
                             ],
                           ),
                           Slider(
                             min: 1,
                             max: 100,
                             divisions: 99,
-                            value: lowStockThreshold.clamp(1.0, 100.0).toDouble(),
+                            value:
+                                lowStockThreshold.clamp(1.0, 100.0).toDouble(),
                             label: '${lowStockThreshold.round()}',
-                            onChanged: (value) => _save('low_stock_threshold', value.round()),
+                            onChanged: (value) =>
+                                _save('low_stock_threshold', value.round()),
                           ),
                           Text(
                             'Products at or below this stock level appear in the dashboard alerts.',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle(context, 'Corner style', 'Set the roundness used by the app theme.'),
+                  _sectionTitle(context, 'Corner style',
+                      'Set the roundness used by the app theme.'),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -506,10 +691,12 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             segments: const [
                               ButtonSegment(value: 8, label: Text('Sharp')),
                               ButtonSegment(value: 16, label: Text('Rounded')),
-                              ButtonSegment(value: 24, label: Text('Pill-like')),
+                              ButtonSegment(
+                                  value: 24, label: Text('Pill-like')),
                             ],
                             selected: {radius},
-                            onSelectionChanged: (values) => _save('corner_radius', values.first),
+                            onSelectionChanged: (values) =>
+                                _save('corner_radius', values.first),
                             showSelectedIcon: false,
                           ),
                           const SizedBox(height: 16),
@@ -517,15 +704,19 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.10),
-                              border: Border.all(color: color.withOpacity(0.6)),
+                              color: color.withValues(alpha: 0.10),
+                              border: Border.all(
+                                  color: color.withValues(alpha: 0.6)),
                               borderRadius: BorderRadius.circular(radius),
                             ),
                             child: Row(
                               children: [
                                 Icon(Icons.receipt_long, color: color),
                                 const SizedBox(width: 12),
-                                const Expanded(child: Text('Preview card', style: TextStyle(fontWeight: FontWeight.w600))),
+                                const Expanded(
+                                    child: Text('Preview card',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w600))),
                                 Icon(Icons.check_circle, color: color),
                               ],
                             ),
@@ -543,7 +734,8 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('product_view', 'list');
                       await _save('navigation_style', 'classic');
                       await _save('navigation_icon_style', 'outlined');
-                      await _save('navigation_icon_overrides', <String, String>{});
+                      await _save(
+                          'navigation_icon_overrides', <String, String>{});
                       await _save('surface_style', 'outlined');
                       await _save('app_bar_style', 'surface');
                       await _save('font_style', 'system');
@@ -617,36 +809,45 @@ class AppearanceSettingsScreen extends StatelessWidget {
           width: 104,
           child: Row(
             children: [
-              Icon(selected == 'default' ? fallback : icons[selected] ?? fallback),
+              Icon(selected == 'default'
+                  ? fallback
+                  : icons[selected] ?? fallback),
               const SizedBox(width: 8),
-              Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
+              Expanded(
+                  child: Text(label,
+                      style: const TextStyle(fontWeight: FontWeight.w600))),
             ],
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: DropdownButtonFormField<String>(
-            value: choices.containsKey(selected) ? selected : 'default',
+            initialValue: choices.containsKey(selected) ? selected : 'default',
             isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Icon',
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
-            items: choices.entries.map((entry) => DropdownMenuItem<String>(
-              value: entry.key,
-              child: Row(
-                children: [
-                  if (entry.key != 'default') ...[
-                    Icon(icons[entry.key], size: 19),
-                    const SizedBox(width: 10),
-                  ] else ...[
-                    Icon(fallback, size: 19),
-                    const SizedBox(width: 10),
-                  ],
-                  Expanded(child: Text(entry.value, overflow: TextOverflow.ellipsis)),
-                ],
-              ),
-            )).toList(),
+            items: choices.entries
+                .map((entry) => DropdownMenuItem<String>(
+                      value: entry.key,
+                      child: Row(
+                        children: [
+                          if (entry.key != 'default') ...[
+                            Icon(icons[entry.key], size: 19),
+                            const SizedBox(width: 10),
+                          ] else ...[
+                            Icon(fallback, size: 19),
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                              child: Text(entry.value,
+                                  overflow: TextOverflow.ellipsis)),
+                        ],
+                      ),
+                    ))
+                .toList(),
             onChanged: (value) {
               if (value == null) return;
               final updated = Map<String, String>.from(overrides);
@@ -669,9 +870,15 @@ class AppearanceSettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 3),
-          Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          Text(subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );

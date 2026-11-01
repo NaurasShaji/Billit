@@ -51,25 +51,38 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
   bool get _gstAvailable {
     final settings = Hive.box<dynamic>('app_settings');
-    final registration = settings.get('gst_registration_type', defaultValue: 'regular').toString();
-    return (settings.get('gst_enabled', defaultValue: false) as bool) && registration == 'regular';
+    final registration = settings
+        .get('gst_registration_type', defaultValue: 'regular')
+        .toString();
+    return (settings.get('gst_enabled', defaultValue: false) as bool) &&
+        registration == 'regular';
   }
-  double get _gstRate => (Hive.box<dynamic>('app_settings').get('gst_rate', defaultValue: 0.0) as num).toDouble();
+
+  double get _gstRate =>
+      (Hive.box<dynamic>('app_settings').get('gst_rate', defaultValue: 0.0)
+              as num)
+          .toDouble();
   double _money(double value) => (value * 100).roundToDouble() / 100;
-  double get _subtotal => _money(items.fold(0.0, (sum, item) => sum + item.subtotal));
+  double get _subtotal =>
+      _money(items.fold(0.0, (sum, item) => sum + item.subtotal));
   double _lineGrossAfterDiscount(SaleItem item) {
     if (_subtotal <= 0) return 0.0;
     final allocatedDiscount = _discount * item.subtotal / _subtotal;
-    return _money((item.subtotal - allocatedDiscount).clamp(0.0, double.infinity).toDouble());
+    return _money((item.subtotal - allocatedDiscount)
+        .clamp(0.0, double.infinity)
+        .toDouble());
   }
+
   double _lineTaxableAmount(SaleItem item) {
     final gross = _lineGrossAfterDiscount(item);
     if (!_applyGst || !_gstInclusive) return gross;
     final rate = _lineGstRate(item);
     return rate <= 0 ? gross : _money(gross / (1 + rate / 100.0));
   }
+
   double get _taxableAmount => _applyGst
-      ? _money(items.fold<double>(0.0, (sum, item) => sum + _lineTaxableAmount(item)))
+      ? _money(items.fold<double>(
+          0.0, (sum, item) => sum + _lineTaxableAmount(item)))
       : _money((_subtotal - _discount).clamp(0.0, double.infinity).toDouble());
   double _lineTaxAmount(SaleItem item) {
     if (!_applyGst) return 0.0;
@@ -79,20 +92,35 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         ? _lineGrossAfterDiscount(item) - taxable
         : _money(taxable * rate / 100.0);
   }
+
   double _lineGstRate(SaleItem item) {
-    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
+    final productRate =
+        Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
     return productRate ?? _gstRate;
   }
-  double get _gstAmount => !_applyGst ? 0.0 : _money(items.fold<double>(
-    0.0, (sum, item) => sum + _lineTaxAmount(item),
-  ));
-  double _lineCgst(SaleItem item) => _applyGst && !_interstateSale ? _money(_lineTaxAmount(item) / 2) : 0.0;
-  double _lineSgst(SaleItem item) => _applyGst && !_interstateSale ? _money(_lineTaxAmount(item) - _lineCgst(item)) : 0.0;
-  double _lineIgst(SaleItem item) => _applyGst && _interstateSale ? _lineTaxAmount(item) : 0.0;
-  double get _cgstAmount => _money(items.fold<double>(0.0, (sum, item) => sum + _lineCgst(item)));
-  double get _sgstAmount => _money(items.fold<double>(0.0, (sum, item) => sum + _lineSgst(item)));
-  double get _igstAmount => _money(items.fold<double>(0.0, (sum, item) => sum + _lineIgst(item)));
-  double get _grandTotal => _money(_applyGst && _gstInclusive ? _subtotal - _discount : _taxableAmount + _gstAmount);
+
+  double get _gstAmount => !_applyGst
+      ? 0.0
+      : _money(items.fold<double>(
+          0.0,
+          (sum, item) => sum + _lineTaxAmount(item),
+        ));
+  double _lineCgst(SaleItem item) =>
+      _applyGst && !_interstateSale ? _money(_lineTaxAmount(item) / 2) : 0.0;
+  double _lineSgst(SaleItem item) => _applyGst && !_interstateSale
+      ? _money(_lineTaxAmount(item) - _lineCgst(item))
+      : 0.0;
+  double _lineIgst(SaleItem item) =>
+      _applyGst && _interstateSale ? _lineTaxAmount(item) : 0.0;
+  double get _cgstAmount =>
+      _money(items.fold<double>(0.0, (sum, item) => sum + _lineCgst(item)));
+  double get _sgstAmount =>
+      _money(items.fold<double>(0.0, (sum, item) => sum + _lineSgst(item)));
+  double get _igstAmount =>
+      _money(items.fold<double>(0.0, (sum, item) => sum + _lineIgst(item)));
+  double get _grandTotal => _money(_applyGst && _gstInclusive
+      ? _subtotal - _discount
+      : _taxableAmount + _gstAmount);
   double get _estimatedProfit => _taxableAmount - cost;
 
   @override
@@ -100,8 +128,10 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     super.initState();
     _cartService = CartService();
     final gstSettings = Hive.box<dynamic>('app_settings');
-    _gstInclusive = gstSettings.get('gst_price_inclusive', defaultValue: false) as bool;
-    _interstateSale = gstSettings.get('gst_default_interstate_sale', defaultValue: false) as bool;
+    _gstInclusive =
+        gstSettings.get('gst_price_inclusive', defaultValue: false) as bool;
+    _interstateSale = gstSettings.get('gst_default_interstate_sale',
+        defaultValue: false) as bool;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -110,12 +140,12 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       CurvedAnimation(parent: _animationController!, curve: Curves.easeInOut),
     );
     _animationController?.forward();
-    
+
     // Initialize controllers with cart service data
     _customerName.text = _cartService.customerName;
     _customerPhone.text = _cartService.customerPhone;
     _discountController.text = _cartService.discount.toString();
-    
+
     // Listen to cart changes
     _cartService.addListener(_onCartChanged);
   }
@@ -154,7 +184,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   }
 
   InputDecoration _getInputDecoration({
-    required String label, 
+    required String label,
     required IconData icon,
     String? hint,
   }) {
@@ -181,7 +211,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       fillColor: _cardColor,
       filled: true,
       labelStyle: TextStyle(color: _textSecondary, fontSize: 14),
-      hintStyle: TextStyle(color: _textSecondary.withOpacity(0.6), fontSize: 12),
+      hintStyle:
+          TextStyle(color: _textSecondary.withValues(alpha: 0.6), fontSize: 12),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
@@ -194,7 +225,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _primaryColor.withOpacity(0.1),
+              color: _primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: _primaryColor, size: 20),
@@ -216,7 +247,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPaymentMethodTile(PaymentMethod method, String label, IconData icon) {
+  Widget _buildPaymentMethodTile(
+      PaymentMethod method, String label, IconData icon) {
     final isSelected = _method == method;
     return InkWell(
       onTap: () {
@@ -228,7 +260,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? _primaryColor.withOpacity(0.1) : _cardColor,
+          color: isSelected ? _primaryColor.withValues(alpha: 0.1) : _cardColor,
           border: Border.all(
             color: isSelected ? _primaryColor : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
@@ -238,12 +270,14 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
+            Icon(
+              icon,
               color: isSelected ? _primaryColor : _textSecondary,
               size: 28,
             ),
             const SizedBox(height: 8),
-            Text(label,
+            Text(
+              label,
               style: TextStyle(
                 color: isSelected ? _primaryColor : _textSecondary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -255,7 +289,6 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       ),
     );
   }
-
 
   void _showStockLimitMessage(String productName, double availableStock) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -281,7 +314,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   Future<void> _handleScannedBarcode(String rawValue) async {
     final barcode = rawValue.trim();
     if (barcode.isEmpty) return;
-    final products = Hive.box<Product>(Boxes.products).values.where((p) => p.active);
+    final products =
+        Hive.box<Product>(Boxes.products).values.where((p) => p.active);
     Product? match;
     for (final product in products) {
       if (product.barcode?.trim() == barcode) {
@@ -293,14 +327,18 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     if (match == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('No product is assigned to barcode "$barcode". Add it in Product Management first.'),
+        content: Text(
+            'No product is assigned to barcode "$barcode". Add it in Product Management first.'),
         backgroundColor: _warningColor,
         behavior: SnackBarBehavior.floating,
       ));
       return;
     }
     final product = match;
-    final increment = (product.unit == UnitType.kg || product.unit == UnitType.sqft) ? 0.5 : 1.0;
+    final increment =
+        (product.unit == UnitType.kg || product.unit == UnitType.sqft)
+            ? 0.5
+            : 1.0;
     if (!_canAddToCart(product, increment)) {
       _showStockLimitMessage(product.name, _getAvailableStock(product));
       return;
@@ -331,203 +369,47 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final products = Hive.box<Product>(Boxes.products).values.where((p) => p.active).toList();
+    final products = Hive.box<Product>(Boxes.products)
+        .values
+        .where((p) => p.active)
+        .toList();
     final cur = NumberFormat.simpleCurrency(locale: 'en_IN');
     final invoiceSettings = Hive.box<dynamic>('app_settings');
-    final savedPrefix = invoiceSettings.get('invoice_prefix', defaultValue: 'INV').toString().trim().toUpperCase();
+    final savedPrefix = invoiceSettings
+        .get('invoice_prefix', defaultValue: 'INV')
+        .toString()
+        .trim()
+        .toUpperCase();
     final invoicePrefix = savedPrefix.isEmpty ? 'INV' : savedPrefix;
-    final nextInvoiceNumber = (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num).toInt();
+    final nextInvoiceNumber =
+        (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num)
+            .toInt();
     final invoiceDatePart = DateFormat('yyyyMM').format(DateTime.now());
-    final invoiceIdPreview = '$invoicePrefix-$invoiceDatePart-${nextInvoiceNumber.toString().padLeft(5, "0")}';
+    final invoiceIdPreview =
+        '$invoicePrefix-$invoiceDatePart-${nextInvoiceNumber.toString().padLeft(5, "0")}';
 
-      // Get last 5 invoices, sorted by date and time (newest first)
-      final salesBox = Hive.box<Sale>(Boxes.sales);
-      final allSales = salesBox.values.toList();
-      allSales.sort((a, b) {
-        // Compare milliseconds since epoch to get precise date-time ordering
-        return b.date.millisecondsSinceEpoch.compareTo(a.date.millisecondsSinceEpoch);
-      });
-      final recentSales = allSales.take(5).toList();
+    // Get last 5 invoices, sorted by date and time (newest first)
+    final salesBox = Hive.box<Sale>(Boxes.sales);
+    final allSales = salesBox.values.toList();
+    allSales.sort((a, b) {
+      // Compare milliseconds since epoch to get precise date-time ordering
+      return b.date.millisecondsSinceEpoch
+          .compareTo(a.date.millisecondsSinceEpoch);
+    });
+    final recentSales = allSales.take(5).toList();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: null,
-      body: _fadeAnimation != null 
-        ? FadeTransition(
-            opacity: _fadeAnimation!,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Customer Details Section
-                  Card(
-                    elevation: 0,
-                    color: _cardColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionHeader('Customer Information', Icons.person_outline),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _customerName,
-                            decoration: _getInputDecoration(
-                              label: 'Customer Name',
-                              icon: Icons.person_outline,
-                              hint: 'Optional',
-                            ),
-                            onChanged: (value) {
-                              _cartService.updateCustomerInfo(value, _customerPhone.text);
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _customerPhone,
-                            keyboardType: TextInputType.phone,
-                            decoration: _getInputDecoration(
-                              label: 'Phone Number',
-                              icon: Icons.phone_outlined,
-                              hint: 'Optional',
-                            ),
-                            onChanged: (value) {
-                              _cartService.updateCustomerInfo(_customerName.text, value);
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          _buildSectionHeader('Payment Method', Icons.payment_outlined),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildPaymentMethodTile(
-                                  PaymentMethod.cash,
-                                  'Cash',
-                                  Icons.payments_outlined,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildPaymentMethodTile(
-                                  PaymentMethod.card,
-                                  'Card',
-                                  Icons.credit_card_outlined,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildPaymentMethodTile(
-                                  PaymentMethod.upi,
-                                  'UPI',
-                                  Icons.qr_code_outlined,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Barcode input: camera or external scanner in keyboard-wedge mode.
-                  Card(
-                    elevation: 0,
-                    color: _cardColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionHeader('Barcode Scanner', Icons.qr_code_scanner),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _barcodeInputController,
-                                  textInputAction: TextInputAction.done,
-                                  onSubmitted: _handleScannedBarcode,
-                                  decoration: _getInputDecoration(
-                                    label: 'Scan or enter barcode',
-                                    icon: Icons.qr_code_2,
-                                    hint: 'External scanner works like a keyboard',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton.filled(
-                                tooltip: 'Scan with camera',
-                                onPressed: _openCameraBarcodeScanner,
-                                icon: const Icon(Icons.camera_alt),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'For USB/Bluetooth scanners, focus this field and scan. Most scanners submit the code with Enter.',
-                            style: TextStyle(fontSize: 12, color: _textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Add Product and Shopping Cart Section
-                  ShoppingCartSection(
-                    items: items,
-                    products: products,
-                    onClearAll: () {
-                      _cartService.clearCart();
-                      _customerName.clear();
-                      _customerPhone.clear();
-                      _discountController.clear();
-        _customerGstin.clear();
-        _applyGst = false;
-        _interstateSale = false;
-                    },
-                    onAddProduct: (product) {
-                      // Logic to add product using CartService
-                      final increment = (product.unit == UnitType.kg || product.unit == UnitType.sqft) ? 0.5 : 1.0;
-                      
-                      if (_canAddToCart(product, increment)) {
-                        final item = SaleItem()
-                          ..productId = product.id
-                          ..qty = increment
-                          ..sellingPrice = product.sellingPrice
-                          ..costPrice = product.costPrice
-                          ..subtotal = product.sellingPrice * increment
-                          ..unitLabel = product.unit.name;
-                        _cartService.addItem(item);
-                      } else {
-                        _showStockLimitMessage(product.name, _getAvailableStock(product));
-                      }
-                    },
-                    onUpdateCartItem: (item, product, index) {
-                      // Update item through CartService
-                      item.subtotal = item.qty * item.sellingPrice;
-                      _cartService.updateItem(index, item);
-                    },
-                    onRemoveCartItem: (item, product, index) {
-                      _cartService.removeItem(index);
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Checkout Section
-                  if (items.isNotEmpty)
+      body: _fadeAnimation != null
+          ? FadeTransition(
+              opacity: _fadeAnimation!,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Customer Details Section
                     Card(
                       elevation: 0,
                       color: _cardColor,
@@ -540,321 +422,598 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSectionHeader('Order Summary', Icons.receipt_long_outlined),
+                            _buildSectionHeader(
+                                'Customer Information', Icons.person_outline),
                             const SizedBox(height: 16),
                             TextField(
-                              controller: _discountController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              controller: _customerName,
                               decoration: _getInputDecoration(
-                                label: 'Discount Amount',
-                                icon: Icons.discount_outlined,
-                                hint: 'Enter discount amount (optional)',
+                                label: 'Customer Name',
+                                icon: Icons.person_outline,
+                                hint: 'Optional',
                               ),
                               onChanged: (value) {
-                                final discount = double.tryParse(value) ?? 0.0;
-                                final clampedDiscount = discount.clamp(0.0, _subtotal);
-                                _cartService.updateDiscount(clampedDiscount);
+                                _cartService.updateCustomerInfo(
+                                    value, _customerPhone.text);
                               },
                             ),
-                            const SizedBox(height: 12),
-                            if (_gstAvailable) ...[
-                              SwitchListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: const Text('Apply GST'),
-                                subtitle: const Text('Tax is calculated after discount.'),
-                                value: _applyGst,
-                                onChanged: (value) => setState(() {
-                                  _applyGst = value;
-                                  if (value) {
-                                    _gstInclusive = Hive.box<dynamic>('app_settings').get('gst_price_inclusive', defaultValue: false) as bool;
-                                  }
-                                }),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _customerPhone,
+                              keyboardType: TextInputType.phone,
+                              decoration: _getInputDecoration(
+                                label: 'Phone Number',
+                                icon: Icons.phone_outlined,
+                                hint: 'Optional',
                               ),
-                              if (_applyGst) ...[
-                                CheckboxListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: const Text('Interstate sale (IGST)'),
-                                  subtitle: const Text('Leave unchecked for CGST + SGST.'),
-                                  value: _interstateSale,
-                                  onChanged: (value) => setState(() => _interstateSale = value ?? false),
+                              onChanged: (value) {
+                                _cartService.updateCustomerInfo(
+                                    _customerName.text, value);
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            _buildSectionHeader(
+                                'Payment Method', Icons.payment_outlined),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildPaymentMethodTile(
+                                    PaymentMethod.cash,
+                                    'Cash',
+                                    Icons.payments_outlined,
+                                  ),
                                 ),
-                                CheckboxListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: const Text('Prices already include GST'),
-                                  subtitle: const Text('If enabled, GST is extracted from the listed price instead of added on top.'),
-                                  value: _gstInclusive,
-                                  onChanged: (value) => setState(() => _gstInclusive = value ?? false),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildPaymentMethodTile(
+                                    PaymentMethod.card,
+                                    'Card',
+                                    Icons.credit_card_outlined,
+                                  ),
                                 ),
-                                TextField(
-                                  controller: _customerGstin,
-                                  textCapitalization: TextCapitalization.characters,
-                                  decoration: _getInputDecoration(
-                                    label: 'Customer GSTIN (optional)',
-                                    icon: Icons.verified_outlined,
-                                    hint: 'For B2B invoices',
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildPaymentMethodTile(
+                                    PaymentMethod.upi,
+                                    'UPI',
+                                    Icons.qr_code_outlined,
                                   ),
                                 ),
                               ],
-                            ] else
-                              Text(
-                                'GST is disabled. An admin can configure it in Invoice & GST Settings.',
-                                style: TextStyle(fontSize: 12, color: _textSecondary),
-                              ),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: _surfaceColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Invoice ID',
-                                        style: TextStyle(fontSize: 14, color: _textSecondary),
-                                      ),
-                                      Text(
-                                        invoiceIdPreview,
-                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Subtotal',
-                                        style: TextStyle(
-                                          color: _textSecondary,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      Text(
-                                        cur.format(_subtotal),
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Estimated Profit',
-                                        style: TextStyle(
-                                          color: _textSecondary,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      Text(
-                                        cur.format(_estimatedProfit),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: _successColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (_discount > 0)
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text('Discount'),
-                                        Text('-${cur.format(_discount)}'),
-                                      ],
-                                    ),
-                                  if (_applyGst) ...[
-                                    const SizedBox(height: 6),
-                                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Taxable value'), Text(cur.format(_taxableAmount))]),
-                                    if (!_interstateSale) ...[
-                                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('CGST'), Text(cur.format(_cgstAmount))]),
-                                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('SGST'), Text(cur.format(_sgstAmount))]),
-                                    ] else
-                                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('IGST'), Text(cur.format(_igstAmount))]),
-                                  ],
-                                  const Divider(height: 24),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Total Amount',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        cur.format(_grandTotal),
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w700,
-                                          color: _primaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Balance',
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                      ),
-                                      Text(
-                                        cur.format(_grandTotal),
-                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _primaryColor),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _primaryColor,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                onPressed: _handleCheckout,
-                                icon: const Icon(Icons.check_circle_outline),
-                                label: const Text(
-                                  'Complete Sale',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
 
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 16),
 
-                  // Invoice Management Section
-                  Card(
-                    elevation: 0,
-                    color: _cardColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionHeader('Invoice History', Icons.history),
-                          const SizedBox(height: 16),
-                          if (recentSales.isEmpty)
-                            const Center(child: Text('No recent invoices.'))
-                          else
-                            ...recentSales.map((sale) {
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                elevation: 0,
-                                color: _surfaceColor,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Invoice ID: ${sale.id}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                                      const SizedBox(height: 4),
-                                      Text(DateFormat('MMM dd, yyyy - hh:mm a').format(sale.date), style: TextStyle(color: _textSecondary)),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            cur.format(sale.totalAmount),
-                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _primaryColor),
-                                          ),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(Icons.print, color: _primaryColor),
-                                                onPressed: () async {
-                                                  final printOption = await showPrintOptionDialog(context, sale);
-                                                  if (printOption != null) {
-                                                    await _handlePrintInvoice(sale, printOption);
-                                                  }
-                                                },
-                                                tooltip: 'Print Invoice',
-                                              ),
-                                              IconButton(
-                                                icon: Icon(Icons.edit, color: _primaryColor),
-                                                onPressed: () async {
-                                                  final result = await Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) => EditInvoiceScreen(sale: sale),
-                                                    ),
-                                                  );
-                                                  if (result == true) {
-                                                    setState(() {});
-                                                  }
-                                                },
-                                                tooltip: 'Edit Invoice',
-                                              ),
-                                              IconButton(
-                                                icon: Icon(Icons.delete, color: _errorColor),
-                                                onPressed: () async {
-                                                  final confirm = await showDialog<bool>(
-                                                    context: context,
-                                                    builder: (ctx) => AlertDialog(
-                                                      title: const Text('Delete Invoice?'),
-                                                      content: Text('Are you sure you want to delete invoice ${sale.id}?'),
-                                                      actions: [
-                                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                                        ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
-                                                      ],
-                                                    ),
-                                                  ) ?? false;
-                                                  if (confirm) {
-                                                    await _deleteInvoice(sale);
-                                                  }
-                                                },
-                                                tooltip: 'Delete Invoice',
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                    // Barcode input: camera or external scanner in keyboard-wedge mode.
+                    Card(
+                      elevation: 0,
+                      color: _cardColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader(
+                                'Barcode Scanner', Icons.qr_code_scanner),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _barcodeInputController,
+                                    textInputAction: TextInputAction.done,
+                                    onSubmitted: _handleScannedBarcode,
+                                    decoration: _getInputDecoration(
+                                      label: 'Scan or enter barcode',
+                                      icon: Icons.qr_code_2,
+                                      hint:
+                                          'External scanner works like a keyboard',
+                                    ),
                                   ),
                                 ),
-                              );
-                            }).toList(),
-                        ],
+                                const SizedBox(width: 8),
+                                IconButton.filled(
+                                  tooltip: 'Scan with camera',
+                                  onPressed: _openCameraBarcodeScanner,
+                                  icon: const Icon(Icons.camera_alt),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'For USB/Bluetooth scanners, focus this field and scan. Most scanners submit the code with Enter.',
+                              style: TextStyle(
+                                  fontSize: 12, color: _textSecondary),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
 
-                  const SizedBox(height: 16),
-                ],
+                    // Add Product and Shopping Cart Section
+                    ShoppingCartSection(
+                      items: items,
+                      products: products,
+                      onClearAll: () {
+                        _cartService.clearCart();
+                        _customerName.clear();
+                        _customerPhone.clear();
+                        _discountController.clear();
+                        _customerGstin.clear();
+                        _applyGst = false;
+                        _interstateSale = false;
+                      },
+                      onAddProduct: (product) {
+                        // Logic to add product using CartService
+                        final increment = (product.unit == UnitType.kg ||
+                                product.unit == UnitType.sqft)
+                            ? 0.5
+                            : 1.0;
+
+                        if (_canAddToCart(product, increment)) {
+                          final item = SaleItem()
+                            ..productId = product.id
+                            ..qty = increment
+                            ..sellingPrice = product.sellingPrice
+                            ..costPrice = product.costPrice
+                            ..subtotal = product.sellingPrice * increment
+                            ..unitLabel = product.unit.name;
+                          _cartService.addItem(item);
+                        } else {
+                          _showStockLimitMessage(
+                              product.name, _getAvailableStock(product));
+                        }
+                      },
+                      onUpdateCartItem: (item, product, index) {
+                        // Update item through CartService
+                        item.subtotal = item.qty * item.sellingPrice;
+                        _cartService.updateItem(index, item);
+                      },
+                      onRemoveCartItem: (item, product, index) {
+                        _cartService.removeItem(index);
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Checkout Section
+                    if (items.isNotEmpty)
+                      Card(
+                        elevation: 0,
+                        color: _cardColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader(
+                                  'Order Summary', Icons.receipt_long_outlined),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _discountController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                decoration: _getInputDecoration(
+                                  label: 'Discount Amount',
+                                  icon: Icons.discount_outlined,
+                                  hint: 'Enter discount amount (optional)',
+                                ),
+                                onChanged: (value) {
+                                  final discount =
+                                      double.tryParse(value) ?? 0.0;
+                                  final clampedDiscount =
+                                      discount.clamp(0.0, _subtotal);
+                                  _cartService.updateDiscount(clampedDiscount);
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              if (_gstAvailable) ...[
+                                SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('Apply GST'),
+                                  subtitle: const Text(
+                                      'Tax is calculated after discount.'),
+                                  value: _applyGst,
+                                  onChanged: (value) => setState(() {
+                                    _applyGst = value;
+                                    if (value) {
+                                      _gstInclusive =
+                                          Hive.box<dynamic>('app_settings').get(
+                                              'gst_price_inclusive',
+                                              defaultValue: false) as bool;
+                                    }
+                                  }),
+                                ),
+                                if (_applyGst) ...[
+                                  CheckboxListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: const Text('Interstate sale (IGST)'),
+                                    subtitle: const Text(
+                                        'Leave unchecked for CGST + SGST.'),
+                                    value: _interstateSale,
+                                    onChanged: (value) => setState(
+                                        () => _interstateSale = value ?? false),
+                                  ),
+                                  CheckboxListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: const Text(
+                                        'Prices already include GST'),
+                                    subtitle: const Text(
+                                        'If enabled, GST is extracted from the listed price instead of added on top.'),
+                                    value: _gstInclusive,
+                                    onChanged: (value) => setState(
+                                        () => _gstInclusive = value ?? false),
+                                  ),
+                                  TextField(
+                                    controller: _customerGstin,
+                                    textCapitalization:
+                                        TextCapitalization.characters,
+                                    decoration: _getInputDecoration(
+                                      label: 'Customer GSTIN (optional)',
+                                      icon: Icons.verified_outlined,
+                                      hint: 'For B2B invoices',
+                                    ),
+                                  ),
+                                ],
+                              ] else
+                                Text(
+                                  'GST is disabled. An admin can configure it in Invoice & GST Settings.',
+                                  style: TextStyle(
+                                      fontSize: 12, color: _textSecondary),
+                                ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: _surfaceColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Invoice ID',
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: _textSecondary),
+                                        ),
+                                        Text(
+                                          invoiceIdPreview,
+                                          style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Subtotal',
+                                          style: TextStyle(
+                                            color: _textSecondary,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        Text(
+                                          cur.format(_subtotal),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Estimated Profit',
+                                          style: TextStyle(
+                                            color: _textSecondary,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        Text(
+                                          cur.format(_estimatedProfit),
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: _successColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (_discount > 0)
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('Discount'),
+                                          Text('-${cur.format(_discount)}'),
+                                        ],
+                                      ),
+                                    if (_applyGst) ...[
+                                      const SizedBox(height: 6),
+                                      Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text('Taxable value'),
+                                            Text(cur.format(_taxableAmount))
+                                          ]),
+                                      if (!_interstateSale) ...[
+                                        Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text('CGST'),
+                                              Text(cur.format(_cgstAmount))
+                                            ]),
+                                        Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text('SGST'),
+                                              Text(cur.format(_sgstAmount))
+                                            ]),
+                                      ] else
+                                        Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text('IGST'),
+                                              Text(cur.format(_igstAmount))
+                                            ]),
+                                    ],
+                                    const Divider(height: 24),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Total Amount',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        Text(
+                                          cur.format(_grandTotal),
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w700,
+                                            color: _primaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Balance',
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        Text(
+                                          cur.format(_grandTotal),
+                                          style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w700,
+                                              color: _primaryColor),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: _handleCheckout,
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  label: const Text(
+                                    'Complete Sale',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 32),
+
+                    // Invoice Management Section
+                    Card(
+                      elevation: 0,
+                      color: _cardColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader(
+                                'Invoice History', Icons.history),
+                            const SizedBox(height: 16),
+                            if (recentSales.isEmpty)
+                              const Center(child: Text('No recent invoices.'))
+                            else
+                              ...recentSales.map((sale) {
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  elevation: 0,
+                                  color: _surfaceColor,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Invoice ID: ${sale.id}',
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                            DateFormat('MMM dd, yyyy - hh:mm a')
+                                                .format(sale.date),
+                                            style: TextStyle(
+                                                color: _textSecondary)),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              cur.format(sale.totalAmount),
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                  color: _primaryColor),
+                                            ),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                IconButton(
+                                                  icon: Icon(Icons.print,
+                                                      color: _primaryColor),
+                                                  onPressed: () async {
+                                                    final printOption =
+                                                        await showPrintOptionDialog(
+                                                            context, sale);
+                                                    if (printOption != null) {
+                                                      await _handlePrintInvoice(
+                                                          sale, printOption);
+                                                    }
+                                                  },
+                                                  tooltip: 'Print Invoice',
+                                                ),
+                                                IconButton(
+                                                  icon: Icon(Icons.edit,
+                                                      color: _primaryColor),
+                                                  onPressed: () async {
+                                                    final result =
+                                                        await Navigator.of(
+                                                                context)
+                                                            .push(
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            EditInvoiceScreen(
+                                                                sale: sale),
+                                                      ),
+                                                    );
+                                                    if (result == true) {
+                                                      setState(() {});
+                                                    }
+                                                  },
+                                                  tooltip: 'Edit Invoice',
+                                                ),
+                                                IconButton(
+                                                  icon: Icon(Icons.delete,
+                                                      color: _errorColor),
+                                                  onPressed: () async {
+                                                    final confirm =
+                                                        await showDialog<bool>(
+                                                              context: context,
+                                                              builder: (ctx) =>
+                                                                  AlertDialog(
+                                                                title: const Text(
+                                                                    'Delete Invoice?'),
+                                                                content: Text(
+                                                                    'Are you sure you want to delete invoice ${sale.id}?'),
+                                                                actions: [
+                                                                  TextButton(
+                                                                      onPressed: () =>
+                                                                          Navigator.pop(
+                                                                              ctx,
+                                                                              false),
+                                                                      child: const Text(
+                                                                          'Cancel')),
+                                                                  ElevatedButton(
+                                                                      onPressed: () =>
+                                                                          Navigator.pop(
+                                                                              ctx,
+                                                                              true),
+                                                                      child: const Text(
+                                                                          'Delete')),
+                                                                ],
+                                                              ),
+                                                            ) ??
+                                                            false;
+                                                    if (confirm) {
+                                                      await _deleteInvoice(
+                                                          sale);
+                                                    }
+                                                  },
+                                                  tooltip: 'Delete Invoice',
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
-            ),
-          ) : const Center(child: CircularProgressIndicator()),
+            )
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -896,11 +1055,18 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       }
       final salesBox = Hive.box<Sale>(Boxes.sales);
       final invoiceSettings = Hive.box<dynamic>('app_settings');
-      final prefix = invoiceSettings.get('invoice_prefix', defaultValue: 'INV').toString().trim().toUpperCase();
+      final prefix = invoiceSettings
+          .get('invoice_prefix', defaultValue: 'INV')
+          .toString()
+          .trim()
+          .toUpperCase();
       final safePrefix = prefix.isEmpty ? 'INV' : prefix;
-      final nextNumber = (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num).toInt();
+      final nextNumber =
+          (invoiceSettings.get('next_invoice_number', defaultValue: 1) as num)
+              .toInt();
       final datePart = DateFormat('yyyyMM').format(DateTime.now());
-      final id = '$safePrefix-$datePart-${nextNumber.toString().padLeft(5, "0")}';
+      final id =
+          '$safePrefix-$datePart-${nextNumber.toString().padLeft(5, "0")}';
       await invoiceSettings.put('next_invoice_number', nextNumber + 1);
 
       final sale = Sale()
@@ -935,7 +1101,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           await product.save();
         }
       }
-      
+
       // Show print option selection dialog
       if (mounted) {
         Navigator.of(context).pop(); // Close loading dialog
@@ -944,7 +1110,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         if (printOption != null) {
           await _handlePrintInvoice(sale, printOption);
         }
-        
+
         _cartService.clearCart();
         _customerName.clear();
         _customerPhone.clear();
@@ -962,7 +1128,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Text('Sale completed successfully!'),
-                      Text('Invoice ID: $id', style: const TextStyle(fontSize: 12)),
+                      Text('Invoice ID: $id',
+                          style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
@@ -970,7 +1137,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
             ),
             backgroundColor: _successColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
       }
@@ -992,7 +1160,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   Future<void> _handlePrintInvoice(Sale sale, PrintOption printOption) async {
     try {
       final invoiceService = InvoiceService();
-      
+
       if (printOption == PrintOption.thermal) {
         // Generate thermal printer format
         await invoiceService.generateInvoice(sale, useThermalPrinter: true);
@@ -1008,7 +1176,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
               ),
               backgroundColor: _successColor,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
           );
         }
@@ -1018,7 +1187,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           context: context,
           builder: (dialogContext) => AlertDialog(
             title: const Text('Choose PDF type'),
-            content: const Text('Generate a normal invoice without GST details, or a separate GST tax invoice.'),
+            content: const Text(
+                'Generate a normal invoice without GST details, or a separate GST tax invoice.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -1046,12 +1216,15 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 12),
-                  Text(includeGst ? 'GST tax invoice PDF generated!' : 'Normal invoice PDF generated!'),
+                  Text(includeGst
+                      ? 'GST tax invoice PDF generated!'
+                      : 'Normal invoice PDF generated!'),
                 ],
               ),
               backgroundColor: _successColor,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
           );
         }
@@ -1063,7 +1236,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
             content: Text('Error generating invoice: $e'),
             backgroundColor: _errorColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
       }

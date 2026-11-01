@@ -19,7 +19,8 @@ class ArchiveTab extends StatelessWidget {
         _ArchiveCategory(
           title: 'Financial Management',
           subtitle: 'Expenses and cost tracking',
-          description: 'Record business expenses and review your expense history.',
+          description:
+              'Record business expenses and review your expense history.',
           icon: Icons.account_balance_wallet_outlined,
           color: Colors.green,
           items: [
@@ -67,7 +68,8 @@ class ArchiveTab extends StatelessWidget {
         _ArchiveCategory(
           title: 'Product Management',
           subtitle: 'Bulk product import',
-          description: 'Add multiple products to your inventory from an Excel file.',
+          description:
+              'Add multiple products to your inventory from an Excel file.',
           icon: Icons.inventory_2_outlined,
           color: Colors.teal,
           items: [
@@ -79,18 +81,19 @@ class ArchiveTab extends StatelessWidget {
             ),
           ],
         ),
-
         _ArchiveCategory(
           title: 'Reports & Statements',
           subtitle: 'Sales statements and GST exports',
-          description: 'Download day-wise or date-range sales statements, GST registers and expense exports.',
+          description:
+              'Download day-wise or date-range sales statements, GST registers and expense exports.',
           icon: Icons.assessment_outlined,
           color: Colors.deepOrange,
           items: [
             ArchiveCategoryItem(
               icon: Icons.file_download_outlined,
               title: 'Reports & Statements',
-              subtitle: 'Sales statements, GST sales, item and expense registers',
+              subtitle:
+                  'Sales statements, GST sales, item and expense registers',
               builder: (_) => const GstExportsScreen(),
             ),
           ],
@@ -179,14 +182,14 @@ class ArchiveTab extends StatelessWidget {
                   Text(
                     'Business tools and account management',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: scheme.onSurface.withOpacity(0.62),
+                      color: scheme.onSurface.withValues(alpha: 0.62),
                     ),
                   ),
                   const SizedBox(height: 26),
                   Text(
                     'CATEGORIES',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: scheme.onSurface.withOpacity(0.55),
+                      color: scheme.onSurface.withValues(alpha: 0.55),
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.1,
                     ),
@@ -270,7 +273,7 @@ class _CategoryCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: category.color.withOpacity(0.11),
+                  color: category.color.withValues(alpha: 0.11),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
@@ -299,7 +302,7 @@ class _CategoryCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurface.withOpacity(0.60),
+                        color: scheme.onSurface.withValues(alpha: 0.60),
                       ),
                     ),
                   ],
@@ -308,7 +311,7 @@ class _CategoryCard extends StatelessWidget {
               const SizedBox(width: 4),
               Icon(
                 Icons.chevron_right_rounded,
-                color: scheme.onSurface.withOpacity(0.45),
+                color: scheme.onSurface.withValues(alpha: 0.45),
               ),
             ],
           ),

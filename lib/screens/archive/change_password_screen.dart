@@ -11,12 +11,14 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmNewPasswordController = TextEditingController();
+  final TextEditingController _confirmNewPasswordController =
+      TextEditingController();
   final _formKey = GlobalKey<FormState>();
   UserType _selectedChangeUserType = UserType.worker;
-  
+
   // Password visibility toggles
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
@@ -56,9 +58,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (_formKey.currentState!.validate()) {
       // Show loading indicator
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Changing password...'), duration: Duration(seconds: 1)),
+        const SnackBar(
+            content: Text('Changing password...'),
+            duration: Duration(seconds: 1)),
       );
-      
+
       try {
         // Get the target user based on selected type
         final allUsers = authService.getAllUsers();
@@ -71,28 +75,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         await authService.changePassword(
           _newPasswordController.text,
           targetUserId: targetUser.id, // Pass the target user ID
-          currentPassword: _selectedChangeUserType == UserType.admin 
-              ? _currentPasswordController.text 
+          currentPassword: _selectedChangeUserType == UserType.admin
+              ? _currentPasswordController.text
               : null,
         );
-        
+
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Password changed successfully!'),
-              backgroundColor: Colors.green,
-            )
-          );
-          Navigator.of(context).pop(); // Go back after successful password change
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Password changed successfully!'),
+            backgroundColor: Colors.green,
+          ));
+          Navigator.of(context)
+              .pop(); // Go back after successful password change
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            )
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ));
         }
       }
     }
@@ -101,7 +102,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
-    
+
     // Only admins can access password management
     if (!authService.isAdmin) {
       return Scaffold(
@@ -146,8 +147,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         backgroundColor: Colors.orange[600],
         foregroundColor: Colors.white,
       ),
-      body: SafeArea( // Add SafeArea
-        child: SingleChildScrollView( // Add SingleChildScrollView - THIS IS THE FIX
+      body: SafeArea(
+        // Add SafeArea
+        child: SingleChildScrollView(
+          // Add SingleChildScrollView - THIS IS THE FIX
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
@@ -184,20 +187,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // User Type Selection
                 DropdownButtonFormField<UserType>(
-                  value: _selectedChangeUserType,
+                  initialValue: _selectedChangeUserType,
                   decoration: const InputDecoration(
                     labelText: 'Change Password For',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person_outline),
                   ),
                   items: const [
-                    DropdownMenuItem(value: UserType.admin, child: Text('Admin')),
-                    DropdownMenuItem(value: UserType.worker, child: Text('Worker')),
+                    DropdownMenuItem(
+                        value: UserType.admin, child: Text('Admin')),
+                    DropdownMenuItem(
+                        value: UserType.worker, child: Text('Worker')),
                   ],
                   onChanged: (UserType? newType) {
                     setState(() {
@@ -209,9 +214,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     });
                   },
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Current Password Field - Only show when changing admin passwords
                 if (_selectedChangeUserType == UserType.admin) ...[
                   TextFormField(
@@ -223,9 +228,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       hintText: 'Enter current password to verify',
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        onPressed: () => setState(() => _obscureCurrentPassword = !_obscureCurrentPassword),
+                        onPressed: () => setState(() =>
+                            _obscureCurrentPassword = !_obscureCurrentPassword),
                         icon: Icon(
-                          _obscureCurrentPassword ? Icons.visibility : Icons.visibility_off,
+                          _obscureCurrentPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: Colors.grey[600],
                         ),
                       ),
@@ -239,7 +247,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   const SizedBox(height: 20),
                 ],
-                
+
                 // New Password Field
                 TextFormField(
                   controller: _newPasswordController,
@@ -247,21 +255,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   decoration: InputDecoration(
                     labelText: 'New Password',
                     border: const OutlineInputBorder(),
-                    hintText: 'Enter new password (min 6 characters, letters & numbers only)',
+                    hintText:
+                        'Enter new password (min 6 characters, letters & numbers only)',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+                      onPressed: () => setState(
+                          () => _obscureNewPassword = !_obscureNewPassword),
                       icon: Icon(
-                        _obscureNewPassword ? Icons.visibility : Icons.visibility_off,
+                        _obscureNewPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: Colors.grey[600],
                       ),
                     ),
                   ),
                   validator: _validatePassword,
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Confirm New Password Field
                 TextFormField(
                   controller: _confirmNewPasswordController,
@@ -272,9 +284,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     hintText: 'Confirm your new password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      onPressed: () => setState(() =>
+                          _obscureConfirmPassword = !_obscureConfirmPassword),
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                        _obscureConfirmPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -294,9 +309,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Change Password Button
                 SizedBox(
                   width: double.infinity,
@@ -305,11 +320,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     onPressed: () => _changePassword(authService),
                     icon: const Icon(Icons.lock_reset),
                     label: Text(
-                      'Change ${_selectedChangeUserType == UserType.admin ? 'Admin' : 'Worker'} Password'
-                    ),
+                        'Change ${_selectedChangeUserType == UserType.admin ? 'Admin' : 'Worker'} Password'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedChangeUserType == UserType.admin 
-                          ? Colors.orange[600] 
+                      backgroundColor: _selectedChangeUserType == UserType.admin
+                          ? Colors.orange[600]
                           : Colors.blue[600],
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -318,9 +332,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Password Requirements Info
                 Container(
                   width: double.infinity,
@@ -363,9 +377,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Additional Info
                 Container(
                   width: double.infinity,
@@ -397,7 +411,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20), // Extra padding at bottom
               ],
             ),

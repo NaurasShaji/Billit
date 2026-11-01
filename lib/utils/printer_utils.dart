@@ -14,17 +14,10 @@ class BluetoothDevice {
 }
 
 // Printer connection status
-enum PrinterStatus {
-  connected,
-  disconnected,
-  error
-}
+enum PrinterStatus { connected, disconnected, error }
 
 // Printer type for invoice generation
-enum PrinterType {
-  thermal,
-  pdf
-}
+enum PrinterType { thermal, pdf }
 
 class PrinterUtils {
   static const int PAPER_WIDTH_58 = 384; // 48 chars per line

@@ -27,7 +27,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     try {
       // Load saved printer
       _savedMacAddress = await _printerService.getSavedPrinter();
-      
+
       // Load paired devices
       await _scanDevices();
     } catch (e) {
@@ -89,12 +89,12 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: _isScanning 
+            icon: _isScanning
                 ? const SizedBox(
-                    width: 20, 
-                    height: 20, 
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                  ) 
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2))
                 : const Icon(Icons.refresh),
             onPressed: _isScanning ? null : _scanDevices,
           ),
@@ -107,11 +107,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+                      const Icon(Icons.bluetooth_disabled,
+                          size: 64, color: Colors.grey),
                       const SizedBox(height: 16),
                       const Text(
                         'No paired devices found',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -137,28 +139,33 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                       elevation: isSelected ? 4 : 1,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: isSelected 
-                            ? BorderSide(color: Theme.of(context).primaryColor, width: 2)
+                        side: isSelected
+                            ? BorderSide(
+                                color: Theme.of(context).primaryColor, width: 2)
                             : BorderSide.none,
                       ),
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
                         leading: CircleAvatar(
-                          backgroundColor: isSelected 
-                              ? Theme.of(context).primaryColor.withOpacity(0.1)
+                          backgroundColor: isSelected
+                              ? Theme.of(context)
+                                  .primaryColor
+                                  .withValues(alpha: 0.1)
                               : Colors.grey.shade100,
                           child: Icon(
                             Icons.print,
-                            color: isSelected 
-                                ? Theme.of(context).primaryColor 
+                            color: isSelected
+                                ? Theme.of(context).primaryColor
                                 : Colors.grey,
                           ),
                         ),
                         title: Text(
                           device.name,
                           style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             fontSize: 16,
                           ),
                         ),
@@ -181,7 +188,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                           ],
                         ),
                         trailing: isSelected
-                            ? Icon(Icons.check_circle, color: Theme.of(context).primaryColor)
+                            ? Icon(Icons.check_circle,
+                                color: Theme.of(context).primaryColor)
                             : ElevatedButton(
                                 onPressed: () => _savePrinter(device),
                                 style: ElevatedButton.styleFrom(

@@ -6,8 +6,8 @@ import '../utils/printer_utils.dart';
 
 class BillingScreen extends StatefulWidget {
   final Sale sale;
-  
-  const BillingScreen({Key? key, required this.sale}) : super(key: key);
+
+  const BillingScreen({super.key, required this.sale});
 
   @override
   State<BillingScreen> createState() => _BillingScreenState();
@@ -50,18 +50,16 @@ class _BillingScreenState extends State<BillingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              _selectedPrinterType == PrinterType.thermal
-                  ? 'Invoice printed successfully'
-                  : 'PDF generated successfully'
-            ),
+            content: Text(_selectedPrinterType == PrinterType.thermal
+                ? 'Invoice printed successfully'
+                : 'PDF generated successfully'),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       setState(() => _error = e.toString());
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -123,9 +121,9 @@ class _BillingScreenState extends State<BillingScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Error message if any
             if (_error != null) ...[
               Card(
@@ -140,7 +138,7 @@ class _BillingScreenState extends State<BillingScreen> {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Print button
             SizedBox(
               height: 50,
@@ -148,11 +146,9 @@ class _BillingScreenState extends State<BillingScreen> {
                 onPressed: _isProcessing ? null : _handlePrint,
                 child: _isProcessing
                     ? const CircularProgressIndicator()
-                    : Text(
-                        _selectedPrinterType == PrinterType.thermal
-                            ? 'Print Invoice'
-                            : 'Generate PDF'
-                      ),
+                    : Text(_selectedPrinterType == PrinterType.thermal
+                        ? 'Print Invoice'
+                        : 'Generate PDF'),
               ),
             ),
           ],

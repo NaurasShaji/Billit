@@ -5,29 +5,46 @@ part 'sale.g.dart';
 
 @HiveType(typeId: 5)
 enum PaymentMethod {
-  @HiveField(0) cash,
-  @HiveField(1) card,
-  @HiveField(2) upi,
+  @HiveField(0)
+  cash,
+  @HiveField(1)
+  card,
+  @HiveField(2)
+  upi,
 }
 
 @HiveType(typeId: 6)
 class SaleItem extends HiveObject {
   SaleItem(); // Unnamed constructor
-  @HiveField(0) late String productId;
-  @HiveField(1) double qty = 1;
-  @HiveField(2) double sellingPrice = 0;
-  @HiveField(3) double costPrice = 0;
-  @HiveField(4) double subtotal = 0;
-  @HiveField(5) String unitLabel = 'pcs';
-  @HiveField(6) String hsnCode = '';
-  @HiveField(7) double? gstRate;
-  @HiveField(8) double taxableAmount = 0.0;
-  @HiveField(9) double cgstAmount = 0.0;
-  @HiveField(10) double sgstAmount = 0.0;
-  @HiveField(11) double igstAmount = 0.0;
+  @HiveField(0)
+  late String productId;
+  @HiveField(1)
+  double qty = 1;
+  @HiveField(2)
+  double sellingPrice = 0;
+  @HiveField(3)
+  double costPrice = 0;
+  @HiveField(4)
+  double subtotal = 0;
+  @HiveField(5)
+  String unitLabel = 'pcs';
+  @HiveField(6)
+  String hsnCode = '';
+  @HiveField(7)
+  double? gstRate;
+  @HiveField(8)
+  double taxableAmount = 0.0;
+  @HiveField(9)
+  double cgstAmount = 0.0;
+  @HiveField(10)
+  double sgstAmount = 0.0;
+  @HiveField(11)
+  double igstAmount = 0.0;
 
   // Getters for reports
-  String get productName => Hive.box<Product>(Boxes.products).get(productId)?.name ?? 'Unknown Product';
+  String get productName =>
+      Hive.box<Product>(Boxes.products).get(productId)?.name ??
+      'Unknown Product';
   double get quantity => qty;
   double get totalAmount => subtotal;
   double get profit => (sellingPrice - costPrice) * qty;
@@ -48,19 +65,19 @@ class SaleItem extends HiveObject {
   }
 
   Map<String, dynamic> toJson() => {
-    'productId': productId,
-    'qty': qty,
-    'sellingPrice': sellingPrice,
-    'costPrice': costPrice,
-    'subtotal': subtotal,
-    'unitLabel': unitLabel,
-    'hsnCode': hsnCode,
-    'gstRate': gstRate,
-    'taxableAmount': taxableAmount,
-    'cgstAmount': cgstAmount,
-    'sgstAmount': sgstAmount,
-    'igstAmount': igstAmount,
-  };
+        'productId': productId,
+        'qty': qty,
+        'sellingPrice': sellingPrice,
+        'costPrice': costPrice,
+        'subtotal': subtotal,
+        'unitLabel': unitLabel,
+        'hsnCode': hsnCode,
+        'gstRate': gstRate,
+        'taxableAmount': taxableAmount,
+        'cgstAmount': cgstAmount,
+        'sgstAmount': sgstAmount,
+        'igstAmount': igstAmount,
+      };
 
   static SaleItem fromJson(Map<String, dynamic> json) {
     return SaleItem()
@@ -81,55 +98,77 @@ class SaleItem extends HiveObject {
 
 @HiveType(typeId: 7)
 class Sale extends HiveObject {
-  @HiveField(0) late String id;
-  @HiveField(1) late DateTime date;
-  @HiveField(2) late List<SaleItem> items;
-  @HiveField(3) double totalAmount = 0;
-  @HiveField(4) double totalCost = 0;
-  @HiveField(5) double profit = 0;
-  @HiveField(6) PaymentMethod payment = PaymentMethod.cash;
-  @HiveField(7) String customerName = '';
-  @HiveField(8) String customerPhone = '';
-  @HiveField(9) String userId = '';
-  @HiveField(10) double discount = 0.0;
-  @HiveField(11) bool gstEnabled = false;
-  @HiveField(12) double gstRate = 0.0;
-  @HiveField(13) double taxableAmount = 0.0;
-  @HiveField(14) double cgstAmount = 0.0;
-  @HiveField(15) double sgstAmount = 0.0;
-  @HiveField(16) double igstAmount = 0.0;
-  @HiveField(17) String customerGstin = '';
-  @HiveField(18) bool interstateSale = false;
-  @HiveField(19) bool gstInclusive = false;
+  @HiveField(0)
+  late String id;
+  @HiveField(1)
+  late DateTime date;
+  @HiveField(2)
+  late List<SaleItem> items;
+  @HiveField(3)
+  double totalAmount = 0;
+  @HiveField(4)
+  double totalCost = 0;
+  @HiveField(5)
+  double profit = 0;
+  @HiveField(6)
+  PaymentMethod payment = PaymentMethod.cash;
+  @HiveField(7)
+  String customerName = '';
+  @HiveField(8)
+  String customerPhone = '';
+  @HiveField(9)
+  String userId = '';
+  @HiveField(10)
+  double discount = 0.0;
+  @HiveField(11)
+  bool gstEnabled = false;
+  @HiveField(12)
+  double gstRate = 0.0;
+  @HiveField(13)
+  double taxableAmount = 0.0;
+  @HiveField(14)
+  double cgstAmount = 0.0;
+  @HiveField(15)
+  double sgstAmount = 0.0;
+  @HiveField(16)
+  double igstAmount = 0.0;
+  @HiveField(17)
+  String customerGstin = '';
+  @HiveField(18)
+  bool interstateSale = false;
+  @HiveField(19)
+  bool gstInclusive = false;
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'date': date.toIso8601String(),
-    'items': items.map((item) => item.toJson()).toList(),
-    'totalAmount': totalAmount,
-    'totalCost': totalCost,
-    'profit': profit,
-    'payment': payment.name,
-    'customerName': customerName,
-    'customerPhone': customerPhone,
-    'userId': userId,
-    'discount': discount,
-    'gstEnabled': gstEnabled,
-    'gstRate': gstRate,
-    'taxableAmount': taxableAmount,
-    'cgstAmount': cgstAmount,
-    'sgstAmount': sgstAmount,
-    'igstAmount': igstAmount,
-    'customerGstin': customerGstin,
-    'interstateSale': interstateSale,
-    'gstInclusive': gstInclusive,
-  };
+        'id': id,
+        'date': date.toIso8601String(),
+        'items': items.map((item) => item.toJson()).toList(),
+        'totalAmount': totalAmount,
+        'totalCost': totalCost,
+        'profit': profit,
+        'payment': payment.name,
+        'customerName': customerName,
+        'customerPhone': customerPhone,
+        'userId': userId,
+        'discount': discount,
+        'gstEnabled': gstEnabled,
+        'gstRate': gstRate,
+        'taxableAmount': taxableAmount,
+        'cgstAmount': cgstAmount,
+        'sgstAmount': sgstAmount,
+        'igstAmount': igstAmount,
+        'customerGstin': customerGstin,
+        'interstateSale': interstateSale,
+        'gstInclusive': gstInclusive,
+      };
 
   static Sale fromJson(Map<String, dynamic> json) {
     return Sale()
       ..id = json['id'] as String
       ..date = DateTime.parse(json['date'] as String)
-      ..items = (json['items'] as List).map((item) => SaleItem.fromJson(item as Map<String, dynamic>)).toList()
+      ..items = (json['items'] as List)
+          .map((item) => SaleItem.fromJson(item as Map<String, dynamic>))
+          .toList()
       ..totalAmount = (json['totalAmount'] as num).toDouble()
       ..totalCost = (json['totalCost'] as num).toDouble()
       ..profit = (json['profit'] as num).toDouble()

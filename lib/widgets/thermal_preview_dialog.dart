@@ -21,7 +21,8 @@ class ThermalPreviewDialog extends StatelessWidget {
       insetPadding: EdgeInsets.all(isSmallScreen ? 8 : 16),
       child: Container(
         width: isSmallScreen ? screenSize.width * 0.95 : screenSize.width * 0.9,
-        height: isSmallScreen ? screenSize.height * 0.85 : screenSize.height * 0.8,
+        height:
+            isSmallScreen ? screenSize.height * 0.85 : screenSize.height * 0.8,
         padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
         child: Column(
           children: [
@@ -50,7 +51,8 @@ class ThermalPreviewDialog extends StatelessWidget {
             // Preview Content
             Expanded(
               child: Container(
-                width: isSmallScreen ? 180 : 200, // Simulate thermal printer width
+                width:
+                    isSmallScreen ? 180 : 200, // Simulate thermal printer width
                 padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -178,7 +180,8 @@ class ThermalPreviewDialog extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: EdgeInsets.symmetric(
-              vertical: isSmallScreen ? 3 : 4, horizontal: isSmallScreen ? 6 : 8),
+              vertical: isSmallScreen ? 3 : 4,
+              horizontal: isSmallScreen ? 6 : 8),
           decoration: BoxDecoration(
             color: Colors.grey.shade200,
             borderRadius: BorderRadius.circular(4),
@@ -197,10 +200,12 @@ class ThermalPreviewDialog extends StatelessWidget {
 
         // Invoice details
         _buildPreviewRow('ID:', sale.id),
-        _buildPreviewRow('Date:', DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())),
+        _buildPreviewRow('Date:',
+            DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())),
         if (sale.customerName.isNotEmpty)
           _buildPreviewRow('Customer:', _truncateText(sale.customerName, 15)),
-        if (sale.customerPhone.isNotEmpty) _buildPreviewRow('Phone:', sale.customerPhone),
+        if (sale.customerPhone.isNotEmpty)
+          _buildPreviewRow('Phone:', sale.customerPhone),
         _buildPreviewRow('Payment:', sale.payment.name.toUpperCase()),
 
         SizedBox(height: isSmallScreen ? 6 : 8),
@@ -209,7 +214,8 @@ class ThermalPreviewDialog extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: EdgeInsets.symmetric(
-              vertical: isSmallScreen ? 2 : 3, horizontal: isSmallScreen ? 3 : 4),
+              vertical: isSmallScreen ? 2 : 3,
+              horizontal: isSmallScreen ? 3 : 4),
           decoration: BoxDecoration(
             color: Colors.grey.shade800,
             borderRadius: BorderRadius.circular(2),
@@ -293,10 +299,16 @@ class ThermalPreviewDialog extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: Column(
             children: [
-              _buildTotalRow('Subtotal:', sale.items.fold(0.0, (a, b) => a + b.subtotal).truncate().toString()),
+              _buildTotalRow(
+                  'Subtotal:',
+                  sale.items
+                      .fold(0.0, (a, b) => a + b.subtotal)
+                      .truncate()
+                      .toString()),
               if (sale.discount > 0) ...[
                 SizedBox(height: isSmallScreen ? 1 : 2),
-                _buildTotalRow('Discount:', '-${sale.discount.truncate()}', valueColor: Colors.red),
+                _buildTotalRow('Discount:', '-${sale.discount.truncate()}',
+                    valueColor: Colors.red),
               ],
               const SizedBox(height: 4),
               Container(
@@ -410,7 +422,8 @@ class ThermalPreviewDialog extends StatelessWidget {
     final product = Hive.box<Product>(Boxes.products).get(item.productId);
     final productName = '$itemNumber. ${product?.name ?? 'Unknown Product'}';
     final qty = item.qty.toStringAsFixed(product?.unit == UnitType.kg ? 1 : 0);
-    final unitLabel = item.unitLabel.isNotEmpty ? item.unitLabel : (product?.unit.name ?? '');
+    final unitLabel =
+        item.unitLabel.isNotEmpty ? item.unitLabel : (product?.unit.name ?? '');
 
     final priceStr = 'Rs.${item.sellingPrice.toStringAsFixed(2)}';
     String qtyStr = '$qty ${unitLabel.isNotEmpty ? unitLabel : ''}'.trim();
@@ -419,12 +432,12 @@ class ThermalPreviewDialog extends StatelessWidget {
     // Split product name intelligently at word boundaries (max 13 chars for first line)
     String firstLine = '';
     String secondLine = '';
-    
+
     if (productName.length <= 13) {
       firstLine = productName;
     } else {
       List<String> words = productName.split(' ');
-      
+
       // Build first line with as many words as possible (max 13 chars)
       for (String word in words) {
         if ((firstLine + word).length <= 13) {
@@ -434,7 +447,7 @@ class ThermalPreviewDialog extends StatelessWidget {
           secondLine += (secondLine.isEmpty ? '' : ' ') + word;
         }
       }
-      
+
       // If second line is empty, use simple truncation
       if (secondLine.isEmpty) {
         firstLine = productName.substring(0, 13);

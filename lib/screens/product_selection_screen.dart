@@ -4,13 +4,14 @@ import '../../models/models.dart';
 import '../../services/boxes.dart';
 
 class ProductSelectionScreen extends StatefulWidget {
-  ProductSelectionScreen({super.key});
+  const ProductSelectionScreen({super.key});
 
   @override
   State<ProductSelectionScreen> createState() => _ProductSelectionScreenState();
 }
 
-class _ProductSelectionScreenState extends State<ProductSelectionScreen> with TickerProviderStateMixin {
+class _ProductSelectionScreenState extends State<ProductSelectionScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String? _selectedCategory;
@@ -87,7 +88,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
       ),
       body: SafeArea(
         child: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(), // Dismiss keyboard on tap outside
+          onTap: () => FocusScope.of(context)
+              .unfocus(), // Dismiss keyboard on tap outside
           child: CustomScrollView(
             slivers: [
               // Fixed filters and search area
@@ -113,7 +115,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
                   ),
                 ),
               ),
-              
+
               // Scrollable products list that adjusts to keyboard
               SliverFillRemaining(
                 child: _buildProductsList(theme, isTablet),
@@ -134,7 +136,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -172,7 +174,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
 
   Widget _buildFilterSection(ThemeData theme, bool isTablet) {
     final productsBox = Hive.box<Product>(Boxes.products);
-    final categories = productsBox.values.map((p) => p.category).toSet().toList()..sort();
+    final categories =
+        productsBox.values.map((p) => p.category).toSet().toList()..sort();
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -207,9 +210,9 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
           // Stock filter
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
             ),
             child: CheckboxListTile(
               title: const Text(
@@ -233,15 +236,16 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
     );
   }
 
-  Widget _buildFilterChip(String label, String value, IconData icon, VoidCallback onTap) {
+  Widget _buildFilterChip(
+      String label, String value, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -271,7 +275,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
                 ],
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 18),
+            const Icon(Icons.keyboard_arrow_down,
+                color: Colors.white70, size: 18),
           ],
         ),
       ),
@@ -313,17 +318,20 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
                 return ListTile(
                   title: Text(category),
                   leading: Icon(
-                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
                     color: Theme.of(context).primaryColor,
                   ),
                   onTap: () {
                     setState(() {
-                      _selectedCategory = category == 'All Categories' ? null : category;
+                      _selectedCategory =
+                          category == 'All Categories' ? null : category;
                     });
                     Navigator.pop(context);
                   },
                 );
-              }).toList(),
+              }),
             ],
           ),
         );
@@ -365,7 +373,9 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
                 return ListTile(
                   title: Text(label),
                   leading: Icon(
-                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
                     color: Theme.of(context).primaryColor,
                   ),
                   onTap: () {
@@ -375,7 +385,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
                     Navigator.pop(context);
                   },
                 );
-              }).toList(),
+              }),
             ],
           ),
         );
@@ -389,11 +399,17 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
       builder: (context, Box<Product> box, _) {
         final products = box.values.where((p) => p.active).toList();
         final filteredProducts = products.where((p) {
-          final matchesSearchQuery = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-          final matchesCategory = _selectedCategory == null || p.category == _selectedCategory;
-          final matchesUnitType = _selectedUnitType == null || p.unit == _selectedUnitType;
+          final matchesSearchQuery =
+              p.name.toLowerCase().contains(_searchQuery.toLowerCase());
+          final matchesCategory =
+              _selectedCategory == null || p.category == _selectedCategory;
+          final matchesUnitType =
+              _selectedUnitType == null || p.unit == _selectedUnitType;
           final matchesStock = !_showOnlyInStock || p.stock > 0;
-          return matchesSearchQuery && matchesCategory && matchesUnitType && matchesStock;
+          return matchesSearchQuery &&
+              matchesCategory &&
+              matchesUnitType &&
+              matchesStock;
         }).toList();
 
         if (filteredProducts.isEmpty) {
@@ -469,7 +485,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
     );
   }
 
-  Widget _buildProductCard(Product product, ThemeData theme, {required bool isGrid}) {
+  Widget _buildProductCard(Product product, ThemeData theme,
+      {required bool isGrid}) {
     final isOutOfStock = product.stock <= 0;
     final isLowStock = product.stock > 0 && product.stock <= 5;
 
@@ -478,23 +495,27 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: isOutOfStock ? null : () {
-          Navigator.of(context).pop(product);
-        },
+        onTap: isOutOfStock
+            ? null
+            : () {
+                Navigator.of(context).pop(product);
+              },
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             color: isOutOfStock ? Colors.grey.shade100 : Colors.white,
           ),
-          child: isGrid ? _buildGridContent(product, theme, isOutOfStock, isLowStock)
+          child: isGrid
+              ? _buildGridContent(product, theme, isOutOfStock, isLowStock)
               : _buildListContent(product, theme, isOutOfStock, isLowStock),
         ),
       ),
     );
   }
 
-  Widget _buildGridContent(Product product, ThemeData theme, bool isOutOfStock, bool isLowStock) {
+  Widget _buildGridContent(
+      Product product, ThemeData theme, bool isOutOfStock, bool isLowStock) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -558,9 +579,11 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
                   color: Colors.white,
                   size: 20,
                 ),
-                onPressed: isOutOfStock ? null : () {
-                  Navigator.of(context).pop(product);
-                },
+                onPressed: isOutOfStock
+                    ? null
+                    : () {
+                        Navigator.of(context).pop(product);
+                      },
               ),
             ),
           ],
@@ -569,14 +592,15 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
     );
   }
 
-  Widget _buildListContent(Product product, ThemeData theme, bool isOutOfStock, bool isLowStock) {
+  Widget _buildListContent(
+      Product product, ThemeData theme, bool isOutOfStock, bool isLowStock) {
     return Row(
       children: [
         Container(
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: theme.primaryColor.withOpacity(0.1),
+            color: theme.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -646,9 +670,11 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
               isOutOfStock ? Icons.block : Icons.add_shopping_cart,
               color: Colors.white,
             ),
-            onPressed: isOutOfStock ? null : () {
-              Navigator.of(context).pop(product);
-            },
+            onPressed: isOutOfStock
+                ? null
+                : () {
+                    Navigator.of(context).pop(product);
+                  },
           ),
         ),
       ],
@@ -745,7 +771,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen> with Ti
               icon: const Icon(Icons.clear_all),
               label: const Text('Clear Filters'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

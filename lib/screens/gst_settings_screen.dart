@@ -20,32 +20,63 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
   bool _saving = false;
 
   static const _states = <String, String>{
-    '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab',
-    '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana',
-    '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
-    '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh',
-    '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura',
-    '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
-    '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh',
-    '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu',
-    '27': 'Maharashtra', '28': 'Andhra Pradesh (old code)', '29': 'Karnataka',
-    '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu',
-    '34': 'Puducherry', '35': 'Andaman and Nicobar Islands',
-    '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh',
+    '01': 'Jammu and Kashmir',
+    '02': 'Himachal Pradesh',
+    '03': 'Punjab',
+    '04': 'Chandigarh',
+    '05': 'Uttarakhand',
+    '06': 'Haryana',
+    '07': 'Delhi',
+    '08': 'Rajasthan',
+    '09': 'Uttar Pradesh',
+    '10': 'Bihar',
+    '11': 'Sikkim',
+    '12': 'Arunachal Pradesh',
+    '13': 'Nagaland',
+    '14': 'Manipur',
+    '15': 'Mizoram',
+    '16': 'Tripura',
+    '17': 'Meghalaya',
+    '18': 'Assam',
+    '19': 'West Bengal',
+    '20': 'Jharkhand',
+    '21': 'Odisha',
+    '22': 'Chhattisgarh',
+    '23': 'Madhya Pradesh',
+    '24': 'Gujarat',
+    '26': 'Dadra and Nagar Haveli and Daman and Diu',
+    '27': 'Maharashtra',
+    '28': 'Andhra Pradesh (old code)',
+    '29': 'Karnataka',
+    '30': 'Goa',
+    '31': 'Lakshadweep',
+    '32': 'Kerala',
+    '33': 'Tamil Nadu',
+    '34': 'Puducherry',
+    '35': 'Andaman and Nicobar Islands',
+    '36': 'Telangana',
+    '37': 'Andhra Pradesh',
+    '38': 'Ladakh',
   };
 
   @override
   void initState() {
     super.initState();
     _settings = Hive.box<dynamic>('app_settings');
-    _registrationType = _settings.get('gst_registration_type', defaultValue: 'regular').toString();
-    if (!const ['regular', 'composition', 'unregistered'].contains(_registrationType)) {
+    _registrationType = _settings
+        .get('gst_registration_type', defaultValue: 'regular')
+        .toString();
+    if (!const ['regular', 'composition', 'unregistered']
+        .contains(_registrationType)) {
       _registrationType = 'regular';
     }
     _gstEnabled = _settings.get('gst_enabled', defaultValue: false) as bool;
-    _gstInclusive = _settings.get('gst_price_inclusive', defaultValue: false) as bool;
-    _defaultInterstate = _settings.get('gst_default_interstate_sale', defaultValue: false) as bool;
-    _stateCode = _settings.get('business_state_code', defaultValue: '32').toString();
+    _gstInclusive =
+        _settings.get('gst_price_inclusive', defaultValue: false) as bool;
+    _defaultInterstate = _settings.get('gst_default_interstate_sale',
+        defaultValue: false) as bool;
+    _stateCode =
+        _settings.get('business_state_code', defaultValue: '32').toString();
     if (!_states.containsKey(_stateCode)) _stateCode = '32';
     if (_registrationType != 'regular') _gstEnabled = false;
     _defaultRate = TextEditingController(
@@ -63,13 +94,16 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
     final rate = double.tryParse(_defaultRate.text.trim());
     if (rate == null || rate < 0 || rate > 100) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid default GST rate from 0 to 100.')),
+        const SnackBar(
+            content: Text('Enter a valid default GST rate from 0 to 100.')),
       );
       return;
     }
     if (_registrationType != 'regular' && _gstEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('GST collection through tax invoices is available only for regular registration.')),
+        const SnackBar(
+            content: Text(
+                'GST collection through tax invoices is available only for regular registration.')),
       );
       return;
     }
@@ -85,7 +119,9 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('GST settings saved. Review these settings with your accountant before issuing invoices.')),
+        const SnackBar(
+            content: Text(
+                'GST settings saved. Review these settings with your accountant before issuing invoices.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -93,10 +129,10 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
   }
 
   InputDecoration _decoration(String label, IconData icon) => InputDecoration(
-    labelText: label,
-    prefixIcon: Icon(icon),
-    border: const OutlineInputBorder(),
-  );
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: const OutlineInputBorder(),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +153,10 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     const Row(children: [
                       Icon(Icons.receipt_long_outlined),
                       SizedBox(width: 10),
-                      Expanded(child: Text('GST configuration', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+                      Expanded(
+                          child: Text('GST configuration',
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold))),
                     ]),
                     const SizedBox(height: 8),
                     Text(
@@ -126,12 +165,19 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     ),
                     const SizedBox(height: 18),
                     DropdownButtonFormField<String>(
-                      value: _registrationType,
-                      decoration: _decoration('GST registration type', Icons.business_outlined),
+                      initialValue: _registrationType,
+                      decoration: _decoration(
+                          'GST registration type', Icons.business_outlined),
                       items: const [
-                        DropdownMenuItem(value: 'regular', child: Text('Regular GST taxpayer')),
-                        DropdownMenuItem(value: 'composition', child: Text('Composition scheme')),
-                        DropdownMenuItem(value: 'unregistered', child: Text('Not GST registered')),
+                        DropdownMenuItem(
+                            value: 'regular',
+                            child: Text('Regular GST taxpayer')),
+                        DropdownMenuItem(
+                            value: 'composition',
+                            child: Text('Composition scheme')),
+                        DropdownMenuItem(
+                            value: 'unregistered',
+                            child: Text('Not GST registered')),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
@@ -143,13 +189,18 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _stateCode,
-                      decoration: _decoration('Business state / UT', Icons.location_on_outlined),
-                      items: _states.entries.map((entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text('${entry.key} — ${entry.value}'),
-                      )).toList(),
-                      onChanged: (value) { if (value != null) setState(() => _stateCode = value); },
+                      initialValue: _stateCode,
+                      decoration: _decoration(
+                          'Business state / UT', Icons.location_on_outlined),
+                      items: _states.entries
+                          .map((entry) => DropdownMenuItem(
+                                value: entry.key,
+                                child: Text('${entry.key} — ${entry.value}'),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _stateCode = value);
+                      },
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -170,21 +221,27 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                         ? 'Allows the cashier to apply GST to a bill.'
                         : 'Disabled for composition and unregistered profiles. Do not use this app to collect GST under these profiles.'),
                     value: _gstEnabled && isRegular,
-                    onChanged: isRegular ? (value) => setState(() => _gstEnabled = value) : null,
+                    onChanged: isRegular
+                        ? (value) => setState(() => _gstEnabled = value)
+                        : null,
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
-                    title: const Text('Catalogue prices include GST by default'),
-                    subtitle: const Text('Cashiers can still change this on an individual bill.'),
+                    title:
+                        const Text('Catalogue prices include GST by default'),
+                    subtitle: const Text(
+                        'Cashiers can still change this on an individual bill.'),
                     value: _gstInclusive,
                     onChanged: (value) => setState(() => _gstInclusive = value),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     title: const Text('Default to interstate sale (IGST)'),
-                    subtitle: const Text('Sets the initial billing choice; verify the place of supply for each transaction.'),
+                    subtitle: const Text(
+                        'Sets the initial billing choice; verify the place of supply for each transaction.'),
                     value: _defaultInterstate,
-                    onChanged: (value) => setState(() => _defaultInterstate = value),
+                    onChanged: (value) =>
+                        setState(() => _defaultInterstate = value),
                   ),
                 ],
               ),
@@ -196,13 +253,17 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Tax defaults', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Tax defaults',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _defaultRate,
                       enabled: _gstEnabled && isRegular,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: _decoration('Fallback GST rate (%)', Icons.percent),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration:
+                          _decoration('Fallback GST rate (%)', Icons.percent),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -212,9 +273,9 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                   ],
                 ),
               ),
-              ),
-              const SizedBox(height: 12),
-              const Card(
+            ),
+            const SizedBox(height: 12),
+            const Card(
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
@@ -226,7 +287,10 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
             FilledButton.icon(
               onPressed: _saving ? null : _save,
               icon: _saving
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.save_outlined),
               label: const Text('Save GST settings'),
             ),

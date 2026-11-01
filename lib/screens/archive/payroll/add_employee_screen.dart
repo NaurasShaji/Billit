@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../../models/employee.dart';
 import '../../../services/boxes.dart';
 
 class AddEmployeeScreen extends StatefulWidget {
-  const AddEmployeeScreen({Key? key}) : super(key: key);
+  const AddEmployeeScreen({super.key});
 
   @override
   State<AddEmployeeScreen> createState() => _AddEmployeeScreenState();
@@ -29,9 +28,10 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
-      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+      backgroundColor:
+          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
         title: const Text('Employee Management'),
         backgroundColor: Colors.blue.shade600,
@@ -51,7 +51,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.onSurface.withOpacity(0.08),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
                       offset: const Offset(0, 4),
                       blurRadius: 16,
                     ),
@@ -97,7 +98,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                     'Manage your team members efficiently',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.6),
                                     ),
                                   ),
                                 ],
@@ -106,49 +108,62 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                           ],
                         ),
                         const SizedBox(height: 28),
-                        
+
                         // Employee Name Input
                         TextFormField(
                           controller: _nameController,
                           decoration: InputDecoration(
                             labelText: 'Employee Name',
                             prefixIcon: const Icon(Icons.person_outline),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
-                          validator: (value) => value!.isEmpty ? 'Please enter employee name' : null,
+                          validator: (value) => value!.isEmpty
+                              ? 'Please enter employee name'
+                              : null,
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Employee Type Dropdown
                         DropdownButtonFormField<String>(
-                          value: _employeeType,
+                          initialValue: _employeeType,
                           decoration: InputDecoration(
                             labelText: 'Employee Type',
                             prefixIcon: const Icon(Icons.work_outline),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'Daily Wage', child: Text('Daily Wage')),
-                            DropdownMenuItem(value: 'Monthly Salary', child: Text('Monthly Salary')),
+                            DropdownMenuItem(
+                                value: 'Daily Wage', child: Text('Daily Wage')),
+                            DropdownMenuItem(
+                                value: 'Monthly Salary',
+                                child: Text('Monthly Salary')),
                           ],
-                          onChanged: (value) => setState(() => _employeeType = value!),
+                          onChanged: (value) =>
+                              setState(() => _employeeType = value!),
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Wage Input
                         TextFormField(
                           controller: _wageController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                             labelText: 'Wage/Salary Amount',
-                            prefixIcon: const Icon(Icons.currency_rupee_outlined),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            prefixIcon:
+                                const Icon(Icons.currency_rupee_outlined),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             hintText: 'Enter amount in ₹',
                           ),
-                          validator: (value) => value == null || value.isEmpty ? 'Please enter wage or salary' : null,
+                          validator: (value) => value == null || value.isEmpty
+                              ? 'Please enter wage or salary'
+                              : null,
                         ),
                         const SizedBox(height: 28),
-                        
+
                         // Add Employee Button
                         SizedBox(
                           width: double.infinity,
@@ -161,12 +176,15 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
                                     ),
                                   )
                                 : const Icon(Icons.person_add),
                             label: Text(
-                              _isLoading ? 'Adding Employee...' : 'Add Employee',
+                              _isLoading
+                                  ? 'Adding Employee...'
+                                  : 'Add Employee',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -175,7 +193,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue.shade600,
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
                               elevation: 0,
                             ),
                           ),
@@ -185,9 +204,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Employee List Section
               Container(
                 decoration: BoxDecoration(
@@ -195,7 +214,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.onSurface.withOpacity(0.08),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
                       offset: const Offset(0, 4),
                       blurRadius: 16,
                     ),
@@ -234,14 +254,15 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                         ],
                       ),
                     ),
-                    
+
                     // List Content
                     ValueListenableBuilder(
-                      valueListenable: Hive.box<Employee>(Boxes.employees).listenable(),
+                      valueListenable:
+                          Hive.box<Employee>(Boxes.employees).listenable(),
                       builder: (context, Box<Employee> box, _) {
                         final employees = box.values.toList()
                           ..sort((a, b) => a.name.compareTo(b.name));
-                        
+
                         if (employees.isEmpty) {
                           return Padding(
                             padding: const EdgeInsets.all(32),
@@ -250,7 +271,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                 Icon(
                                   Icons.person_off_outlined,
                                   size: 48,
-                                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.3),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -258,7 +280,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -266,7 +289,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                   'Add your first employee using the form above',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.5),
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -274,7 +298,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                             ),
                           );
                         }
-                        
+
                         return ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -282,34 +306,41 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                           separatorBuilder: (_, __) => Divider(
                             height: 1,
                             thickness: 0.5,
-                            color: theme.colorScheme.outline.withOpacity(0.2),
+                            color: theme.colorScheme.outline
+                                .withValues(alpha: 0.2),
                             indent: 56,
                             endIndent: 16,
                           ),
                           itemBuilder: (context, index) {
                             final e = employees[index];
                             final isDailyWage = e.type == 'daily';
-                            
+
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
                               child: Row(
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: isDailyWage ? Colors.orange.shade50 : Colors.green.shade50,
+                                      color: isDailyWage
+                                          ? Colors.orange.shade50
+                                          : Colors.green.shade50,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
                                       Icons.person_outline,
-                                      color: isDailyWage ? Colors.orange.shade600 : Colors.green.shade600,
+                                      color: isDailyWage
+                                          ? Colors.orange.shade600
+                                          : Colors.green.shade600,
                                       size: 20,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           e.name,
@@ -322,17 +353,27 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                         Row(
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: isDailyWage ? Colors.orange.shade100 : Colors.green.shade100,
-                                                borderRadius: BorderRadius.circular(10),
+                                                color: isDailyWage
+                                                    ? Colors.orange.shade100
+                                                    : Colors.green.shade100,
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
                                               child: Text(
-                                                isDailyWage ? 'Daily Wage' : 'Monthly Salary',
+                                                isDailyWage
+                                                    ? 'Daily Wage'
+                                                    : 'Monthly Salary',
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w500,
-                                                  color: isDailyWage ? Colors.orange.shade700 : Colors.green.shade700,
+                                                  color: isDailyWage
+                                                      ? Colors.orange.shade700
+                                                      : Colors.green.shade700,
                                                 ),
                                               ),
                                             ),
@@ -342,23 +383,30 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w600,
-                                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                                color: theme
+                                                    .colorScheme.onSurface
+                                                    .withValues(alpha: 0.7),
                                               ),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
                                           children: [
                                             Container(
                                               decoration: BoxDecoration(
                                                 color: Colors.blue.shade50,
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               child: IconButton(
-                                                icon: Icon(Icons.edit_outlined, color: Colors.blue.shade600, size: 20),
-                                                onPressed: () => _editEmployee(e),
+                                                icon: Icon(Icons.edit_outlined,
+                                                    color: Colors.blue.shade600,
+                                                    size: 20),
+                                                onPressed: () =>
+                                                    _editEmployee(e),
                                                 tooltip: 'Edit Employee',
                                               ),
                                             ),
@@ -366,11 +414,15 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                             Container(
                                               decoration: BoxDecoration(
                                                 color: Colors.red.shade50,
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               child: IconButton(
-                                                icon: Icon(Icons.delete_outline, color: Colors.red.shade600, size: 20),
-                                                onPressed: () => _deleteEmployee(e),
+                                                icon: Icon(Icons.delete_outline,
+                                                    color: Colors.red.shade600,
+                                                    size: 20),
+                                                onPressed: () =>
+                                                    _deleteEmployee(e),
                                                 tooltip: 'Delete Employee',
                                               ),
                                             ),
@@ -386,7 +438,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                         );
                       },
                     ),
-                    
+
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -400,12 +452,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
 
   Future<void> _addEmployee() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     // Simulate loading delay for better UX
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     final id = const Uuid().v4();
     final employee = Employee(
       id: id,
@@ -413,10 +465,10 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       type: _employeeType == 'Daily Wage' ? 'daily' : 'monthly',
       wage: double.tryParse(_wageController.text.trim()) ?? 0,
     );
-    
+
     final box = Hive.box<Employee>(Boxes.employees);
     await box.put(employee.id, employee);
-    
+
     // Clear form and reset state
     _nameController.clear();
     _wageController.clear();
@@ -424,7 +476,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       _employeeType = 'Daily Wage';
       _isLoading = false;
     });
-    
+
     // Show success message
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -432,7 +484,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
           content: Text('Employee "${employee.name}" added successfully!'),
           backgroundColor: Colors.green.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -443,7 +496,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(Icons.warning_amber_outlined, color: Colors.red.shade600),
@@ -465,7 +519,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.person_outline, color: Colors.red.shade600, size: 20),
+                    Icon(Icons.person_outline,
+                        color: Colors.red.shade600, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -512,7 +567,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade600,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text('Delete'),
             ),
@@ -524,14 +580,15 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     if (confirmed == true) {
       final box = Hive.box<Employee>(Boxes.employees);
       await box.delete(employee.id);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Employee "${employee.name}" deleted successfully!'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -541,14 +598,15 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   Future<void> _editEmployee(Employee e) async {
     String type = e.type == 'daily' ? 'Daily Wage' : 'Monthly Salary';
     final controller = TextEditingController(text: e.wage.toStringAsFixed(2));
-    
+
     await showDialog<void>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: Row(
                 children: [
                   Icon(Icons.edit, color: Colors.blue.shade600),
@@ -560,25 +618,31 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    value: type,
+                    initialValue: type,
                     decoration: InputDecoration(
                       labelText: 'Employee Type',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.work_outline),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'Daily Wage', child: Text('Daily Wage')),
-                      DropdownMenuItem(value: 'Monthly Salary', child: Text('Monthly Salary')),
+                      DropdownMenuItem(
+                          value: 'Daily Wage', child: Text('Daily Wage')),
+                      DropdownMenuItem(
+                          value: 'Monthly Salary',
+                          child: Text('Monthly Salary')),
                     ],
                     onChanged: (v) => setStateDialog(() => type = v!),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: controller,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       labelText: 'Wage/Salary Amount',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.currency_rupee_outlined),
                       hintText: 'Enter amount in ₹',
                     ),
@@ -597,15 +661,17 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                     if (w != null && w > 0) {
                       e.wage = w;
                       await e.save();
-                      
+
                       if (mounted) {
                         Navigator.of(ctx).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Employee "${e.name}" updated successfully!'),
+                            content: Text(
+                                'Employee "${e.name}" updated successfully!'),
                             backgroundColor: Colors.green.shade600,
                             behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                         );
                       }
@@ -614,7 +680,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade600,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text('Save Changes'),
                 ),

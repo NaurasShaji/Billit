@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class BackupScreen extends StatelessWidget {
-  const BackupScreen({Key? key}) : super(key: key);
+  const BackupScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

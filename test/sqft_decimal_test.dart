@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/models/product.dart';
-import '../lib/models/sale.dart';
-import '../lib/services/cart_service.dart';
+import 'package:floralbill/models/product.dart';
+import 'package:floralbill/models/sale.dart';
+import 'package:floralbill/services/cart_service.dart';
 
 void main() {
   group('SQFT Decimal Quantity Tests', () {
@@ -42,7 +42,8 @@ void main() {
       expect(cartService.items.first.subtotal, 125.0); // 2.5 * 50.0
     });
 
-    test('Should calculate available stock correctly with decimal quantities', () {
+    test('Should calculate available stock correctly with decimal quantities',
+        () {
       final item = SaleItem()
         ..productId = sqftProduct.id
         ..qty = 10.5

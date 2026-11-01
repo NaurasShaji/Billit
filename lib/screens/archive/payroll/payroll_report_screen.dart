@@ -5,13 +5,14 @@ import '../../../models/expense.dart';
 import '../../../services/boxes.dart';
 
 class PayrollReportScreen extends StatefulWidget {
-  const PayrollReportScreen({Key? key}) : super(key: key);
+  const PayrollReportScreen({super.key});
 
   @override
   State<PayrollReportScreen> createState() => _PayrollReportScreenState();
 }
 
-class _PayrollReportScreenState extends State<PayrollReportScreen> with SingleTickerProviderStateMixin {
+class _PayrollReportScreenState extends State<PayrollReportScreen>
+    with SingleTickerProviderStateMixin {
   String _filter = 'all'; // all | salary | other
   late TabController _tab;
 
@@ -67,21 +68,35 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> with SingleTi
           }
 
           final all = expBox.values
-              .where((e) => !e.date.isBefore(rangeStart) && e.date.isBefore(rangeEnd))
+              .where((e) =>
+                  !e.date.isBefore(rangeStart) && e.date.isBefore(rangeEnd))
               .toList()
             ..sort((a, b) => b.date.compareTo(a.date));
-          final salaryMonthly = all.where((e) => e.category == 'Salary-Monthly').fold<double>(0, (s, e) => s + e.amount);
-          final salaryDaily = all.where((e) => e.category == 'Salary-Daily').fold<double>(0, (s, e) => s + e.amount);
-          final otherExpenses = all.where((e) => !(e.category == 'Salary-Monthly' || e.category == 'Salary-Daily'))
+          final salaryMonthly = all
+              .where((e) => e.category == 'Salary-Monthly')
+              .fold<double>(0, (s, e) => s + e.amount);
+          final salaryDaily = all
+              .where((e) => e.category == 'Salary-Daily')
+              .fold<double>(0, (s, e) => s + e.amount);
+          final otherExpenses = all
+              .where((e) => !(e.category == 'Salary-Monthly' ||
+                  e.category == 'Salary-Daily'))
               .fold<double>(0, (s, e) => s + e.amount);
           final totalSalary = salaryMonthly + salaryDaily;
           final netExpenses = totalSalary + otherExpenses;
 
           List<Expense> filtered = all;
           if (_filter == 'salary') {
-            filtered = all.where((e) => e.category == 'Salary-Monthly' || e.category == 'Salary-Daily').toList();
+            filtered = all
+                .where((e) =>
+                    e.category == 'Salary-Monthly' ||
+                    e.category == 'Salary-Daily')
+                .toList();
           } else if (_filter == 'other') {
-            filtered = all.where((e) => !(e.category == 'Salary-Monthly' || e.category == 'Salary-Daily')).toList();
+            filtered = all
+                .where((e) => !(e.category == 'Salary-Monthly' ||
+                    e.category == 'Salary-Daily'))
+                .toList();
           }
 
           return Column(
@@ -96,17 +111,22 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> with SingleTi
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(children: [
-                              const Icon(Icons.payments),
-                              const SizedBox(width: 8),
-                              const Text('Totals', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const Row(children: [
+                              Icon(Icons.payments),
+                              SizedBox(width: 8),
+                              Text('Totals',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.w600)),
                             ]),
                             const SizedBox(height: 8),
-                            _row('Monthly Salaries', currency.format(salaryMonthly)),
+                            _row('Monthly Salaries',
+                                currency.format(salaryMonthly)),
                             _row('Daily Wages', currency.format(salaryDaily)),
-                            _row('Other Expenses', currency.format(otherExpenses)),
+                            _row('Other Expenses',
+                                currency.format(otherExpenses)),
                             const Divider(height: 20),
-                            _row('Net Expense', currency.format(netExpenses), isBold: true),
+                            _row('Net Expense', currency.format(netExpenses),
+                                isBold: true),
                           ],
                         ),
                       ),
@@ -140,16 +160,22 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> with SingleTi
                       )
                     else
                       ...filtered.map((e) => ListTile(
-                        leading: Icon(
-                          e.category == 'Salary-Monthly' || e.category == 'Salary-Daily' ? Icons.wallet : Icons.receipt,
-                        ),
-                        title: Text(e.description.isNotEmpty ? e.description : e.category),
-                        subtitle: Text(dateFmt.format(e.date)),
-                        trailing: Text(
-                          currency.format(e.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      )),
+                            leading: Icon(
+                              e.category == 'Salary-Monthly' ||
+                                      e.category == 'Salary-Daily'
+                                  ? Icons.wallet
+                                  : Icons.receipt,
+                            ),
+                            title: Text(e.description.isNotEmpty
+                                ? e.description
+                                : e.category),
+                            subtitle: Text(dateFmt.format(e.date)),
+                            trailing: Text(
+                              currency.format(e.amount),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          )),
                   ],
                 ),
               ),
@@ -165,8 +191,14 @@ class _PayrollReportScreenState extends State<PayrollReportScreen> with SingleTi
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: TextStyle(fontWeight: isBold ? FontWeight.w600 : FontWeight.normal))),
-          Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.w700 : FontWeight.w500)),
+          Expanded(
+              child: Text(title,
+                  style: TextStyle(
+                      fontWeight:
+                          isBold ? FontWeight.w600 : FontWeight.normal))),
+          Text(value,
+              style: TextStyle(
+                  fontWeight: isBold ? FontWeight.w700 : FontWeight.w500)),
         ],
       ),
     );

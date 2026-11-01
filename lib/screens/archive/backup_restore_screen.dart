@@ -34,7 +34,8 @@ class BackupRestoreTab extends StatefulWidget {
   State<BackupRestoreTab> createState() => _BackupRestoreTabState();
 }
 
-class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProviderStateMixin {
+class _BackupRestoreTabState extends State<BackupRestoreTab>
+    with TickerProviderStateMixin {
   bool _isBackingUp = false;
   bool _isRestoring = false;
   bool _isSigningIn = false;
@@ -57,7 +58,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
       parent: _slideController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _loadAutoBackupPreference();
     _initializeGoogleDrive();
     _slideController.forward();
@@ -92,7 +93,8 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
       final payload = await _exportAllBoxesToJson();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final filename = 'floral_backup_$timestamp.json';
-      await DriveBackupService.instance.uploadJson(filename: filename, json: payload);
+      await DriveBackupService.instance
+          .uploadJson(filename: filename, json: payload);
 
       if (!mounted) return;
       await _refreshDriveBackups();
@@ -126,64 +128,68 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
 
   Future<bool> _showRestoreConfirmationDialog(String fileName) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Restore Data',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('This will replace all current data with:'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.insert_drive_file, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        fileName,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: const Text(
+                'Restore Data',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('This will replace all current data with:'),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.3)),
                     ),
-                  ],
+                    child: Row(
+                      children: [
+                        const Icon(Icons.insert_drive_file,
+                            color: Colors.orange),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            fileName,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '⚠️ This action cannot be undone. Make sure you have a current backup before proceeding.',
+                    style: TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '⚠️ This action cannot be undone. Make sure you have a current backup before proceeding.',
-                style: TextStyle(color: Colors.red, fontSize: 13),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Restore'),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Restore'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   void _showSuccessSnackbar(String message) {
@@ -249,7 +255,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
     final now = DateTime.now();
     DateTime? last;
     if (lastIso != null) {
-      try { last = DateTime.parse(lastIso); } catch (_) {}
+      try {
+        last = DateTime.parse(lastIso);
+      } catch (_) {}
     }
     if (last != null) {
       final dueAt = last.add(Duration(days: _autoBackupDays));
@@ -267,7 +275,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-    
+
     return SlideTransition(
       position: _slideAnimation,
       child: RefreshIndicator(
@@ -283,13 +291,15 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               // Google Drive Section
               _buildGoogleDriveCard(theme, isTablet),
               const SizedBox(height: 24),
-              
+
               // Quick Actions and Auto Backup in responsive layout
               if (isTablet)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 2, child: _buildQuickActionsCard(theme, isTablet)),
+                    Expanded(
+                        flex: 2,
+                        child: _buildQuickActionsCard(theme, isTablet)),
                     const SizedBox(width: 24),
                     Expanded(child: _buildAutoBackupCard(theme)),
                   ],
@@ -299,9 +309,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 const SizedBox(height: 24),
                 _buildAutoBackupCard(theme),
               ],
-              
+
               const SizedBox(height: 24),
-              
+
               // Drive Backups List
               _buildBackupsCard(theme, isTablet),
             ],
@@ -337,7 +347,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
@@ -364,7 +374,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                           'Secure cloud backup for your business data',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
                         ),
                       ],
@@ -390,15 +400,15 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
         width: double.infinity,
         padding: EdgeInsets.all(isTablet ? 20 : 16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
             Icon(
               Icons.info_outline,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -418,7 +428,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                   Text(
                     'Sign in to securely backup your business data to the cloud',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 14,
                     ),
                   ),
@@ -435,9 +445,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
       width: double.infinity,
       padding: EdgeInsets.all(isTablet ? 20 : 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -483,7 +493,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.green.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -499,7 +509,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
 
   Widget _buildAuthButton(ThemeData theme, bool isTablet) {
     final isSignedIn = DriveBackupService.instance.currentUser != null;
-    
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
@@ -508,7 +518,8 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
           backgroundColor: Colors.white,
           foregroundColor: Colors.teal.shade700,
           padding: EdgeInsets.symmetric(vertical: isTablet ? 20 : 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,
           shadowColor: Colors.transparent,
         ),
@@ -518,14 +529,17 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade700),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(Colors.teal.shade700),
                 ),
               )
             : Icon(isSignedIn ? Icons.check_circle : Icons.login, size: 24),
         label: Text(
           _isSigningIn
               ? 'Connecting...'
-              : (isSignedIn ? 'Connected to Google Drive' : 'Connect to Google Drive'),
+              : (isSignedIn
+                  ? 'Connected to Google Drive'
+                  : 'Connect to Google Drive'),
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -549,7 +563,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -568,16 +582,18 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Backup and Restore Buttons
-            isTablet 
+            isTablet
                 ? Row(
                     children: [
                       Expanded(
                         child: _buildActionButton(
                           onPressed: _isBackingUp ? null : _backupNow,
                           icon: _isBackingUp ? null : Icons.cloud_upload,
-                          label: _isBackingUp ? 'Creating Backup...' : 'Create Backup',
+                          label: _isBackingUp
+                              ? 'Creating Backup...'
+                              : 'Create Backup',
                           isLoading: _isBackingUp,
                           color: Colors.blue,
                           height: 100,
@@ -586,11 +602,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildActionButton(
-                          onPressed: _isRestoring || _driveBackups.isEmpty 
-                              ? null 
+                          onPressed: _isRestoring || _driveBackups.isEmpty
+                              ? null
                               : () => _restoreFromDrive(_driveBackups.first),
                           icon: _isRestoring ? null : Icons.restore,
-                          label: _isRestoring ? 'Restoring...' : 'Restore Latest',
+                          label:
+                              _isRestoring ? 'Restoring...' : 'Restore Latest',
                           isLoading: _isRestoring,
                           color: Colors.orange,
                           height: 100,
@@ -603,15 +620,17 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                       _buildActionButton(
                         onPressed: _isBackingUp ? null : _backupNow,
                         icon: _isBackingUp ? null : Icons.cloud_upload,
-                        label: _isBackingUp ? 'Creating Backup...' : 'Create Backup',
+                        label: _isBackingUp
+                            ? 'Creating Backup...'
+                            : 'Create Backup',
                         isLoading: _isBackingUp,
                         color: Colors.blue,
                         height: 60,
                       ),
                       const SizedBox(height: 16),
                       _buildActionButton(
-                        onPressed: _isRestoring || _driveBackups.isEmpty 
-                            ? null 
+                        onPressed: _isRestoring || _driveBackups.isEmpty
+                            ? null
                             : () => _restoreFromDrive(_driveBackups.first),
                         icon: _isRestoring ? null : Icons.restore,
                         label: _isRestoring ? 'Restoring...' : 'Restore Latest',
@@ -641,11 +660,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withValues(alpha: 0.1),
           foregroundColor: color,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          side: BorderSide(color: color.withOpacity(0.2)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          side: BorderSide(color: color.withValues(alpha: 0.2)),
         ),
         child: isLoading
             ? Row(
@@ -701,7 +721,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -735,9 +755,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.05),
+                color: Colors.grey.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
               ),
               child: DropdownButton<int>(
                 value: _autoBackupDays,
@@ -766,13 +786,15 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.05),
+                  color: Colors.green.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                  border:
+                      Border.all(color: Colors.green.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: Colors.green, size: 16),
+                    const Icon(Icons.info_outline,
+                        color: Colors.green, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -808,7 +830,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
+                    color: Colors.purple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -828,7 +850,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: IconButton(
@@ -891,26 +913,32 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
       itemBuilder: (context, index) {
         final backup = _driveBackups[index];
         final isLatest = index == 0;
-        
+
         return AnimatedContainer(
           duration: Duration(milliseconds: 100 + (index * 50)),
           decoration: BoxDecoration(
-            color: isLatest ? Colors.green.withOpacity(0.05) : Colors.grey.shade50,
+            color: isLatest
+                ? Colors.green.withValues(alpha: 0.05)
+                : Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isLatest ? Colors.green.withOpacity(0.3) : Colors.grey.shade200,
+              color: isLatest
+                  ? Colors.green.withValues(alpha: 0.3)
+                  : Colors.grey.shade200,
             ),
           ),
           child: ListTile(
             contentPadding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 20 : 16, 
+              horizontal: isTablet ? 20 : 16,
               vertical: isTablet ? 12 : 8,
             ),
             leading: Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: isLatest ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                color: isLatest
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -922,13 +950,16 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               children: [
                 Expanded(
                   child: Text(
-                    backup.name.replaceAll('floral_backup_', '').replaceAll('.json', ''),
+                    backup.name
+                        .replaceAll('floral_backup_', '')
+                        .replaceAll('.json', ''),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 if (isLatest)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(12),
@@ -947,12 +978,13 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
             subtitle: Text(_buildBackupSubtitle(backup)),
             trailing: Container(
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: IconButton(
                 icon: const Icon(Icons.restore, color: Colors.orange),
-                onPressed: _isRestoring ? null : () => _restoreFromDrive(backup),
+                onPressed:
+                    _isRestoring ? null : () => _restoreFromDrive(backup),
                 tooltip: 'Restore this backup',
               ),
             ),
@@ -1004,7 +1036,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 'userType': u.userType.name,
               })
           .toList(),
-      'appSettings': appSettingsBox.toMap().map((key, value) => MapEntry(key.toString(), value)),
+      'appSettings': appSettingsBox
+          .toMap()
+          .map((key, value) => MapEntry(key.toString(), value)),
       'products': productsBox.values
           .map((p) => {
                 'id': p.id,
@@ -1101,7 +1135,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
         ..id = u['id'] as String
         ..username = u['username'] as String
         ..password = u['password'] as String
-        ..userType = (u['userType'] as String) == 'admin' ? UserType.admin : UserType.worker;
+        ..userType = (u['userType'] as String) == 'admin'
+            ? UserType.admin
+            : UserType.worker;
       await usersBox.put(user.id, user);
     }
 

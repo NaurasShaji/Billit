@@ -52,9 +52,9 @@ class ArchiveCategoryScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withOpacity(0.16)),
+                border: Border.all(color: color.withValues(alpha: 0.16)),
               ),
               child: Row(
                 children: [
@@ -62,7 +62,7 @@ class ArchiveCategoryScreen extends StatelessWidget {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.16),
+                      color: color.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: Icon(icon, color: color.shade800, size: 27),
@@ -83,7 +83,7 @@ class ArchiveCategoryScreen extends StatelessWidget {
                         Text(
                           description,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: scheme.onSurface.withOpacity(0.68),
+                            color: scheme.onSurface.withValues(alpha: 0.68),
                           ),
                         ),
                       ],
@@ -96,7 +96,7 @@ class ArchiveCategoryScreen extends StatelessWidget {
             Text(
               'OPTIONS',
               style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onSurface.withOpacity(0.55),
+                color: scheme.onSurface.withValues(alpha: 0.55),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
               ),
@@ -125,7 +125,7 @@ class ArchiveCategoryScreen extends StatelessWidget {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: color.withOpacity(0.10),
+                                color: color.withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(13),
                               ),
                               child: Icon(
@@ -149,7 +149,8 @@ class ArchiveCategoryScreen extends StatelessWidget {
                                   Text(
                                     item.subtitle,
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: scheme.onSurface.withOpacity(0.62),
+                                      color: scheme.onSurface
+                                          .withValues(alpha: 0.62),
                                     ),
                                   ),
                                 ],
@@ -158,7 +159,7 @@ class ArchiveCategoryScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Icon(
                               Icons.chevron_right_rounded,
-                              color: scheme.onSurface.withOpacity(0.45),
+                              color: scheme.onSurface.withValues(alpha: 0.45),
                             ),
                           ],
                         ),

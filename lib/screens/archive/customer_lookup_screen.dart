@@ -6,8 +6,8 @@ import '../../services/boxes.dart';
 import '../edit_invoice_screen.dart';
 
 class CustomerLookupScreen extends StatefulWidget {
-  const CustomerLookupScreen({Key? key}) : super(key: key);
-  
+  const CustomerLookupScreen({super.key});
+
   @override
   State<CustomerLookupScreen> createState() => _CustomerLookupScreenState();
 }
@@ -19,7 +19,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
   List<Sale> _customerInvoices = [];
   List<Customer> _foundCustomers = [];
   bool _isLoading = false;
-  
+
   // Initialize as nullable and check before use
   AnimationController? _animationController;
   Animation<double>? _fadeAnimation;
@@ -27,13 +27,13 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animation controller first
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     // Then initialize the animation
     _fadeAnimation = Tween<double>(
       begin: 0.0,
@@ -42,7 +42,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
       parent: _animationController!,
       curve: Curves.easeInOut,
     ));
-    
+
     _searchController.addListener(_onSearchChanged);
     _searchCustomers('');
     _animationController!.forward();
@@ -61,7 +61,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
     setState(() {
       _isLoading = true;
     });
-    
+
     // Add a small delay to debounce the search
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
@@ -82,7 +82,8 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
     if (query.isEmpty) {
       for (final sale in allSales) {
         final customerIdentifier = '${sale.customerName}_${sale.customerPhone}';
-        if (!uniqueCustomers.contains(customerIdentifier) && sale.customerName.isNotEmpty) {
+        if (!uniqueCustomers.contains(customerIdentifier) &&
+            sale.customerName.isNotEmpty) {
           uniqueCustomers.add(customerIdentifier);
           customers.add(Customer(
             name: sale.customerName,
@@ -94,7 +95,8 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
       for (final sale in allSales) {
         if (sale.customerName.toLowerCase().contains(query.toLowerCase()) ||
             sale.customerPhone.contains(query)) {
-          final customerIdentifier = '${sale.customerName}_${sale.customerPhone}';
+          final customerIdentifier =
+              '${sale.customerName}_${sale.customerPhone}';
           if (!uniqueCustomers.contains(customerIdentifier)) {
             uniqueCustomers.add(customerIdentifier);
             customers.add(Customer(
@@ -119,7 +121,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
             sale.customerName == customerName &&
             sale.customerPhone == customerPhone)
         .toList();
-    
+
     // Sort invoices by date (newest first)
     invoices.sort((a, b) => b.date.compareTo(a.date));
 
@@ -141,7 +143,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
   Widget build(BuildContext context) {
     final cur = NumberFormat.simpleCurrency(locale: 'en_IN');
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -166,7 +168,8 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
               opacity: _fadeAnimation!,
               child: _buildBody(cur, theme),
             )
-          : _buildBody(cur, theme), // Fallback without animation if not initialized
+          : _buildBody(
+              cur, theme), // Fallback without animation if not initialized
     );
   }
 
@@ -191,7 +194,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -207,7 +210,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                       fontSize: 16,
                     ),
                     prefixIcon: Icon(
-                      Icons.search, 
+                      Icons.search,
                       color: theme.primaryColor,
                       size: 22,
                     ),
@@ -234,11 +237,12 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
                       borderSide: BorderSide(
-                        color: theme.primaryColor.withOpacity(0.3),
+                        color: theme.primaryColor.withValues(alpha: 0.3),
                         width: 2,
                       ),
                     ),
-                    filled: false, // Disabled since container provides background
+                    filled:
+                        false, // Disabled since container provides background
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 16,
@@ -263,7 +267,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -271,7 +275,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                     children: [
                       Expanded(
                         child: Text(
-                          '${_customerInvoices.first.customerName}',
+                          _customerInvoices.first.customerName,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -304,7 +308,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
             ],
           ),
         ),
-        
+
         // Content Area
         Expanded(
           child: Padding(
@@ -323,7 +327,9 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
       );
     }
 
-    if (_foundCustomers.isEmpty && _customerInvoices.isEmpty && _searchController.text.isNotEmpty) {
+    if (_foundCustomers.isEmpty &&
+        _customerInvoices.isEmpty &&
+        _searchController.text.isNotEmpty) {
       return _buildEmptyState();
     }
 
@@ -350,7 +356,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
           ),
           const SizedBox(height: 20),
           Text(
-            _searchController.text.isEmpty 
+            _searchController.text.isEmpty
                 ? 'Start typing to search customers'
                 : 'No customers found',
             style: TextStyle(
@@ -399,7 +405,9 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: Theme.of(context)
+                            .primaryColor
+                            .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: Icon(
@@ -422,8 +430,8 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            customer.phone.isNotEmpty 
-                                ? customer.phone 
+                            customer.phone.isNotEmpty
+                                ? customer.phone
                                 : 'No phone number',
                             style: TextStyle(
                               fontSize: 14,
@@ -467,7 +475,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => EditInvoiceScreen(
-                      sale: invoice, 
+                      sale: invoice,
                       isViewOnly: true,
                     ),
                   ),
@@ -487,7 +495,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.primaryColor.withOpacity(0.1),
+                            color: theme.primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -519,7 +527,8 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          DateFormat('MMM dd, yyyy - hh:mm a').format(invoice.date),
+                          DateFormat('MMM dd, yyyy - hh:mm a')
+                              .format(invoice.date),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -548,6 +557,6 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
 class Customer {
   final String name;
   final String phone;
-  
+
   Customer({required this.name, required this.phone});
 }

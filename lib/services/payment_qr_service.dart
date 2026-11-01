@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -16,9 +15,14 @@ class PaymentQrService {
     final upiId = settings.get('upi_id', defaultValue: '').toString().trim();
     if (upiId.isEmpty) return null;
 
-    final payeeName = settings.get('upi_payee_name', defaultValue: '').toString().trim();
-    final notePrefix = settings.get('upi_note_prefix', defaultValue: 'Invoice').toString().trim();
-    final note = [notePrefix, sale.id].where((part) => part.isNotEmpty).join(' ');
+    final payeeName =
+        settings.get('upi_payee_name', defaultValue: '').toString().trim();
+    final notePrefix = settings
+        .get('upi_note_prefix', defaultValue: 'Invoice')
+        .toString()
+        .trim();
+    final note =
+        [notePrefix, sale.id].where((part) => part.isNotEmpty).join(' ');
     final paymentUri = Uri(
       scheme: 'upi',
       host: 'pay',
