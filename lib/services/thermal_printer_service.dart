@@ -229,6 +229,7 @@ class ThermalPrinterService {
       bytes += generator.text('ID: ${sale.id}');
       bytes += generator.text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())}');
       if (sale.customerName.isNotEmpty) bytes += generator.text('Customer: ${sale.customerName}');
+      if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty) bytes += generator.text('GSTIN: ${sale.customerGstin}');
       if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) bytes += generator.text('Phone: ${sale.customerPhone}');
       if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
       bytes += generator.text('--------------------------------');
@@ -266,7 +267,7 @@ class ThermalPrinterService {
         'Rs.'; // Changed to Rs. to avoid encoding errors
 
     // Replace logo with bold, bigger "Royal Garden" heading
-    bytes += generator.text(
+    if (template['showBusinessName'] == true) bytes += generator.text(
       businessName,
       styles: PosStyles(
           align: PosAlign.center,
@@ -298,86 +299,50 @@ class ThermalPrinterService {
     if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
     bytes += generator.text('');
 
-    // Items header - adjusted for 80mm paper (48 characters width)
-    bytes += generator.text('================================================');
-    bytes += generator.text(
-      'ITEM'.padRight(20) +
-          'PRICE'.padLeft(9) +
-          'QTY'.padLeft(8) +
-          'AMT'.padLeft(11),
-    );
-    bytes += generator.text('================================================');
+    // Build the 80mm table from the selected template columns.
+    final configuredColumns = (template['columns'] as List).cast<String>();
+    const columnLabels = {
+      'serial':'#', 'product':'ITEM', 'hsn':'HSN', 'quantity':'QTY',
+      'unit':'UNIT', 'rate':'RATE', 'discount':'DISC', 'gst_rate':'GST%',
+      'tax':'TAX', 'amount':'AMOUNT',
+    };
+    final columnWidth = configuredColumns.isEmpty ? 48 : (48 ~/ configuredColumns.length);
+    final widths = <int>[
+      for (var i = 0; i < configuredColumns.length; i++)
+        i == configuredColumns.length - 1 ? 48 - columnWidth * (configuredColumns.length - 1) : columnWidth,
+    ];
+    String fitCell(String value, int width, {bool left = false}) {
+      final text = value.length > width ? value.substring(0, width) : value;
+      return left ? text.padRight(width) : text.padLeft(width);
+    }
+    if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
+    bytes += generator.text([
+      for (var i = 0; i < configuredColumns.length; i++)
+        fitCell(columnLabels[configuredColumns[i]] ?? configuredColumns[i], widths[i], left: configuredColumns[i] == 'product'),
+    ].join());
+    if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
 
-    // Print items with better formatting for 80mm paper
     for (var itemIndex = 0; itemIndex < sale.items.length; itemIndex++) {
       final item = sale.items[itemIndex];
       final product = Hive.box<Product>(Boxes.products).get(item.productId);
-      final productName = product?.name ?? 'Unknown Product';
-      final numberedName = '${itemIndex + 1}. $productName';
-      final qty =
-          item.qty.toStringAsFixed(product?.unit == UnitType.kg ? 1 : 0);
-      final unitLabel = item.unitLabel.isNotEmpty
-          ? item.unitLabel
-          : (product?.unit.name ?? '');
-
-      String priceStr = _formatRupees(item.sellingPrice);
-      String qtyStr = '$qty ${unitLabel.isNotEmpty ? unitLabel : ''}'.trim();
-      String amtStr = _formatRupees(item.subtotal);
-
-      // For 80mm paper, we have about 48 characters width
-      // Product name: 20 chars (wrapped at 15), Price: 9 chars, Qty: 8 chars, Amount: 11 chars
-      if (numberedName.length <= 20) {
-        // Short name - fits on one line
-        String itemLine = numberedName.padRight(20) +
-            priceStr.padLeft(9) +
-            qtyStr.padLeft(8) +
-            amtStr.padLeft(11);
-        bytes += generator.text(itemLine);
-      } else {
-        // Long name - split intelligently at word boundaries
-        List<String> words = productName.split(' ');
-        String firstLine = '${itemIndex + 1}. ';
-        String secondLine = '';
-
-        // Build first line with as many words as possible (20-character item column)
-        for (String word in words) {
-          String candidate = firstLine == '${itemIndex + 1}. '
-              ? '$firstLine$word'
-              : '$firstLine $word';
-          if (candidate.length <= 20) {
-            firstLine = candidate;
-          } else {
-            // Add remaining words to second line
-            secondLine += (secondLine.isEmpty ? '' : ' ') + word;
-          }
-        }
-
-        // If the first word is longer than the available item column, split it.
-        if (firstLine == '${itemIndex + 1}. ') {
-          firstLine = '${itemIndex + 1}. ${productName.substring(0, 17)}';
-          secondLine = productName.substring(17);
-        }
-
-        // Print first line
-        bytes += generator.text(firstLine);
-
-        // Print second line with price, qty and amount
-        // If second line is still too long, truncate to 20 to fit column
-        if (secondLine.length > 20) {
-          secondLine = secondLine.substring(0, 20);
-        }
-
-        String qtyAmtLine = secondLine.padRight(20) +
-            priceStr.padLeft(9) +
-            qtyStr.padLeft(8) +
-            amtStr.padLeft(11);
-        bytes += generator.text(qtyAmtLine);
-      }
-
-      // Add separator line between items (but not after the last one)
-      if (itemIndex < sale.items.length - 1) {
-        bytes +=
-            generator.text('------------------------------------------------');
+      final values = <String, String>{
+        'serial': '${itemIndex + 1}',
+        'product': product?.name ?? 'Unknown Product',
+        'hsn': item.hsnCode.isNotEmpty ? item.hsnCode : (product?.hsnCode ?? '-'),
+        'quantity': item.qty.toString(),
+        'unit': item.unitLabel,
+        'rate': _formatRupees(item.sellingPrice),
+        'discount': '-',
+        'gst_rate': sale.gstEnabled ? '${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
+        'tax': sale.gstEnabled ? _formatRupees(item.cgstAmount + item.sgstAmount + item.igstAmount) : '-',
+        'amount': _formatRupees(item.subtotal),
+      };
+      bytes += generator.text([
+        for (var i = 0; i < configuredColumns.length; i++)
+          fitCell(values[configuredColumns[i]] ?? '', widths[i], left: configuredColumns[i] == 'product'),
+      ].join());
+      if (template['showTableBorders'] == true && itemIndex < sale.items.length - 1) {
+        bytes += generator.text('-' * 48);
       }
     }
 
@@ -433,6 +398,8 @@ class ThermalPrinterService {
 
     // Footer
     if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: PosAlign.center));
+    final terms = template['termsText']?.toString() ?? '';
+    if (terms.isNotEmpty) bytes += generator.text(terms, styles: PosStyles(align: PosAlign.center));
     bytes += generator.text('');
     // bytes += generator.text('      Royal Garden',
     //     styles: PosStyles(align: PosAlign.center));
