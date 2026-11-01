@@ -104,29 +104,34 @@ class ThermalPreviewDialog extends StatelessWidget {
       if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) _info('Phone:', sale.customerPhone),
       if (template['showPaymentMethod'] == true) _info('Payment:', sale.payment.name.toUpperCase()),
       const SizedBox(height: 6),
-      if (borders) const Divider(color: Colors.black, height: 1),
-      _tableHeader(columns, customLabels),
-      if (borders) const Divider(color: Colors.black, height: 1),
-      ...sale.items.asMap().entries.map((entry) {
+      if (is58mm) ...sale.items.asMap().entries.map((entry) {
         final item = entry.value;
         final product = Hive.box<Product>(Boxes.products).get(item.productId);
-        final values = <String, String>{
-          'serial': '${entry.key + 1}',
-          'product': product?.name ?? 'Unknown Product',
-          'hsn': item.hsnCode.isNotEmpty ? item.hsnCode : (product?.hsnCode ?? '-'),
-          'quantity': item.qty.toString(),
-          'unit': item.unitLabel,
-          'rate': _money(item.sellingPrice),
-          'discount': '-',
-          'gst_rate': sale.gstEnabled ? '${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
-          'tax': sale.gstEnabled ? _money(item.cgstAmount + item.sgstAmount + item.igstAmount) : '-',
-          'amount': _money(item.subtotal),
-        };
-        return Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: Column(children: [
-          _tableRow(columns, (id) => values[id] ?? ''),
-          if (borders) const Divider(color: Colors.black26, height: 7),
-        ]));
+        final values = _itemValues(entry.key, item, product);
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            if (columns.contains('product')) Text(values['product'] ?? ''),
+            for (final id in columns.where((id) => id != 'product'))
+              Text('${customLabels[id]?.toString().trim().isNotEmpty == true ? customLabels[id] : (_labels[id] ?? id)}: ${values[id] ?? ''}'),
+            if (borders) const Divider(color: Colors.black26, height: 6),
+          ]),
+        );
       }),
+      if (!is58mm) ...[
+        if (borders) const Divider(color: Colors.black, height: 1),
+        _build80Header(columns, customLabels),
+        if (borders) const Divider(color: Colors.black, height: 1),
+        ...sale.items.asMap().entries.map((entry) {
+          final item = entry.value;
+          final product = Hive.box<Product>(Boxes.products).get(item.productId);
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(_format80Row(columns, _itemValues(entry.key, item, product)),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 8.5)),
+          );
+        }),
+      ],
       if (borders) const Divider(color: Colors.black, height: 1),
       const SizedBox(height: 5),
       _total('Subtotal:', _money(sale.items.fold<double>(0, (sum, item) => sum + item.subtotal))),
@@ -149,6 +154,60 @@ class ThermalPreviewDialog extends StatelessWidget {
       return Padding(padding: const EdgeInsets.only(bottom: 6),
         child: Center(child: Image.memory(base64Decode(value), height: 58, fit: BoxFit.contain)));
     } catch (_) { return const SizedBox.shrink(); }
+  }
+
+  Map<String, String> _itemValues(int index, SaleItem item, Product? product) => {
+    'serial': '${index + 1}',
+    'product': product?.name ?? 'Unknown Product',
+    'hsn': item.hsnCode.isNotEmpty ? item.hsnCode : (product?.hsnCode ?? '-'),
+    'quantity': item.qty.toString(),
+    'unit': item.unitLabel,
+    'rate': _money(item.sellingPrice),
+    'discount': '-',
+    'gst_rate': sale.gstEnabled ? '${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
+    'tax': sale.gstEnabled ? _money(item.cgstAmount + item.sgstAmount + item.igstAmount) : '-',
+    'amount': _money(item.subtotal),
+  };
+
+  Widget _build80Header(List<String> columns, Map<String, dynamic> custom) {
+    const defaults = <String, String>{
+      'serial': '#', 'product': 'ITEM', 'hsn': 'HSN', 'quantity': 'QTY',
+      'unit': 'UNIT', 'rate': 'RATE', 'discount': 'DISC', 'gst_rate': 'GST%',
+      'tax': 'TAX', 'amount': 'AMOUNT',
+    };
+    final labels = columns.map((id) {
+      final value = custom[id]?.toString().trim() ?? '';
+      return value.isNotEmpty ? value : (defaults[id] ?? id);
+    }).toList();
+    return Text(_format80Cells(columns, labels),
+      style: const TextStyle(fontFamily: 'monospace', fontSize: 8.5, fontWeight: FontWeight.bold));
+  }
+
+  String _format80Row(List<String> columns, Map<String, String> values) =>
+      _format80Cells(columns, columns.map((id) => values[id] ?? '').toList());
+
+  String _format80Cells(List<String> columns, List<String> values) {
+    const preferred = <String, int>{
+      'serial': 3, 'product': 20, 'hsn': 7, 'quantity': 5, 'unit': 4,
+      'rate': 9, 'discount': 7, 'gst_rate': 5, 'tax': 8, 'amount': 10,
+    };
+    final widths = columns.map((id) => preferred[id] ?? 6).toList();
+    final total = widths.fold<int>(0, (sum, width) => sum + width);
+    if (total > 48) {
+      for (var i = 0; i < widths.length; i++) {
+        widths[i] = (widths[i] * 48 / total).floor().clamp(3, 48);
+      }
+    } else if (widths.isNotEmpty) {
+      final productIndex = columns.indexOf('product');
+      widths[productIndex >= 0 ? productIndex : widths.length - 1] +=
+          48 - widths.fold<int>(0, (sum, width) => sum + width);
+    }
+    return List.generate(columns.length, (i) {
+      final value = values[i];
+      final width = widths[i];
+      final fitted = value.length > width ? value.substring(0, width) : value;
+      return columns[i] == 'product' ? fitted.padRight(width) : fitted.padLeft(width);
+    }).join();
   }
 
   Widget _tableHeader(List<String> columns, Map<String, dynamic> custom) =>
