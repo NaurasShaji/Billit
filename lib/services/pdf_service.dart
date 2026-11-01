@@ -110,7 +110,7 @@ class PdfService {
     final productsBox = Hive.box<Product>(Boxes.products);
     final configuredColumns = (template['columns'] as List).cast<String>();
     final itemRows = <List<String>>[
-      configuredColumns.map((id) => _invoiceColumnLabel(id)).toList(),
+      configuredColumns.map((id) => ((template['columnLabels'] as Map?)?[id]?.toString().trim().isNotEmpty == true ? (template['columnLabels'] as Map)[id].toString() : _invoiceColumnLabel(id))).toList(),
       for (var i = 0; i < sale.items.length; i++)
         [
           for (final id in configuredColumns)
