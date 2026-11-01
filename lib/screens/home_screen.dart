@@ -193,14 +193,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               
               // Subtitle
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Frequently Asked Questions',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
