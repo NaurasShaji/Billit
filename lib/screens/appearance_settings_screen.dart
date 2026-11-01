@@ -74,26 +74,22 @@ class AppearanceSettingsScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color, color.withOpacity(0.72)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(radius + 4),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.palette_outlined, color: Colors.white, size: 30),
+                        Icon(Icons.palette_outlined, color: Theme.of(context).colorScheme.onPrimaryContainer, size: 30),
                         const SizedBox(height: 12),
                         const Text(
                           'Make Billit yours',
-                          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           '${_paletteNames[selectedTheme] ?? 'Garden Green'} · ${themeMode[0].toUpperCase()}${themeMode.substring(1)} mode',
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
                         ),
                       ],
                     ),
@@ -120,12 +116,12 @@ class AppearanceSettingsScreen extends StatelessWidget {
                                   color: entry.value,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
+                                    color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                                     width: selected ? 3 : 0,
                                   ),
                                 ),
                                 child: selected
-                                    ? const Icon(Icons.check, color: Colors.white, size: 21)
+                                    ? Icon(Icons.check, color: entry.value.computeLuminance() > 0.55 ? Colors.black87 : Colors.white, size: 21)
                                     : null,
                               ),
                             ),
@@ -151,7 +147,6 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
                   const SizedBox(height: 18),
                   _sectionTitle(context, 'Navigation icon skin', 'Choose a neutral icon family for Overview, Billing, Inventory and Reports.'),
                   Card(
