@@ -49,6 +49,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
         final lowStockThreshold = (box.get('low_stock_threshold', defaultValue: 10) as num).toDouble();
         final navigationStyle = box.get('navigation_style', defaultValue: 'classic').toString();
         final navigationIconStyle = box.get('navigation_icon_style', defaultValue: 'outlined').toString();
+        final surfaceStyle = box.get('surface_style', defaultValue: 'outlined').toString();
+        final appBarStyle = box.get('app_bar_style', defaultValue: 'surface').toString();
+        final fontStyle = box.get('font_style', defaultValue: 'system').toString();
         final navigationIconOverridesRaw = box.get('navigation_icon_overrides', defaultValue: <String, String>{});
         final navigationIconOverrides = navigationIconOverridesRaw is Map
             ? Map<String, String>.from(navigationIconOverridesRaw)
@@ -253,6 +256,74 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  _sectionTitle(context, 'App bar appearance', 'Choose between a subtle surface header or a strong brand-colour header.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'surface', icon: Icon(Icons.view_agenda_outlined), label: Text('Surface')),
+                          ButtonSegment(value: 'brand', icon: Icon(Icons.color_lens_outlined), label: Text('Brand')),
+                        ],
+                        selected: {appBarStyle},
+                        onSelectionChanged: (values) => _save('app_bar_style', values.first),
+                        showSelectedIcon: false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _sectionTitle(context, 'Card and panel style', 'Control the depth and borders used across the interface.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          RadioListTile<String>(
+                            value: 'outlined',
+                            groupValue: surfaceStyle,
+                            title: const Text('Outlined'),
+                            subtitle: const Text('Defined panels with subtle borders.'),
+                            secondary: const Icon(Icons.crop_square),
+                            onChanged: (v) { if (v != null) _save('surface_style', v); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'elevated',
+                            groupValue: surfaceStyle,
+                            title: const Text('Elevated'),
+                            subtitle: const Text('Soft shadows and raised cards.'),
+                            secondary: const Icon(Icons.layers_outlined),
+                            onChanged: (v) { if (v != null) _save('surface_style', v); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'flat',
+                            groupValue: surfaceStyle,
+                            title: const Text('Flat'),
+                            subtitle: const Text('Minimal surfaces without shadows or borders.'),
+                            secondary: const Icon(Icons.rectangle_outlined),
+                            onChanged: (v) { if (v != null) _save('surface_style', v); },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _sectionTitle(context, 'Typography', 'Choose the overall typeface style used throughout the app.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'system', label: Text('System')),
+                          ButtonSegment(value: 'serif', label: Text('Serif')),
+                          ButtonSegment(value: 'monospace', label: Text('Mono')),
+                        ],
+                        selected: {fontStyle},
+                        onSelectionChanged: (values) => _save('font_style', values.first),
+                        showSelectedIcon: false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   _sectionTitle(context, 'Display density', 'Choose a more compact view or extra breathing room.'),
                   Card(
                     child: Column(
@@ -405,6 +476,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('navigation_style', 'classic');
                       await _save('navigation_icon_style', 'outlined');
                       await _save('navigation_icon_overrides', <String, String>{});
+                      await _save('surface_style', 'outlined');
+                      await _save('app_bar_style', 'surface');
+                      await _save('font_style', 'system');
                       await _save('text_scale', 1.0);
                       await _save('corner_radius', 16.0);
                       await _save('low_stock_threshold', 10);
