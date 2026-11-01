@@ -29,6 +29,7 @@ class PdfService {
     final isThermal = paperSize == '58mm' || paperSize == '80mm';
     final effectiveThermalSize = paperSize == '58mm' ? ThermalSize.mm58 : ThermalSize.mm80;
     final marginMm = (template['marginMm'] as num).toDouble();
+    final marginPoints = marginMm * 72 / 25.4;
     final qrImage = await _loadPaymentQrImage(sale);
 
     if (fullPage && !isThermal) {
@@ -54,10 +55,10 @@ class PdfService {
           pageFormat: PdfPageFormat(
             pageWidth,
             double.infinity,
-            marginLeft: 4,
-            marginRight: 4,
-            marginTop: 6,
-            marginBottom: 6,
+            marginLeft: marginPoints,
+            marginRight: marginPoints,
+            marginTop: marginPoints,
+            marginBottom: marginPoints,
           ),
           build: (context) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -103,6 +104,7 @@ class PdfService {
         : (subtotal - sale.discount).clamp(0.0, double.infinity).toDouble();
     final taxTotal = sale.cgstAmount + sale.sgstAmount + sale.igstAmount;
     final displayGst = includeGST && sale.gstEnabled;
+    final templateFontSize = (template['fontSize'] as num).toDouble();
     final configuredTitle = template['headerTitle']?.toString().trim() ?? '';
     final invoiceTitle = configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && displayGst) ? (displayGst ? 'TAX INVOICE' : 'INVOICE') : configuredTitle;
     final productsBox = Hive.box<Product>(Boxes.products);
@@ -136,13 +138,13 @@ class PdfService {
           children: [
             pw.Expanded(
               child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                crossAxisAlignment: template['headerAlignment'] == 'right' ? pw.CrossAxisAlignment.end : template['headerAlignment'] == 'center' ? pw.CrossAxisAlignment.center : pw.CrossAxisAlignment.start,
                 children: [
                   if (template['showLogo'] == true && businessLogo != null) ...[
                     pw.Container(width: 110, height: 60, alignment: pw.Alignment.centerLeft, child: pw.Image(businessLogo, fit: pw.BoxFit.contain)),
                     pw.SizedBox(height: 6),
                   ],
-                  if (template['showBusinessName'] == true) pw.Text(businessName, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                  if (template['showBusinessName'] == true) pw.Text(businessName, style: pw.TextStyle(fontSize: templateFontSize * 2.2, fontWeight: pw.FontWeight.bold)),
                   if (template['showAddress'] == true && businessAddress.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 4), child: pw.Text(businessAddress)),
                   if (template['showPhone'] == true && businessPhone.isNotEmpty) pw.Text('Phone: $businessPhone'),
                   if (template['showEmail'] == true && businessEmail.isNotEmpty) pw.Text('Email: $businessEmail'),
@@ -160,7 +162,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(invoiceTitle, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(invoiceTitle, style: pw.TextStyle(fontSize: templateFontSize * 2, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 8),
                   pw.Text('Invoice: ${sale.id}'),
                   pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
@@ -196,9 +198,9 @@ class PdfService {
       pw.Table.fromTextArray(
         headers: itemRows.first,
         data: itemRows.skip(1).toList(),
-        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
+        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: templateFontSize),
         headerDecoration: pw.BoxDecoration(color: accent),
-        cellStyle: const pw.TextStyle(fontSize: 9),
+        cellStyle: pw.TextStyle(fontSize: templateFontSize),
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 8),
         columnWidths: {
           for (var i = 0; i < configuredColumns.length; i++)
