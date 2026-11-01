@@ -61,6 +61,18 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate temporary CI signing key
+        run: |
+          keytool -genkeypair -v \
+            -keystore android/app/legacy_debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android CI,O=Billit,C=IN"
+
       - name: Build release APK
         run: flutter build apk --release
 
