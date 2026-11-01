@@ -217,6 +217,7 @@ class ThermalPrinterService {
     final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
     final businessAddress = settings.get('business_address', defaultValue: '').toString();
     final businessPhone = settings.get('business_phone', defaultValue: '').toString();
+    final businessEmail = settings.get('business_email', defaultValue: '').toString();
     final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
     final footerText = template['footerText']?.toString() ?? 'Thank you for your business.';
 
@@ -224,6 +225,7 @@ class ThermalPrinterService {
       if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2));
       if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: PosAlign.center));
       if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text(businessPhone, styles: PosStyles(align: PosAlign.center));
+      if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: PosAlign.center));
       if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
       bytes += generator.text(template['headerTitle']?.toString() ?? 'INVOICE', styles: PosStyles(align: PosAlign.center, bold: true));
       bytes += generator.text('ID: ${sale.id}');
@@ -280,6 +282,7 @@ class ThermalPrinterService {
     // Business contact info - centered
     if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: PosAlign.center));
     if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text('ph: $businessPhone', styles: PosStyles(align: PosAlign.center));
+    if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: PosAlign.center));
     if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
     bytes += generator.text(template['headerTitle']?.toString() ?? 'INVOICE',
         styles: PosStyles(align: PosAlign.center, bold: true));
@@ -293,6 +296,7 @@ class ThermalPrinterService {
     if (sale.customerName.isNotEmpty) {
       bytes += generator.text('Customer: ${sale.customerName}');
     }
+    if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty) bytes += generator.text('Customer GSTIN: ${sale.customerGstin}');
     if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) {
       bytes += generator.text('Phone: ${sale.customerPhone}');
     }
@@ -388,7 +392,7 @@ class ThermalPrinterService {
 
     // Generate a bill-specific UPI QR when a UPI ID is configured;
     // otherwise use the optional static QR fallback.
-    try {
+    if (template['showQr'] == true) try {
       final qrBytes = await PaymentQrService.generateForSale(sale) ??
           await PaymentQrService.loadStaticQrFallback();
       if (qrBytes != null) {
