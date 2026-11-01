@@ -49,15 +49,56 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
   }
 
 
-  Future<void> _shareSalesStatementPdf(String filename, List<List<Object?>> rows) async {
+
+  Future<void> _exportSalesStatementPdf() async {
     if (_exportingPdf) return;
+    final startDate = _dateOnly(_statementStart);
+    final endDate = _dateOnly(_singleDayStatement ? _statementStart : _statementEnd);
+    final endExclusive = endDate.add(const Duration(days: 1));
+    final sales = Hive.box<Sale>(Boxes.sales).values.where((sale) {
+      final date = sale.date.toLocal();
+      return !date.isBefore(startDate) && date.isBefore(endExclusive);
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+
+    if (sales.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No sales found for the selected date period.')),
+      );
+      return;
+    }
+
     setState(() => _exportingPdf = true);
     try {
+      final totalSales = sales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+      final totalDiscount = sales.fold<double>(0, (sum, sale) => sum + sale.discount);
+      final totalTax = sales.fold<double>(
+        0, (sum, sale) => sum + sale.cgstAmount + sale.sgstAmount + sale.igstAmount,
+      );
+      final rows = <List<String>>[
+        ['Period', '${DateFormat('dd MMM yyyy').format(startDate)} - ${DateFormat('dd MMM yyyy').format(endDate)}'],
+        ['Total Invoices', sales.length.toString()],
+        ['Total Sales', totalSales.toStringAsFixed(2)],
+        ['Total Discounts', totalDiscount.toStringAsFixed(2)],
+        ['Total GST', totalTax.toStringAsFixed(2)],
+        ['Invoice No', 'Date & Time', 'Customer', 'Phone', 'Payment', 'Subtotal', 'Discount', 'Taxable', 'CGST', 'SGST', 'IGST', 'Total GST', 'Invoice Total'],
+        for (final sale in sales)
+          [
+            sale.id,
+            DateFormat('yyyy-MM-dd HH:mm:ss').format(sale.date.toLocal()),
+            sale.customerName,
+            sale.customerPhone,
+            sale.payment.name.toUpperCase(),
+            sale.items.fold<double>(0, (sum, item) => sum + item.subtotal).toStringAsFixed(2),
+            sale.discount.toStringAsFixed(2),
+            (sale.gstEnabled ? sale.taxableAmount : sale.items.fold<double>(0, (sum, item) => sum + item.subtotal) - sale.discount).toStringAsFixed(2),
+            sale.cgstAmount.toStringAsFixed(2),
+            sale.sgstAmount.toStringAsFixed(2),
+            sale.igstAmount.toStringAsFixed(2),
+            (sale.cgstAmount + sale.sgstAmount + sale.igstAmount).toStringAsFixed(2),
+            sale.totalAmount.toStringAsFixed(2),
+          ],
+      ];
       final document = pw.Document();
-      final printableRows = rows
-          .where((row) => row.isNotEmpty)
-          .map((row) => row.map((cell) => cell?.toString() ?? '').toList())
-          .toList();
       document.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4.landscape,
@@ -67,19 +108,20 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
                 style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 12),
             pw.TableHelper.fromTextArray(
-              data: printableRows,
+              data: rows,
               headerCount: 0,
               cellStyle: const pw.TextStyle(fontSize: 6.5),
-              headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
               cellPadding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 4),
               border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.4),
             ),
           ],
         ),
       );
-      final bytes = await document.save();
+      final filename = _singleDayStatement
+          ? 'sales_statement_${DateFormat('yyyyMMdd').format(startDate)}.pdf'
+          : 'sales_statement_${DateFormat('yyyyMMdd').format(startDate)}_to_${DateFormat('yyyyMMdd').format(endDate)}.pdf';
       await Share.shareXFiles(
-        [XFile.fromData(bytes, mimeType: 'application/pdf', name: filename)],
+        [XFile.fromData(await document.save(), mimeType: 'application/pdf', name: filename)],
         subject: 'Sales statement',
         text: 'Floral Bill sales statement',
       );
