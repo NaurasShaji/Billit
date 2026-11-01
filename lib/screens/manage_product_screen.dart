@@ -263,7 +263,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.55)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -275,12 +275,12 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                     size: 20,
                   ),
                 ),
@@ -308,10 +308,10 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     final isEditing = widget.product != null;
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
         title: Text(isEditing ? 'Edit ${widget.product!.name}' : 'Add Product'),
         elevation: 0,
         centerTitle: false,
@@ -490,20 +490,20 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _profitMargin > 0 
-                          ? Colors.green.withOpacity(0.1) 
-                          : Colors.orange.withOpacity(0.1),
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.tertiaryContainer,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _profitMargin > 0 
-                            ? Colors.green.withOpacity(0.2) 
-                            : Colors.orange.withOpacity(0.2),
+                            ? Theme.of(context).colorScheme.primary.withOpacity(0.25)
+                            : Theme.of(context).colorScheme.tertiary.withOpacity(0.25),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             _profitMargin > 0 ? Icons.trending_up : Icons.trending_down,
-                            color: _profitMargin > 0 ? Colors.green : Colors.orange,
+                            color: _profitMargin > 0 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -574,8 +574,8 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _isLoading ? null : _saveProduct,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -610,8 +610,8 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                   OutlinedButton.icon(
                     onPressed: _isLoading ? null : () => _showDeleteConfirmation(context),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
+                      foregroundColor: theme.colorScheme.error,
+                      side: BorderSide(color: theme.colorScheme.error),
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
