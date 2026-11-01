@@ -52,6 +52,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
         final surfaceStyle = box.get('surface_style', defaultValue: 'outlined').toString();
         final appBarStyle = box.get('app_bar_style', defaultValue: 'surface').toString();
         final fontStyle = box.get('font_style', defaultValue: 'system').toString();
+        final backgroundStyle = box.get('background_style', defaultValue: 'tinted').toString();
+        final inputStyle = box.get('input_style', defaultValue: 'filled').toString();
+        final buttonStyle = box.get('button_style', defaultValue: 'filled').toString();
         final navigationIconOverridesRaw = box.get('navigation_icon_overrides', defaultValue: <String, String>{});
         final navigationIconOverrides = navigationIconOverridesRaw is Map
             ? Map<String, String>.from(navigationIconOverridesRaw)
@@ -324,6 +327,73 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  _sectionTitle(context, 'Page background', 'Choose the overall canvas behind cards and content.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'tinted', icon: Icon(Icons.gradient), label: Text('Tinted')),
+                          ButtonSegment(value: 'plain', icon: Icon(Icons.crop_square), label: Text('Plain')),
+                        ],
+                        selected: {backgroundStyle},
+                        onSelectionChanged: (values) => _save('background_style', values.first),
+                        showSelectedIcon: false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _sectionTitle(context, 'Input field appearance', 'Choose filled fields or a cleaner transparent outlined style.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'filled', icon: Icon(Icons.format_color_fill), label: Text('Filled')),
+                          ButtonSegment(value: 'outlined', icon: Icon(Icons.border_outer), label: Text('Outlined')),
+                        ],
+                        selected: {inputStyle},
+                        onSelectionChanged: (values) => _save('input_style', values.first),
+                        showSelectedIcon: false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _sectionTitle(context, 'Button appearance', 'Set the emphasis used by primary action buttons.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          RadioListTile<String>(
+                            value: 'filled',
+                            groupValue: buttonStyle,
+                            title: const Text('Filled'),
+                            subtitle: const Text('Strong accent-colour buttons.'),
+                            secondary: const Icon(Icons.smart_button),
+                            onChanged: (v) { if (v != null) _save('button_style', v); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'tonal',
+                            groupValue: buttonStyle,
+                            title: const Text('Tonal'),
+                            subtitle: const Text('Softer colour-filled buttons.'),
+                            secondary: const Icon(Icons.rectangle_rounded),
+                            onChanged: (v) { if (v != null) _save('button_style', v); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'minimal',
+                            groupValue: buttonStyle,
+                            title: const Text('Minimal'),
+                            subtitle: const Text('Low-emphasis buttons with no elevation.'),
+                            secondary: const Icon(Icons.border_clear),
+                            onChanged: (v) { if (v != null) _save('button_style', v); },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   _sectionTitle(context, 'Display density', 'Choose a more compact view or extra breathing room.'),
                   Card(
                     child: Column(
@@ -479,6 +549,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('surface_style', 'outlined');
                       await _save('app_bar_style', 'surface');
                       await _save('font_style', 'system');
+                      await _save('background_style', 'tinted');
+                      await _save('input_style', 'filled');
+                      await _save('button_style', 'filled');
                       await _save('text_scale', 1.0);
                       await _save('corner_radius', 16.0);
                       await _save('low_stock_threshold', 10);
