@@ -192,17 +192,21 @@ class WindowsGoogleDriveAuth {
   Future<void> _loadAccountEmail() async {
     final token = _accessToken;
     if (token == null) return;
-    final response = await http.get(
-      Uri.https('www.googleapis.com', '/oauth2/v2/userinfo'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == HttpStatus.ok) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final email = data['email'] as String?;
-      if (email != null && email.isNotEmpty) {
-        _account = WindowsDriveAccount(email);
-        await _storage.write(key: _emailKey, value: email);
+    try {
+      final response = await http.get(
+        Uri.https('www.googleapis.com', '/oauth2/v2/userinfo'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == HttpStatus.ok) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final email = data['email'] as String?;
+        if (email != null && email.isNotEmpty) {
+          _account = WindowsDriveAccount(email);
+          await _storage.write(key: _emailKey, value: email);
+        }
       }
+    } catch (_) {
+      // Profile lookup is supplementary; a valid Drive token remains usable.
     }
     if (_account == null) {
       final savedEmail = await _storage.read(key: _emailKey);
