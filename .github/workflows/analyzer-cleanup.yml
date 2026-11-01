@@ -1,0 +1,64 @@
+name: Analyzer cleanup
+
+on:
+  push:
+    branches:
+      - chore/analyzer-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  analyzer-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cleanup branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/analyzer-cleanup
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Apply supported Dart fixes
+        run: |
+          dart fix --apply
+          dart format lib test
+
+      - name: Commit automatic fixes to cleanup branch
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib test
+            git commit -m "chore: apply automatic Dart analyzer fixes"
+            git push origin chore/analyzer-cleanup
+          else
+            echo "No automatic Dart fixes were applicable."
+          fi
+
+      - name: Run analyzer and save complete report
+        continue-on-error: true
+        run: |
+          flutter analyze --no-pub > analyzer-report.txt 2>&1 || true
+          cat analyzer-report.txt
+
+      - name: Upload analyzer report
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyzer-cleanup-report
+          path: analyzer-report.txt
+          if-no-files-found: error
