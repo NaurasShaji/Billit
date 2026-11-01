@@ -236,8 +236,8 @@ class ThermalPrinterService {
       if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: headerPosAlignment, bold: true, height: PosTextSize.size2));
       if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: headerPosAlignment));
       if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text(businessPhone, styles: PosStyles(align: PosAlign.center));
-      if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: PosAlign.center));
-      if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
+      if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: headerPosAlignment));
+      if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: headerPosAlignment));
       bytes += generator.text(invoiceHeading, styles: PosStyles(align: headerPosAlignment, bold: true));
       bytes += generator.text('ID: ${sale.id}');
       bytes += generator.text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())}');
@@ -312,12 +312,12 @@ class ThermalPrinterService {
     );
 
     // Business contact info - centered
-    if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: PosAlign.center));
-    if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text('ph: $businessPhone', styles: PosStyles(align: PosAlign.center));
+    if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: headerPosAlignment));
+    if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text('ph: $businessPhone', styles: PosStyles(align: headerPosAlignment));
     if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: PosAlign.center));
     if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
-    bytes += generator.text(template['headerTitle']?.toString() ?? 'INVOICE',
-        styles: PosStyles(align: PosAlign.center, bold: true));
+    bytes += generator.text(invoiceHeading,
+        styles: PosStyles(align: headerPosAlignment, bold: true));
     bytes += generator.text('');
 
     // Invoice details
@@ -442,7 +442,7 @@ class ThermalPrinterService {
     }
 
     // Footer
-    if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: PosAlign.center));
+    if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: footerPosAlignment));
     final terms = template['termsText']?.toString() ?? '';
     if (terms.isNotEmpty) bytes += generator.text(terms, styles: PosStyles(align: footerPosAlignment));
     bytes += generator.text('');
