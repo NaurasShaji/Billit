@@ -467,7 +467,7 @@ class ThermalPrinterService {
 
     // Render the configured logo before the business name.
     if (invoiceLogo != null) bytes += generator.image(invoiceLogo);
-    // Replace logo with bold, bigger "Royal Garden" heading
+    // Print the configured business name in the receipt header.
     if (template['showBusinessName'] == true) {
       bytes += generator.text(
         businessName,
@@ -683,8 +683,6 @@ class ThermalPrinterService {
           generator.text(terms, styles: PosStyles(align: footerPosAlignment));
     }
     bytes += generator.text('');
-    // bytes += generator.text('      Royal Garden',
-    //     styles: PosStyles(align: PosAlign.center));
 
     // Feed the completed receipt before cutting so the final lines are printed.
     bytes += generator.feed(3);
