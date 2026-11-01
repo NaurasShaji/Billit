@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:floralbill/models/sale.dart';
@@ -10,6 +11,7 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:image/image.dart' as img;
 import 'payment_qr_service.dart';
+import 'invoice_template_service.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -205,20 +207,102 @@ class ThermalPrinterService {
   Future<List<int>> _generateTicketWithLogo(Sale sale) async {
     List<int> bytes = [];
 
-    // Using default profile for 80mm paper
-    // ATPOS HL300 is compatible with standard ESC/POS commands
+    final template = InvoiceTemplateService.load(InvoiceTemplateService.selected);
+    final is58mm = template['paperSize'] == '58mm';
     final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm80, profile);
+    final generator = Generator(is58mm ? PaperSize.mm58 : PaperSize.mm80, profile);
 
     bytes += generator.reset();
+
+    final settings = Hive.box<dynamic>('app_settings');
+    final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
+    final businessAddress = settings.get('business_address', defaultValue: '').toString();
+    final businessPhone = settings.get('business_phone', defaultValue: '').toString();
+    final businessEmail = settings.get('business_email', defaultValue: '').toString();
+    final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
+    final footerText = template['footerText']?.toString() ?? 'Thank you for your business.';
+    final logoBase64 = settings.get('business_logo_base64') as String?;
+    img.Image? invoiceLogo;
+    if (template['showLogo'] == true && logoBase64 != null && logoBase64.isNotEmpty) {
+      try { invoiceLogo = img.decodeImage(base64Decode(logoBase64)); } catch (_) { invoiceLogo = null; }
+    }
+    final configuredTitle = template['headerTitle']?.toString().trim() ?? '';
+    final invoiceHeading = configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && sale.gstEnabled) ? (sale.gstEnabled ? 'TAX INVOICE' : 'INVOICE') : configuredTitle;
+    final headerPosAlignment = template['headerAlignment'] == 'left' ? PosAlign.left : template['headerAlignment'] == 'right' ? PosAlign.right : PosAlign.center;
+    final footerPosAlignment = template['footerAlignment'] == 'left' ? PosAlign.left : template['footerAlignment'] == 'right' ? PosAlign.right : PosAlign.center;
+
+    if (is58mm) {
+      if (invoiceLogo != null) bytes += generator.image(invoiceLogo);
+      if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: headerPosAlignment, bold: true, height: PosTextSize.size2));
+      if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: headerPosAlignment));
+      if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text(businessPhone, styles: PosStyles(align: PosAlign.center));
+      if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: headerPosAlignment));
+      if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: headerPosAlignment));
+      bytes += generator.text(invoiceHeading, styles: PosStyles(align: headerPosAlignment, bold: true));
+      bytes += generator.text('ID: ${sale.id}');
+      bytes += generator.text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())}');
+      if (sale.customerName.isNotEmpty) bytes += generator.text('Customer: ${sale.customerName}');
+      if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty) bytes += generator.text('GSTIN: ${sale.customerGstin}');
+      if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) bytes += generator.text('Phone: ${sale.customerPhone}');
+      if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
+      if (template['showTableBorders'] == true) bytes += generator.text('--------------------------------');
+      final receiptColumns = (template['columns'] as List).cast<String>();
+      const receiptLabels = {'serial':'#','product':'Item','hsn':'HSN','quantity':'Qty','unit':'Unit','rate':'Rate','discount':'Discount','gst_rate':'GST','tax':'Tax','amount':'Amount'};
+      for (var i = 0; i < sale.items.length; i++) {
+        final item = sale.items[i];
+        final product = Hive.box<Product>(Boxes.products).get(item.productId);
+        final rowValues = <String,String>{
+          'serial':'${i + 1}', 'product':product?.name ?? 'Unknown Product',
+          'hsn':item.hsnCode.isNotEmpty ? item.hsnCode : (product?.hsnCode ?? '-'),
+          'quantity':item.qty.toString(), 'unit':item.unitLabel,
+          'rate':_formatRupees(item.sellingPrice), 'discount':'-',
+          'gst_rate':sale.gstEnabled ? '${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
+          'tax':sale.gstEnabled ? _formatRupees(item.cgstAmount + item.sgstAmount + item.igstAmount) : '-',
+          'amount':_formatRupees(item.subtotal),
+        };
+        for (final id in receiptColumns) {
+          final label = ((template['columnLabels'] as Map?)?[id]?.toString().trim().isNotEmpty == true
+              ? (template['columnLabels'] as Map)[id].toString()
+              : receiptLabels[id] ?? id);
+          final value = rowValues[id] ?? '';
+          bytes += generator.text(id == 'product' ? value : '$label: $value');
+        }
+        if (template['showTableBorders'] == true) bytes += generator.text('--------------------------------');
+      }
+      if (template['showTableBorders'] == true) bytes += generator.text('--------------------------------');
+      final subtotal = sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
+      bytes += generator.text('Subtotal: ${_formatRupees(subtotal)}');
+      if (sale.discount > 0) bytes += generator.text('Discount: -${_formatRupees(sale.discount)}');
+      if (sale.gstEnabled) {
+        bytes += generator.text('Taxable: ${_formatRupees(sale.taxableAmount)}');
+        if (sale.interstateSale) { bytes += generator.text('IGST: ${_formatRupees(sale.igstAmount)}'); }
+        else { bytes += generator.text('CGST: ${_formatRupees(sale.cgstAmount)}'); bytes += generator.text('SGST: ${_formatRupees(sale.sgstAmount)}'); }
+      }
+      bytes += generator.text('================================', styles: PosStyles(bold: true));
+      bytes += generator.text('TOTAL: ${_formatRupees(sale.totalAmount)}', styles: PosStyles(bold: true, height: PosTextSize.size2));
+      if (template['showQr'] == true) {
+        try {
+          final qrBytes = await PaymentQrService.generateForSale(sale) ?? await PaymentQrService.loadStaticQrFallback();
+          if (qrBytes != null) { final qr = img.decodeImage(qrBytes); if (qr != null) { bytes += generator.text('SCAN & PAY', styles: PosStyles(align: PosAlign.center, bold: true)); bytes += generator.image(qr); } }
+        } catch (e) { print('Error generating payment QR: $e'); }
+      }
+      if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: footerPosAlignment));
+      final receiptTerms = template['termsText']?.toString() ?? '';
+      if (receiptTerms.isNotEmpty) bytes += generator.text(receiptTerms, styles: PosStyles(align: footerPosAlignment));
+      bytes += generator.feed(3);
+      bytes += <int>[0x1D, 0x56, 0x00];
+      return bytes;
+    }
 
     // Currency symbol - fallback to Rs. if printer doesn't support ₹
     const String currencySymbol =
         'Rs.'; // Changed to Rs. to avoid encoding errors
 
+    // Render the configured logo before the business name.
+    if (invoiceLogo != null) bytes += generator.image(invoiceLogo);
     // Replace logo with bold, bigger "Royal Garden" heading
-    bytes += generator.text(
-      'Royal Garden',
+    if (template['showBusinessName'] == true) bytes += generator.text(
+      businessName,
       styles: PosStyles(
           align: PosAlign.center,
           bold: true,
@@ -228,14 +312,12 @@ class ThermalPrinterService {
     );
 
     // Business contact info - centered
-    bytes += generator.text('FourLane Byepass,Mangattukavala',
-        styles: PosStyles(align: PosAlign.center));
-    bytes += generator.text('Thodupuzha, 685585',
-        styles: PosStyles(align: PosAlign.center));
-    bytes += generator.text('ph: 8078101212',
-        styles: PosStyles(align: PosAlign.center));
-    bytes += generator.text('INVOICE',
-        styles: PosStyles(align: PosAlign.center, bold: true));
+    if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: headerPosAlignment));
+    if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text('ph: $businessPhone', styles: PosStyles(align: headerPosAlignment));
+    if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: PosAlign.center));
+    if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
+    bytes += generator.text(invoiceHeading,
+        styles: PosStyles(align: headerPosAlignment, bold: true));
     bytes += generator.text('');
 
     // Invoice details
@@ -246,92 +328,66 @@ class ThermalPrinterService {
     if (sale.customerName.isNotEmpty) {
       bytes += generator.text('Customer: ${sale.customerName}');
     }
-    if (sale.customerPhone.isNotEmpty) {
+    if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty) bytes += generator.text('Customer GSTIN: ${sale.customerGstin}');
+    if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) {
       bytes += generator.text('Phone: ${sale.customerPhone}');
     }
-    bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
+    if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
     bytes += generator.text('');
 
-    // Items header - adjusted for 80mm paper (48 characters width)
-    bytes += generator.text('================================================');
-    bytes += generator.text(
-      'ITEM'.padRight(20) +
-          'PRICE'.padLeft(9) +
-          'QTY'.padLeft(8) +
-          'AMT'.padLeft(11),
-    );
-    bytes += generator.text('================================================');
+    // Build the 80mm table from the selected template columns.
+    final configuredColumns = (template['columns'] as List).cast<String>();
+    const columnLabels = {
+      'serial':'#', 'product':'ITEM', 'hsn':'HSN', 'quantity':'QTY',
+      'unit':'UNIT', 'rate':'RATE', 'discount':'DISC', 'gst_rate':'GST%',
+      'tax':'TAX', 'amount':'AMOUNT',
+    };
+    const preferredWidths = {'serial':3,'product':20,'hsn':7,'quantity':5,'unit':4,'rate':9,'discount':7,'gst_rate':5,'tax':8,'amount':10};
+    final widths = <int>[];
+    for (final id in configuredColumns) {
+      widths.add(preferredWidths[id] ?? 6);
+    }
+    final preferredTotal = widths.fold<int>(0,(sum,width)=>sum+width);
+    if (preferredTotal > 48) {
+      for (var i = 0; i < widths.length; i++) {
+        widths[i] = (widths[i] * 48 / preferredTotal).floor().clamp(3,48).toInt();
+      }
+    } else if (widths.isNotEmpty) {
+      final productIndex = configuredColumns.indexOf('product');
+      widths[productIndex >= 0 ? productIndex : widths.length - 1] += 48 - widths.fold<int>(0,(sum,width)=>sum+width);
+    }
+    String fitCell(String value, int width, {bool left = false}) {
+      final text = value.length > width ? value.substring(0, width) : value;
+      return left ? text.padRight(width) : text.padLeft(width);
+    }
+    if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
+    bytes += generator.text([
+      for (var i = 0; i < configuredColumns.length; i++)
+        fitCell(((template['columnLabels'] as Map?)?[configuredColumns[i]]?.toString().trim().isNotEmpty == true ? (template['columnLabels'] as Map)[configuredColumns[i]].toString() : columnLabels[configuredColumns[i]] ?? configuredColumns[i]), widths[i], left: configuredColumns[i] == 'product'),
+    ].join());
+    if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
 
-    // Print items with better formatting for 80mm paper
     for (var itemIndex = 0; itemIndex < sale.items.length; itemIndex++) {
       final item = sale.items[itemIndex];
       final product = Hive.box<Product>(Boxes.products).get(item.productId);
-      final productName = product?.name ?? 'Unknown Product';
-      final numberedName = '${itemIndex + 1}. $productName';
-      final qty =
-          item.qty.toStringAsFixed(product?.unit == UnitType.kg ? 1 : 0);
-      final unitLabel = item.unitLabel.isNotEmpty
-          ? item.unitLabel
-          : (product?.unit.name ?? '');
-
-      String priceStr = _formatRupees(item.sellingPrice);
-      String qtyStr = '$qty ${unitLabel.isNotEmpty ? unitLabel : ''}'.trim();
-      String amtStr = _formatRupees(item.subtotal);
-
-      // For 80mm paper, we have about 48 characters width
-      // Product name: 20 chars (wrapped at 15), Price: 9 chars, Qty: 8 chars, Amount: 11 chars
-      if (numberedName.length <= 20) {
-        // Short name - fits on one line
-        String itemLine = numberedName.padRight(20) +
-            priceStr.padLeft(9) +
-            qtyStr.padLeft(8) +
-            amtStr.padLeft(11);
-        bytes += generator.text(itemLine);
-      } else {
-        // Long name - split intelligently at word boundaries
-        List<String> words = productName.split(' ');
-        String firstLine = '${itemIndex + 1}. ';
-        String secondLine = '';
-
-        // Build first line with as many words as possible (20-character item column)
-        for (String word in words) {
-          String candidate = firstLine == '${itemIndex + 1}. '
-              ? '$firstLine$word'
-              : '$firstLine $word';
-          if (candidate.length <= 20) {
-            firstLine = candidate;
-          } else {
-            // Add remaining words to second line
-            secondLine += (secondLine.isEmpty ? '' : ' ') + word;
-          }
-        }
-
-        // If the first word is longer than the available item column, split it.
-        if (firstLine == '${itemIndex + 1}. ') {
-          firstLine = '${itemIndex + 1}. ${productName.substring(0, 17)}';
-          secondLine = productName.substring(17);
-        }
-
-        // Print first line
-        bytes += generator.text(firstLine);
-
-        // Print second line with price, qty and amount
-        // If second line is still too long, truncate to 20 to fit column
-        if (secondLine.length > 20) {
-          secondLine = secondLine.substring(0, 20);
-        }
-
-        String qtyAmtLine = secondLine.padRight(20) +
-            priceStr.padLeft(9) +
-            qtyStr.padLeft(8) +
-            amtStr.padLeft(11);
-        bytes += generator.text(qtyAmtLine);
-      }
-
-      // Add separator line between items (but not after the last one)
-      if (itemIndex < sale.items.length - 1) {
-        bytes +=
-            generator.text('------------------------------------------------');
+      final values = <String, String>{
+        'serial': '${itemIndex + 1}',
+        'product': product?.name ?? 'Unknown Product',
+        'hsn': item.hsnCode.isNotEmpty ? item.hsnCode : (product?.hsnCode ?? '-'),
+        'quantity': item.qty.toString(),
+        'unit': item.unitLabel,
+        'rate': _formatRupees(item.sellingPrice),
+        'discount': '-',
+        'gst_rate': sale.gstEnabled ? '${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
+        'tax': sale.gstEnabled ? _formatRupees(item.cgstAmount + item.sgstAmount + item.igstAmount) : '-',
+        'amount': _formatRupees(item.subtotal),
+      };
+      bytes += generator.text([
+        for (var i = 0; i < configuredColumns.length; i++)
+          fitCell(values[configuredColumns[i]] ?? '', widths[i], left: configuredColumns[i] == 'product'),
+      ].join());
+      if (template['showTableBorders'] == true && itemIndex < sale.items.length - 1) {
+        bytes += generator.text('-' * 48);
       }
     }
 
@@ -368,7 +424,7 @@ class ThermalPrinterService {
 
     // Generate a bill-specific UPI QR when a UPI ID is configured;
     // otherwise use the optional static QR fallback.
-    try {
+    if (template['showQr'] == true) try {
       final qrBytes = await PaymentQrService.generateForSale(sale) ??
           await PaymentQrService.loadStaticQrFallback();
       if (qrBytes != null) {
@@ -386,8 +442,9 @@ class ThermalPrinterService {
     }
 
     // Footer
-    bytes +=
-        generator.text('THANK YOU!', styles: PosStyles(align: PosAlign.center));
+    if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: footerPosAlignment));
+    final terms = template['termsText']?.toString() ?? '';
+    if (terms.isNotEmpty) bytes += generator.text(terms, styles: PosStyles(align: footerPosAlignment));
     bytes += generator.text('');
     // bytes += generator.text('      Royal Garden',
     //     styles: PosStyles(align: PosAlign.center));

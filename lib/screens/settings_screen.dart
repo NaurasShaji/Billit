@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'appearance_settings_screen.dart';
 import 'gst_settings_screen.dart';
 import 'invoice_settings_screen.dart';
+import 'invoice_customisation_screen.dart';
 import 'printer_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -36,6 +37,12 @@ class SettingsScreen extends StatelessWidget {
               title: 'App & Invoice Settings',
               subtitle: 'Business details, logo and invoice preferences',
               onTap: () => _open(context, const InvoiceSettingsScreen()),
+            ),
+            _SettingsItem(
+              icon: Icons.design_services_outlined,
+              title: 'Invoice Customisation',
+              subtitle: 'Paper sizes, invoice layout, table, header and footer templates',
+              onTap: () => _open(context, const InvoiceCustomisationScreen()),
             ),
             _SettingsItem(
               icon: Icons.percent_outlined,

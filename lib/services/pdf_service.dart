@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../models/models.dart';
 import './boxes.dart';
 import './payment_qr_service.dart';
+import './invoice_template_service.dart';
 
 class PdfService {
   // Thermal printer configurations
@@ -23,39 +24,46 @@ class PdfService {
     bool fullPage = true,
   }) async {
     final doc = pw.Document();
+    final template = InvoiceTemplateService.load(InvoiceTemplateService.selected);
+    final paperSize = template['paperSize'].toString();
+    final isThermal = paperSize == '58mm' || paperSize == '80mm';
+    final effectiveThermalSize = paperSize == '58mm' ? ThermalSize.mm58 : ThermalSize.mm80;
+    final marginMm = (template['marginMm'] as num).toDouble();
+    final marginPoints = marginMm * 72 / 25.4;
     final qrImage = await _loadPaymentQrImage(sale);
 
-    if (fullPage) {
+    if (fullPage && !isThermal) {
       doc.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
+          pageFormat: paperSize == 'A5' ? PdfPageFormat.a5 : PdfPageFormat.a4,
+          margin: pw.EdgeInsets.all(marginMm * 72 / 25.4),
           build: (context) => _buildFullPageInvoice(
             sale,
             includeHeader: includeHeader,
             includeFooter: includeFooter,
             includeGST: includeGST,
             qrImage: qrImage,
+            template: template,
           ),
         ),
       );
     } else {
       final double pageWidth =
-          thermalSize == ThermalSize.mm58 ? thermalWidth58mm : thermalWidth80mm;
+          effectiveThermalSize == ThermalSize.mm58 ? thermalWidth58mm : thermalWidth80mm;
             doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat(
             pageWidth,
             double.infinity,
-            marginLeft: 4,
-            marginRight: 4,
-            marginTop: 6,
-            marginBottom: 6,
+            marginLeft: marginPoints,
+            marginRight: marginPoints,
+            marginTop: marginPoints,
+            marginBottom: marginPoints,
           ),
           build: (context) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: _buildThermalReceipt(
-              sale, thermalSize, qrImage, includeHeader, includeFooter,
+              sale, effectiveThermalSize, qrImage, includeHeader, includeFooter,
             ),
           ),
         ),
@@ -74,11 +82,12 @@ class PdfService {
     required bool includeFooter,
     required bool includeGST,
     pw.ImageProvider? qrImage,
+    required Map<String, dynamic> template,
   }) {
     final settings = Hive.box<dynamic>('app_settings');
     final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
-    final accent = _invoiceAccentColor(settings.get('invoice_accent', defaultValue: 'blue').toString());
-    final footerText = settings.get('invoice_footer_text', defaultValue: 'Thank you for your business.').toString().trim();
+    final accent = _invoiceAccentColor(template['accent']?.toString() ?? 'blue');
+    final footerText = template['footerText']?.toString().trim() ?? 'Thank you for your business.';
     final businessAddress = settings.get('business_address', defaultValue: '').toString();
     final businessPhone = settings.get('business_phone', defaultValue: '').toString();
     final businessEmail = settings.get('business_email', defaultValue: '').toString();
@@ -95,33 +104,30 @@ class PdfService {
         : (subtotal - sale.discount).clamp(0.0, double.infinity).toDouble();
     final taxTotal = sale.cgstAmount + sale.sgstAmount + sale.igstAmount;
     final displayGst = includeGST && sale.gstEnabled;
+    final templateFontSize = (template['fontSize'] as num).toDouble();
+    final configuredTitle = template['headerTitle']?.toString().trim() ?? '';
+    final invoiceTitle = configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && displayGst) ? (displayGst ? 'TAX INVOICE' : 'INVOICE') : configuredTitle;
     final productsBox = Hive.box<Product>(Boxes.products);
+    final configuredColumns = (template['columns'] as List).cast<String>();
     final itemRows = <List<String>>[
-      if (displayGst)
-        ['#', 'Description', 'HSN/SAC', 'Qty', 'Rate', 'Taxable', 'GST %', 'Tax', 'Line total']
-      else
-        ['#', 'Description', 'Qty', 'Rate', 'Amount'],
+      configuredColumns.map((id) => ((template['columnLabels'] as Map?)?[id]?.toString().trim().isNotEmpty == true ? (template['columnLabels'] as Map)[id].toString() : _invoiceColumnLabel(id))).toList(),
       for (var i = 0; i < sale.items.length; i++)
-        if (displayGst)
-          [
-            '${i + 1}',
-            productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
-            sale.items[i].hsnCode.isNotEmpty ? sale.items[i].hsnCode : (productsBox.get(sale.items[i].productId)?.hsnCode ?? '-'),
-            '${sale.items[i].qty} ${sale.items[i].unitLabel}',
-            currency.format(sale.items[i].sellingPrice),
-            currency.format(sale.items[i].taxableAmount),
-            '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%',
-            currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
-            currency.format(sale.items[i].taxableAmount + sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
-          ]
-        else
-          [
-            '${i + 1}',
-            productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
-            '${sale.items[i].qty} ${sale.items[i].unitLabel}',
-            currency.format(sale.items[i].sellingPrice),
-            currency.format(sale.items[i].subtotal),
-          ],
+        [
+          for (final id in configuredColumns)
+            switch (id) {
+              'serial' => '${i + 1}',
+              'product' => productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
+              'hsn' => sale.items[i].hsnCode.isNotEmpty ? sale.items[i].hsnCode : (productsBox.get(sale.items[i].productId)?.hsnCode ?? '-'),
+              'quantity' => sale.items[i].qty.toString(),
+              'unit' => sale.items[i].unitLabel,
+              'rate' => currency.format(sale.items[i].sellingPrice),
+              'discount' => '-',
+              'gst_rate' => displayGst ? '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%' : '-',
+              'tax' => displayGst ? currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount) : '-',
+              'amount' => currency.format(displayGst ? sale.items[i].taxableAmount + sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount : sale.items[i].subtotal),
+              _ => '',
+            },
+        ],
     ];
 
     return [
@@ -132,17 +138,17 @@ class PdfService {
           children: [
             pw.Expanded(
               child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                crossAxisAlignment: template['headerAlignment'] == 'right' ? pw.CrossAxisAlignment.end : template['headerAlignment'] == 'center' ? pw.CrossAxisAlignment.center : pw.CrossAxisAlignment.start,
                 children: [
-                  if (businessLogo != null) ...[
+                  if (template['showLogo'] == true && businessLogo != null) ...[
                     pw.Container(width: 110, height: 60, alignment: pw.Alignment.centerLeft, child: pw.Image(businessLogo, fit: pw.BoxFit.contain)),
                     pw.SizedBox(height: 6),
                   ],
-                  pw.Text(businessName, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                  if (businessAddress.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 4), child: pw.Text(businessAddress)),
-                  if (businessPhone.isNotEmpty) pw.Text('Phone: $businessPhone'),
-                  if (businessEmail.isNotEmpty) pw.Text('Email: $businessEmail'),
-                  if (businessGstin.isNotEmpty) pw.Text('GSTIN: $businessGstin', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  if (template['showBusinessName'] == true) pw.Text(businessName, style: pw.TextStyle(fontSize: templateFontSize * 2.2, fontWeight: pw.FontWeight.bold)),
+                  if (template['showAddress'] == true && businessAddress.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 4), child: pw.Text(businessAddress)),
+                  if (template['showPhone'] == true && businessPhone.isNotEmpty) pw.Text('Phone: $businessPhone'),
+                  if (template['showEmail'] == true && businessEmail.isNotEmpty) pw.Text('Email: $businessEmail'),
+                  if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) pw.Text('GSTIN: $businessGstin', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                 ],
               ),
             ),
@@ -156,7 +162,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(displayGst && businessGstin.isNotEmpty ? 'TAX INVOICE' : (displayGst ? 'GST INVOICE (GSTIN REQUIRED)' : 'INVOICE'), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(invoiceTitle, style: pw.TextStyle(fontSize: templateFontSize * 2, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 8),
                   pw.Text('Invoice: ${sale.id}'),
                   pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
@@ -183,8 +189,8 @@ class PdfService {
             pw.Text('BILL TO', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.grey700)),
             pw.SizedBox(height: 5),
             pw.Text(sale.customerName.isEmpty ? 'Walk-in customer' : sale.customerName, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-            if (sale.customerPhone.isNotEmpty) pw.Text('Phone: ${sale.customerPhone}'),
-            if (sale.customerGstin.isNotEmpty) pw.Text('Customer GSTIN: ${sale.customerGstin}'),
+            if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) pw.Text('Phone: ${sale.customerPhone}'),
+            if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty) pw.Text('Customer GSTIN: ${sale.customerGstin}'),
           ],
         ),
       ),
@@ -192,46 +198,21 @@ class PdfService {
       pw.Table.fromTextArray(
         headers: itemRows.first,
         data: itemRows.skip(1).toList(),
-        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
+        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: templateFontSize),
         headerDecoration: pw.BoxDecoration(color: accent),
-        cellStyle: const pw.TextStyle(fontSize: 9),
+        cellStyle: pw.TextStyle(fontSize: templateFontSize),
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-        border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-        columnWidths: displayGst
-            ? {
-                0: const pw.FixedColumnWidth(20),
-                1: const pw.FlexColumnWidth(3.5),
-                2: const pw.FlexColumnWidth(1.6),
-                3: const pw.FlexColumnWidth(1.4),
-                4: const pw.FlexColumnWidth(1.7),
-                5: const pw.FlexColumnWidth(1.8),
-                6: const pw.FlexColumnWidth(1.2),
-                7: const pw.FlexColumnWidth(1.7),
-                8: const pw.FlexColumnWidth(1.8),
-              }
-            : {
-                0: const pw.FixedColumnWidth(20),
-                1: const pw.FlexColumnWidth(4),
-                2: const pw.FlexColumnWidth(1.5),
-                3: const pw.FlexColumnWidth(1.8),
-                4: const pw.FlexColumnWidth(2),
-              },
-        cellAlignments: displayGst
-            ? {
-                0: pw.Alignment.center,
-                3: pw.Alignment.centerRight,
-                4: pw.Alignment.centerRight,
-                5: pw.Alignment.centerRight,
-                6: pw.Alignment.centerRight,
-                7: pw.Alignment.centerRight,
-                8: pw.Alignment.centerRight,
-              }
-            : {
-                0: pw.Alignment.center,
-                2: pw.Alignment.centerRight,
-                3: pw.Alignment.centerRight,
-                4: pw.Alignment.centerRight,
-              },
+        columnWidths: {
+          for (var i = 0; i < configuredColumns.length; i++)
+            i: pw.FlexColumnWidth(configuredColumns[i] == 'product' ? 4 : 1.3),
+        },
+        cellAlignments: {
+          for (var i = 0; i < configuredColumns.length; i++)
+            i: configuredColumns[i] == 'product' ? pw.Alignment.centerLeft : pw.Alignment.centerRight,
+        },
+        border: template['showTableBorders'] == true
+            ? pw.TableBorder.all(color: PdfColors.grey300, width: 0.5)
+            : pw.TableBorder.symmetric(inside: const pw.BorderSide(color: PdfColors.white, width: 0.1)),
       ),
       pw.SizedBox(height: 18),
       pw.Row(
@@ -241,7 +222,7 @@ class PdfService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('Payment method: ${sale.payment.name.toUpperCase()}'),
+                if (template['showPaymentMethod'] == true) pw.Text('Payment method: ${sale.payment.name.toUpperCase()}'),
                 if (displayGst) ...[
                   pw.SizedBox(height: 8),
                   pw.Text('GST rates are shown against each invoice line.'),
@@ -249,7 +230,8 @@ class PdfService {
                 ],
                 if (includeFooter) ...[
                   pw.SizedBox(height: 18),
-                  if (footerText.isNotEmpty) pw.Text(footerText, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  if (footerText.isNotEmpty) pw.Text(footerText, textAlign: template['footerAlignment'] == 'left' ? pw.TextAlign.left : template['footerAlignment'] == 'right' ? pw.TextAlign.right : pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  if (template['termsText']?.toString().isNotEmpty == true) pw.Text(template['termsText'].toString()),
                   pw.Text('This invoice is generated electronically.'),
                 ],
               ],
@@ -274,7 +256,7 @@ class PdfService {
           ),
         ],
       ),
-      if (qrImage != null) ...[
+      if (qrImage != null && template['showQr'] == true) ...[
         pw.SizedBox(height: 18),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.end,
@@ -289,20 +271,26 @@ class PdfService {
           ],
         ),
       ],
-      pw.SizedBox(height: 24),
-      pw.Container(
-        width: double.infinity,
-        padding: const pw.EdgeInsets.all(10),
-        decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: PdfColors.grey300),
-          borderRadius: pw.BorderRadius.circular(4),
+      if (template['showAmountInWords'] == true) ...[
+        pw.SizedBox(height: 24),
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300), borderRadius: pw.BorderRadius.circular(4)),
+          child: pw.Text('Amount in words: ${_amountInWords(sale.totalAmount)}', style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic)),
         ),
-        child: pw.Text(
-          'Amount in words: ${_amountInWords(sale.totalAmount)}',
-          style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
-        ),
-      ),
+      ],
     ];
+  }
+
+  static String _invoiceColumnLabel(String id) {
+    const labels = {
+      'serial': '#', 'product': 'Description', 'hsn': 'HSN/SAC',
+      'quantity': 'Qty', 'unit': 'Unit', 'rate': 'Rate',
+      'discount': 'Discount', 'gst_rate': 'GST %', 'tax': 'Tax',
+      'amount': 'Amount',
+    };
+    return labels[id] ?? id;
   }
 
   static Future<pw.ImageProvider?> _loadPaymentQrImage(Sale sale) async {
@@ -325,6 +313,7 @@ class PdfService {
       case 'orange': return PdfColors.orange;
       case 'pink': return PdfColors.pink;
       case 'indigo': return PdfColors.indigo;
+      case 'black': return PdfColors.black;
       case 'blue':
       default: return PdfColors.blue;
     }

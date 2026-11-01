@@ -6,6 +6,7 @@ import '../../models/models.dart';
 import '../../services/auth_service.dart';
 import '../../services/boxes.dart';
 import '../../services/invoice_service.dart';
+import '../../services/invoice_template_service.dart';
 import '../edit_invoice_screen.dart';
 
 class ReportsTab extends StatefulWidget {
@@ -74,6 +75,8 @@ class _ReportsTabState extends State<ReportsTab>
     if (_printingSaleIds.contains(sale.id)) return;
 
     setState(() => _printingSaleIds.add(sale.id));
+    final paperSize = InvoiceTemplateService.selected;
+    final fullPage = paperSize == 'A4' || paperSize == 'A5';
     try {
       final printed = await InvoiceService().printThermalInvoice(sale);
       if (!mounted) return;
@@ -81,7 +84,7 @@ class _ReportsTabState extends State<ReportsTab>
         SnackBar(
           content: Text(
             printed
-                ? 'Invoice #${sale.id} sent to the thermal printer.'
+                ? (fullPage ? 'Invoice #${sale.id} opened as a $paperSize PDF for printing or sharing.' : 'Invoice #${sale.id} sent to the thermal printer.')
                 : 'Could not print invoice. Check the printer connection and try again.',
           ),
         ),
