@@ -10,6 +10,7 @@ import '../archive/backup_restore_screen.dart';
 import '../archive/change_password_screen.dart';
 import '../archive/customer_lookup_screen.dart';
 import '../archive/bulk_product_import_screen.dart';
+import '../archive/gst_exports_screen.dart';
 
 class ArchiveTab extends StatelessWidget {
   const ArchiveTab({super.key});
@@ -75,6 +76,21 @@ class ArchiveTab extends StatelessWidget {
               title: 'Bulk Add Products (Excel)',
               subtitle: 'Import products, prices, stock, barcodes and GST',
               builder: (_) => const BulkProductImportScreen(),
+            ),
+          ],
+        ),
+        _ArchiveCategory(
+          title: 'GST & Accounting',
+          subtitle: 'GST registers and financial exports',
+          description: 'Export GST sales, item-wise tax details and expense registers as CSV files.',
+          icon: Icons.request_quote_outlined,
+          color: Colors.deepOrange,
+          items: [
+            ArchiveCategoryItem(
+              icon: Icons.file_download_outlined,
+              title: 'GST & Accounting Exports',
+              subtitle: 'Generate GST sales, item and expenses registers',
+              builder: (_) => const GstExportsScreen(),
             ),
           ],
         ),
