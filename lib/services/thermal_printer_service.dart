@@ -6,6 +6,8 @@ import 'package:floralbill/services/boxes.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
+import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
+import 'package:flutter_thermal_printer/utils/printer.dart' as usb;
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:image/image.dart' as img;
 import 'payment_qr_service.dart';
@@ -97,11 +99,66 @@ class ThermalPrinterService {
 
   Future<bool> printInvoice(Sale sale) async {
     try {
-      // Try to print to any available paired device
+      final settings = Hive.box<dynamic>('app_settings');
+      final connectionType =
+          settings.get('printer_connection_type', defaultValue: 'bluetooth');
+      if (connectionType == 'usb') {
+        return await _printToUsb(sale);
+      }
       return await _attemptPrintToPairedDevice(sale);
     } catch (e) {
       print('Printing error: $e');
       return false;
+    }
+  }
+
+  Future<bool> _printToUsb(Sale sale) async {
+    final settings = Hive.box<dynamic>('app_settings');
+    final vendorId = settings.get('usb_printer_vendor_id')?.toString();
+    final productId = settings.get('usb_printer_product_id')?.toString();
+    if (vendorId == null || productId == null) {
+      throw Exception('Select a USB printer in Printer Settings first.');
+    }
+
+    final plugin = FlutterThermalPrinter.instance;
+    usb.Printer? selectedPrinter;
+    final subscription = plugin.devicesStream.listen((devices) {
+      for (final device in devices) {
+        if (device.connectionType == ConnectionType.USB &&
+            device.vendorId == vendorId &&
+            device.productId == productId) {
+          selectedPrinter = device;
+          break;
+        }
+      }
+    });
+
+    try {
+      await plugin.getPrinters(connectionTypes: [ConnectionType.USB]);
+      // USB discovery is asynchronous; allow Android to enumerate attached
+      // devices and deliver its USB permission/device event.
+      await Future<void>.delayed(const Duration(seconds: 2));
+    } finally {
+      await subscription.cancel();
+    }
+
+    final printer = selectedPrinter;
+    if (printer == null) {
+      throw Exception(
+          'Saved USB printer was not found. Check the OTG cable and printer power.');
+    }
+
+    var connected = false;
+    try {
+      await plugin.connect(printer);
+      connected = true;
+      final ticket = await _generateTicketWithLogo(sale);
+      await plugin.printData(printer, ticket, longData: true);
+      return true;
+    } finally {
+      if (connected) {
+        await plugin.disconnect(printer);
+      }
     }
   }
 
