@@ -16,6 +16,111 @@ class GstExportsScreen extends StatefulWidget {
 }
 
 class _GstExportsScreenState extends State<GstExportsScreen> {
+  bool _singleDayStatement = true;
+  DateTime _statementStart = DateTime.now();
+  DateTime _statementEnd = DateTime.now();
+  bool _exportingStatement = false;
+
+  DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
+
+  Future<void> _pickStatementDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _statementStart : _statementEnd,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (_singleDayStatement) {
+        _statementStart = picked;
+        _statementEnd = picked;
+      } else if (isStart) {
+        _statementStart = picked;
+        if (_statementEnd.isBefore(_statementStart)) _statementEnd = _statementStart;
+      } else {
+        _statementEnd = picked;
+        if (_statementEnd.isBefore(_statementStart)) _statementStart = _statementEnd;
+      }
+    });
+  }
+
+  Future<void> _exportSalesStatement() async {
+    if (_exportingStatement) return;
+    final start = _dateOnly(_statementStart);
+    final end = _dateOnly(_singleDayStatement ? _statementStart : _statementEnd);
+    final endExclusive = end.add(const Duration(days: 1));
+    final sales = Hive.box<Sale>(Boxes.sales).values.where((sale) {
+      final date = sale.date.toLocal();
+      return !date.isBefore(start) && date.isBefore(endExclusive);
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+
+    if (sales.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No sales found for the selected date period.')),
+      );
+      return;
+    }
+
+    setState(() => _exportingStatement = true);
+    try {
+      final totalSales = sales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+      final totalDiscount = sales.fold<double>(0, (sum, sale) => sum + sale.discount);
+      final totalTax = sales.fold<double>(
+        0, (sum, sale) => sum + sale.cgstAmount + sale.sgstAmount + sale.igstAmount,
+      );
+      final rows = <List<Object?>>[
+        ['SALES STATEMENT'],
+        ['Period', '${DateFormat('dd MMM yyyy').format(start)} - ${DateFormat('dd MMM yyyy').format(end)}'],
+        ['Total Invoices', sales.length],
+        ['Total Sales', totalSales.toStringAsFixed(2)],
+        ['Total Discounts', totalDiscount.toStringAsFixed(2)],
+        ['Total GST', totalTax.toStringAsFixed(2)],
+        [],
+        ['Invoice No', 'Date & Time', 'Customer', 'Phone', 'Payment Method', 'Subtotal', 'Discount', 'Taxable Value', 'CGST', 'SGST', 'IGST', 'Total GST', 'Invoice Total'],
+        for (final sale in sales)
+          [
+            sale.id,
+            DateFormat('yyyy-MM-dd HH:mm:ss').format(sale.date.toLocal()),
+            sale.customerName,
+            sale.customerPhone,
+            sale.payment.name.toUpperCase(),
+            sale.items.fold<double>(0, (sum, item) => sum + item.subtotal).toStringAsFixed(2),
+            sale.discount.toStringAsFixed(2),
+            (sale.gstEnabled ? sale.taxableAmount : sale.items.fold<double>(0, (sum, item) => sum + item.subtotal) - sale.discount).toStringAsFixed(2),
+            sale.cgstAmount.toStringAsFixed(2),
+            sale.sgstAmount.toStringAsFixed(2),
+            sale.igstAmount.toStringAsFixed(2),
+            (sale.cgstAmount + sale.sgstAmount + sale.igstAmount).toStringAsFixed(2),
+            sale.totalAmount.toStringAsFixed(2),
+          ],
+      ];
+      final filename = _singleDayStatement
+          ? 'sales_statement_${DateFormat('yyyyMMdd').format(start)}.csv'
+          : 'sales_statement_${DateFormat('yyyyMMdd').format(start)}_to_${DateFormat('yyyyMMdd').format(end)}.csv';
+      await _shareCsv(filename, rows);
+    } finally {
+      if (mounted) setState(() => _exportingStatement = false);
+    }
+  }
+
+  Widget _dateSelectionTile({
+    required String label,
+    required DateTime date,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      child: ListTile(
+        leading: const Icon(Icons.calendar_month_outlined),
+        title: Text(label),
+        subtitle: Text(DateFormat('dd MMM yyyy').format(date)),
+        trailing: const Icon(Icons.edit_calendar_outlined),
+        onTap: onTap,
+      ),
+    );
+  }
+
   String _csvCell(Object? value) {
     final text = (value ?? '').toString().replaceAll('"', '""');
     return '"$text"';
@@ -147,22 +252,74 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('GST & Accounting Exports')),
+      appBar: AppBar(title: const Text('Reports & Statements')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            'Export registers',
+            'Sales statements and tax exports',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(
-            'Generate CSV files for GST filing, reconciliation and expense records.',
+            'Download sales statements for selected dates and export GST and accounting registers.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 22),
+
+          Text(
+            'Sales Statements',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Download invoice-wise sales statements for a single day or a custom date range.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: true, label: Text('Single day'), icon: Icon(Icons.today_outlined)),
+              ButtonSegment(value: false, label: Text('Date range'), icon: Icon(Icons.date_range_outlined)),
+            ],
+            selected: {_singleDayStatement},
+            onSelectionChanged: (values) => setState(() {
+              _singleDayStatement = values.first;
+              if (_singleDayStatement) _statementEnd = _statementStart;
+            }),
+          ),
+          const SizedBox(height: 12),
+          _dateSelectionTile(
+            label: _singleDayStatement ? 'Statement date' : 'From date',
+            date: _statementStart,
+            onTap: () => _pickStatementDate(isStart: true),
+          ),
+          if (!_singleDayStatement) ...[
+            const SizedBox(height: 8),
+            _dateSelectionTile(
+              label: 'To date',
+              date: _statementEnd,
+              onTap: () => _pickStatementDate(isStart: false),
+            ),
+          ],
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _exportingStatement ? null : _exportSalesStatement,
+            icon: _exportingStatement
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.download_outlined),
+            label: Text(_exportingStatement ? 'Preparing statement...' : 'Download Sales Statement'),
+          ),
+          const SizedBox(height: 28),
+          Text(
+            'GST & Accounting Exports',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
           _exportOption(
             icon: Icons.receipt_long_outlined,
             title: 'GST Sales Register',
