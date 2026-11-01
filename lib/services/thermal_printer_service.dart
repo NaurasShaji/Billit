@@ -124,7 +124,7 @@ class ThermalPrinterService {
     usb.Printer? selectedPrinter;
     final subscription = plugin.devicesStream.listen((devices) {
       for (final device in devices) {
-        if (device.connectionType == ConnectionType.USB &&
+        if (device.connectionType == usb.ConnectionType.USB &&
             device.vendorId == vendorId &&
             device.productId == productId) {
           selectedPrinter = device;
@@ -134,7 +134,7 @@ class ThermalPrinterService {
     });
 
     try {
-      await plugin.getPrinters(connectionTypes: [ConnectionType.USB]);
+      await plugin.getPrinters(connectionTypes: [usb.ConnectionType.USB]);
       // USB discovery is asynchronous; allow Android to enumerate attached
       // devices and deliver its USB permission/device event.
       await Future<void>.delayed(const Duration(seconds: 2));
