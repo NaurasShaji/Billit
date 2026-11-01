@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../models/models.dart';
 import './pdf_service.dart';
@@ -48,7 +47,9 @@ class InvoiceService {
     bool includeGST = true,
     ThermalSize thermalSize = ThermalSize.mm80,
   }) async {
-    if (useThermalPrinter && (InvoiceTemplateService.selected == 'A4' || InvoiceTemplateService.selected == 'A5')) {
+    if (useThermalPrinter &&
+        (InvoiceTemplateService.selected == 'A4' ||
+            InvoiceTemplateService.selected == 'A5')) {
       // Full-page formats are exported through the PDF print/share flow.
       await PdfService.generateInvoice(sale);
     } else if (useThermalPrinter) {
@@ -68,7 +69,8 @@ class InvoiceService {
 
   // Generate thermal printer invoice specifically
   Future<bool> printThermalInvoice(Sale sale) async {
-    if (InvoiceTemplateService.selected == 'A4' || InvoiceTemplateService.selected == 'A5') {
+    if (InvoiceTemplateService.selected == 'A4' ||
+        InvoiceTemplateService.selected == 'A5') {
       await PdfService.generateInvoice(sale);
       return true;
     }

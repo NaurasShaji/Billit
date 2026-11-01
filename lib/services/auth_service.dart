@@ -10,7 +10,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> ensureSeedUsers() async {
     final usersBox = Hive.box<User>(Boxes.users);
-    
+
     // Create admin user if not exists
     if (usersBox.values.where((u) => u.userType == UserType.admin).isEmpty) {
       final admin = User()
@@ -21,7 +21,7 @@ class AuthService extends ChangeNotifier {
         ..securityAnswer = 'Buddy';
       await usersBox.put(admin.id, admin);
     }
-    
+
     // Create worker user if not exists
     if (usersBox.values.where((u) => u.userType == UserType.worker).isEmpty) {
       final worker = User()
@@ -45,11 +45,14 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<bool> login(String username, String password, {UserType? userType}) async {
+  Future<bool> login(String username, String password,
+      {UserType? userType}) async {
     final usersBox = Hive.box<User>(Boxes.users);
     try {
       final user = usersBox.values.firstWhere(
-        (u) => u.username == username && (userType == null || u.userType == userType),
+        (u) =>
+            u.username == username &&
+            (userType == null || u.userType == userType),
       );
       if (user.password == User.hash(password)) {
         currentUser = user;
@@ -59,25 +62,26 @@ class AuthService extends ChangeNotifier {
         return true;
       }
       return false;
-    } catch (_) { 
-      return false; 
+    } catch (_) {
+      return false;
     }
   }
 
-  void logout() { 
-    currentUser = null; 
+  void logout() {
+    currentUser = null;
     final session = Hive.box(_sessionBoxName);
     session.delete(_sessionUserIdKey);
-    notifyListeners(); 
+    notifyListeners();
   }
-  
+
   bool get isAdmin => currentUser?.userType == UserType.admin;
   bool get isWorker => currentUser?.userType == UserType.worker;
-  bool get isLoggedIn => currentUser!=null;
+  bool get isLoggedIn => currentUser != null;
 
   /// Change password - only admins can change passwords for any user
   /// Workers cannot change any passwords
-  Future<void> changePassword(String newPassword, {String? targetUserId, String? currentPassword}) async {
+  Future<void> changePassword(String newPassword,
+      {String? targetUserId, String? currentPassword}) async {
     if (currentUser == null) {
       throw Exception('User not logged in');
     }
@@ -92,7 +96,8 @@ class AuthService extends ChangeNotifier {
       throw Exception('Password must be at least 6 characters long');
     }
     if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(newPassword)) {
-      throw Exception('Password can only contain letters and numbers (no special characters)');
+      throw Exception(
+          'Password can only contain letters and numbers (no special characters)');
     }
 
     final usersBox = Hive.box<User>(Boxes.users);
@@ -106,7 +111,8 @@ class AuthService extends ChangeNotifier {
     // If changing own password, require current password
     if (targetUserId == null || targetUserId == currentUser!.id) {
       if (currentPassword == null) {
-        throw Exception('Current password is required when changing your own password');
+        throw Exception(
+            'Current password is required when changing your own password');
       }
       if (user.password != User.hash(currentPassword)) {
         throw Exception('Incorrect current password');
@@ -116,10 +122,10 @@ class AuthService extends ChangeNotifier {
 
     user.password = User.hash(newPassword);
     await user.save();
-    
+
     // If changing own password, update currentUser in session
     if (userToChangeId == currentUser!.id) {
-      currentUser = user; 
+      currentUser = user;
     }
     notifyListeners();
   }
@@ -129,37 +135,37 @@ class AuthService extends ChangeNotifier {
     if (!isAdmin) {
       return [];
     }
-    
+
     final usersBox = Hive.box<User>(Boxes.users);
     return usersBox.values.toList();
   }
 
   /// Reset admin password using security question
   /// This is used for forgot password functionality
-  Future<void> resetAdminPassword(String securityAnswer, String newPassword) async {
+  Future<void> resetAdminPassword(
+      String securityAnswer, String newPassword) async {
     if (newPassword.length < 6) {
       throw Exception('Password must be at least 6 characters long');
     }
 
     final usersBox = Hive.box<User>(Boxes.users);
-    
+
     // Find the admin user by security answer
     final adminUser = usersBox.values.firstWhere(
-      (u) => u.userType == UserType.admin && 
-              u.securityAnswer.toLowerCase() == securityAnswer.toLowerCase(),
+      (u) =>
+          u.userType == UserType.admin &&
+          u.securityAnswer.toLowerCase() == securityAnswer.toLowerCase(),
       orElse: () => throw Exception('Incorrect answer to security question'),
     );
 
     // Update the password
     adminUser.password = User.hash(newPassword);
     await adminUser.save();
-    
+
     // If this is the current user, update the session
     if (currentUser?.id == adminUser.id) {
       currentUser = adminUser;
       notifyListeners();
     }
   }
-
-
 }

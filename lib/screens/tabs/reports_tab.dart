@@ -84,7 +84,9 @@ class _ReportsTabState extends State<ReportsTab>
         SnackBar(
           content: Text(
             printed
-                ? (fullPage ? 'Invoice #${sale.id} opened as a $paperSize PDF for printing or sharing.' : 'Invoice #${sale.id} sent to the thermal printer.')
+                ? (fullPage
+                    ? 'Invoice #${sale.id} opened as a $paperSize PDF for printing or sharing.'
+                    : 'Invoice #${sale.id} sent to the thermal printer.')
                 : 'Could not print invoice. Check the printer connection and try again.',
           ),
         ),
@@ -111,136 +113,141 @@ class _ReportsTabState extends State<ReportsTab>
       key: const PageStorageKey<String>('reports-scroll'),
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
-      children: [
-        // Professional Header with Date Navigation
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.onSurface.withOpacity(0.1),
-                offset: const Offset(0, 2),
-                blurRadius: 8,
-              )
-            ],
-          ),
-          child: Column(
-            children: [
-              // Date Navigation Row
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: theme.colorScheme.outline.withOpacity(0.3)),
-                      ),
-                      child: IconButton(
-                        tooltip: 'Previous',
-                        icon: Icon(Icons.chevron_left,
-                            color: theme.colorScheme.primary),
-                        onPressed: () =>
-                            _updateCurrentAnchor(_previous(_currentAnchor)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
+        children: [
+          // Professional Header with Date Navigation
+          Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                  offset: const Offset(0, 2),
+                  blurRadius: 8,
+                )
+              ],
+            ),
+            child: Column(
+              children: [
+                // Date Navigation Row
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer
-                              .withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color:
-                                  theme.colorScheme.primary.withOpacity(0.2)),
+                              color: theme.colorScheme.outline
+                                  .withValues(alpha: 0.3)),
                         ),
-                        child: TextButton.icon(
-                          onPressed: _pickPeriod,
-                          icon: Icon(Icons.calendar_today,
-                              color: theme.colorScheme.primary, size: 20),
-                          label: Text(
-                            _tab.index == 0
-                                ? DateFormat('dd MMM yyyy').format(_dailyAnchor)
-                                : _tab.index == 1
-                                    ? DateFormat('MMMM yyyy')
-                                        .format(_monthlyAnchor)
-                                    : DateFormat('yyyy').format(_yearlyAnchor),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.primary,
-                              fontSize: 16,
+                        child: IconButton(
+                          tooltip: 'Previous',
+                          icon: Icon(Icons.chevron_left,
+                              color: theme.colorScheme.primary),
+                          onPressed: () =>
+                              _updateCurrentAnchor(_previous(_currentAnchor)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer
+                                .withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: theme.colorScheme.primary
+                                    .withValues(alpha: 0.2)),
+                          ),
+                          child: TextButton.icon(
+                            onPressed: _pickPeriod,
+                            icon: Icon(Icons.calendar_today,
+                                color: theme.colorScheme.primary, size: 20),
+                            label: Text(
+                              _tab.index == 0
+                                  ? DateFormat('dd MMM yyyy')
+                                      .format(_dailyAnchor)
+                                  : _tab.index == 1
+                                      ? DateFormat('MMMM yyyy')
+                                          .format(_monthlyAnchor)
+                                      : DateFormat('yyyy')
+                                          .format(_yearlyAnchor),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: theme.colorScheme.outline.withOpacity(0.3)),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: theme.colorScheme.outline
+                                  .withValues(alpha: 0.3)),
+                        ),
+                        child: IconButton(
+                          tooltip: 'Next',
+                          icon: Icon(Icons.chevron_right,
+                              color: theme.colorScheme.primary),
+                          onPressed: () =>
+                              _updateCurrentAnchor(_next(_currentAnchor)),
+                        ),
                       ),
-                      child: IconButton(
-                        tooltip: 'Next',
-                        icon: Icon(Icons.chevron_right,
-                            color: theme.colorScheme.primary),
-                        onPressed: () =>
-                            _updateCurrentAnchor(_next(_currentAnchor)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Professional Tab Bar
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TabBar(
-                  controller: _tab,
-                  labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                  unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w500, fontSize: 14),
-                  labelColor:
-                      Colors.white, // Make selected tab text white for contrast
-                  unselectedLabelColor: theme.colorScheme
-                      .onSurface, // Make unselected tab text visible
-                  indicator: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(10),
+                    ],
                   ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  tabs: _isAdmin
-                      ? const [
-                          Tab(text: 'Daily'),
-                          Tab(text: 'Monthly'),
-                          Tab(text: 'Yearly'),
-                        ]
-                      : const [
-                          Tab(text: 'Daily'),
-                        ],
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                // Professional Tab Bar
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TabBar(
+                    controller: _tab,
+                    labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14),
+                    unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w500, fontSize: 14),
+                    labelColor: Colors
+                        .white, // Make selected tab text white for contrast
+                    unselectedLabelColor: theme.colorScheme
+                        .onSurface, // Make unselected tab text visible
+                    indicator: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    tabs: _isAdmin
+                        ? const [
+                            Tab(text: 'Daily'),
+                            Tab(text: 'Monthly'),
+                            Tab(text: 'Yearly'),
+                          ]
+                        : const [
+                            Tab(text: 'Daily'),
+                          ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-        ),
-        if (_tab.index == 0 || !_isAdmin)
-          _buildDaily(sales, expenses)
-        else if (_tab.index == 1)
-          _buildMonthly(sales, expenses)
-        else
-          _buildYearly(sales, expenses),
-      ],
-    ),
+          if (_tab.index == 0 || !_isAdmin)
+            _buildDaily(sales, expenses)
+          else if (_tab.index == 1)
+            _buildMonthly(sales, expenses)
+          else
+            _buildYearly(sales, expenses),
+        ],
+      ),
     );
   }
 
@@ -254,14 +261,14 @@ class _ReportsTabState extends State<ReportsTab>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.onSurface.withOpacity(0.08),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
             offset: const Offset(0, 2),
             blurRadius: 12,
             spreadRadius: 0,
           ),
         ],
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -276,7 +283,7 @@ class _ReportsTabState extends State<ReportsTab>
                     ? (value.contains('-')
                         ? Colors.red.shade50
                         : Colors.green.shade50)
-                    : theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    : theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -298,7 +305,7 @@ class _ReportsTabState extends State<ReportsTab>
                     title,
                     style: TextStyle(
                       fontSize: 13,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
                     ),
@@ -346,7 +353,7 @@ class _ReportsTabState extends State<ReportsTab>
               subtitle,
               style: TextStyle(
                 fontSize: 14,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w400,
               ),
             ),
@@ -362,10 +369,10 @@ class _ReportsTabState extends State<ReportsTab>
       margin: const EdgeInsets.symmetric(vertical: 20),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
           style: BorderStyle.solid,
         ),
       ),
@@ -375,7 +382,7 @@ class _ReportsTabState extends State<ReportsTab>
           Icon(
             Icons.analytics_outlined,
             size: 48,
-            color: theme.colorScheme.onSurface.withOpacity(0.4),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 16),
           Text(
@@ -383,7 +390,7 @@ class _ReportsTabState extends State<ReportsTab>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -391,7 +398,7 @@ class _ReportsTabState extends State<ReportsTab>
             'Data will appear here once transactions are recorded',
             style: TextStyle(
               fontSize: 13,
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -431,94 +438,92 @@ class _ReportsTabState extends State<ReportsTab>
               Icons.receipt_long_outlined),
           if (daySales.isNotEmpty) ...[
             _sectionHeader('Today\'s Transactions'),
-            ...daySales
-                .map((sale) => Container(
-                      margin: const EdgeInsets.only(bottom: 8),
+            ...daySales.map((sale) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.06),
+                        offset: const Offset(0, 1),
+                        blurRadius: 8,
+                      ),
+                    ],
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.06),
-                            offset: const Offset(0, 1),
-                            blurRadius: 8,
-                          ),
-                        ],
-                        border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.receipt,
+                          color: Theme.of(context).colorScheme.primary),
+                    ),
+                    title: Text(
+                      'Invoice #${sale.id}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      DateFormat('hh:mm a').format(sale.date),
+                      style: TextStyle(
                           color: Theme.of(context)
                               .colorScheme
-                              .outline
-                              .withOpacity(0.1),
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer
-                                .withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(Icons.receipt,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                        title: Text(
-                          'Invoice #${sale.id}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          DateFormat('hh:mm a').format(sale.date),
+                              .onSurface
+                              .withValues(alpha: 0.6)),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          cur.format(sale.totalAmount),
                           style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6)),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              cur.format(sale.totalAmount),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: 'Print invoice',
-                              onPressed: _printingSaleIds.contains(sale.id)
-                                  ? null
-                                  : () => _printSale(sale),
-                              icon: _printingSaleIds.contains(sale.id)
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.print_outlined),
-                            ),
-                          ],
+                        IconButton(
+                          tooltip: 'Print invoice',
+                          onPressed: _printingSaleIds.contains(sale.id)
+                              ? null
+                              : () => _printSale(sale),
+                          icon: _printingSaleIds.contains(sale.id)
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.print_outlined),
                         ),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => EditInvoiceScreen(
-                                  sale: sale, isViewOnly: true),
-                            ),
-                          );
-                        },
-                      ),
-                    ))
-                .toList(),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EditInvoiceScreen(sale: sale, isViewOnly: true),
+                        ),
+                      );
+                    },
+                  ),
+                )),
           ],
           if (daySales.isEmpty && dayExpenses.isEmpty) _empty(),
         ],
@@ -594,14 +599,16 @@ class _ReportsTabState extends State<ReportsTab>
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.06),
+                          .withValues(alpha: 0.06),
                       offset: const Offset(0, 2),
                       blurRadius: 12,
                     ),
                   ],
                   border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.1),
                   ),
                 ),
                 child: Padding(
@@ -617,7 +624,7 @@ class _ReportsTabState extends State<ReportsTab>
                               color: Theme.of(context)
                                   .colorScheme
                                   .secondaryContainer
-                                  .withOpacity(0.5),
+                                  .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -669,7 +676,7 @@ class _ReportsTabState extends State<ReportsTab>
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
           if (mSales.isEmpty && mExpenses.isEmpty) _empty(),
         ],
@@ -683,7 +690,7 @@ class _ReportsTabState extends State<ReportsTab>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (color ?? theme.colorScheme.primary).withOpacity(0.1),
+        color: (color ?? theme.colorScheme.primary).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -702,7 +709,7 @@ class _ReportsTabState extends State<ReportsTab>
                   label,
                   style: TextStyle(
                     fontSize: 11,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -790,14 +797,16 @@ class _ReportsTabState extends State<ReportsTab>
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.06),
+                          .withValues(alpha: 0.06),
                       offset: const Offset(0, 2),
                       blurRadius: 12,
                     ),
                   ],
                   border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.1),
                   ),
                 ),
                 child: Padding(
@@ -813,7 +822,7 @@ class _ReportsTabState extends State<ReportsTab>
                               color: Theme.of(context)
                                   .colorScheme
                                   .secondaryContainer
-                                  .withOpacity(0.5),
+                                  .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -865,7 +874,7 @@ class _ReportsTabState extends State<ReportsTab>
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
           if (ySales.isEmpty && yExpenses.isEmpty) _empty(),
         ],

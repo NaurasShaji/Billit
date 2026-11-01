@@ -4,7 +4,7 @@ import '../../../models/employee.dart';
 import '../../../services/boxes.dart';
 
 class EmployeesListScreen extends StatelessWidget {
-  const EmployeesListScreen({Key? key}) : super(key: key);
+  const EmployeesListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,8 @@ class EmployeesListScreen extends StatelessWidget {
               return ListTile(
                 leading: const Icon(Icons.person),
                 title: Text(e.name),
-                subtitle: Text(e.type == 'daily' ? 'Daily Wage' : 'Monthly Salary'),
+                subtitle:
+                    Text(e.type == 'daily' ? 'Daily Wage' : 'Monthly Salary'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -45,7 +46,8 @@ class EmployeesListScreen extends StatelessWidget {
     );
   }
 
-  void _showDeleteDialog(BuildContext context, Box<Employee> box, Employee employee) {
+  void _showDeleteDialog(
+      BuildContext context, Box<Employee> box, Employee employee) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

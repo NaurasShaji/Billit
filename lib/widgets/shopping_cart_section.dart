@@ -19,14 +19,14 @@ class ShoppingCartSection extends StatelessWidget {
   final Function(SaleItem, Product, int) onRemoveCartItem;
 
   const ShoppingCartSection({
-    Key? key,
+    super.key,
     required this.items,
     required this.products,
     required this.onClearAll,
     required this.onAddProduct,
     required this.onUpdateCartItem,
     required this.onRemoveCartItem,
-  }) : super(key: key);
+  });
 
   int get itemCount => items.fold(0, (sum, item) => sum + item.qty.toInt());
 
@@ -85,11 +85,12 @@ class ShoppingCartSection extends StatelessWidget {
     );
   }
 
-  Future<void> _handleAddProduct(BuildContext context, Function(Product) onAddProduct) async {
+  Future<void> _handleAddProduct(
+      BuildContext context, Function(Product) onAddProduct) async {
     try {
       final selectedProduct = await Navigator.of(context).push<Product>(
         MaterialPageRoute(
-          builder: (context) => ProductSelectionScreen(),
+          builder: (context) => const ProductSelectionScreen(),
         ),
       );
 
@@ -274,7 +275,8 @@ class _CartItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final availableStock = product.stock; // simplified for this widget, actual check in parent
+    final availableStock =
+        product.stock; // simplified for this widget, actual check in parent
     // final increment = product.unit == UnitType.kg ? 0.5 : 1.0;
 
     return Container(
@@ -311,7 +313,9 @@ class _CartItemWidget extends StatelessWidget {
                     Text(
                       'Stock: ${availableStock == availableStock.toInt() ? availableStock.toInt().toString() : availableStock.toString()} ${product.unit.name}',
                       style: TextStyle(
-                        color: availableStock <= 0 ? _errorColor : Colors.grey.shade600,
+                        color: availableStock <= 0
+                            ? _errorColor
+                            : Colors.grey.shade600,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -333,50 +337,58 @@ class _CartItemWidget extends StatelessWidget {
               // Unit Price
               Expanded(
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Unit Price',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: 100,
-                    height: 40,
-                    child: TextFormField(
-                      initialValue: item.sellingPrice.toStringAsFixed(2),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        prefixText: '₹',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _primaryColor, width: 2),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                      ),
-                      onChanged: (value) {
-                        final newPrice = double.tryParse(value) ?? 0.0;
-                        onUpdate(item..sellingPrice = newPrice ..subtotal = item.qty * newPrice, product, index);
-                      },
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Unit Price',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 100,
+                      height: 40,
+                      child: TextFormField(
+                        initialValue: item.sellingPrice.toStringAsFixed(2),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: InputDecoration(
+                          prefixText: '₹',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                                color: _primaryColor, width: 2),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 0),
+                        ),
+                        onChanged: (value) {
+                          final newPrice = double.tryParse(value) ?? 0.0;
+                          onUpdate(
+                              item
+                                ..sellingPrice = newPrice
+                                ..subtotal = item.qty * newPrice,
+                              product,
+                              index);
+                        },
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 8),
               // Quantity Controls
@@ -386,14 +398,19 @@ class _CartItemWidget extends StatelessWidget {
                   quantity: item.qty,
                   unit: product.unit,
                   onQuantityChanged: (newQty) {
-                    if (newQty > item.qty && availableStock - (newQty - item.qty) < 0) {
+                    if (newQty > item.qty &&
+                        availableStock - (newQty - item.qty) < 0) {
                       return;
                     }
-                    onUpdate(item..qty = newQty ..subtotal = newQty * item.sellingPrice, product, index);
+                    onUpdate(
+                        item
+                          ..qty = newQty
+                          ..subtotal = newQty * item.sellingPrice,
+                        product,
+                        index);
                   },
                 ),
               ),
-
             ],
           ),
           const SizedBox(height: 16),
@@ -413,7 +430,8 @@ class _CartItemWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    NumberFormat.simpleCurrency(locale: 'en_IN').format(item.subtotal),
+                    NumberFormat.simpleCurrency(locale: 'en_IN')
+                        .format(item.subtotal),
                     style: TextStyle(
                       color: theme.primaryColor,
                       fontWeight: FontWeight.w700,
@@ -436,11 +454,10 @@ class _QuantityControls extends StatefulWidget {
   final Function(double) onQuantityChanged;
 
   const _QuantityControls({
-    Key? key,
     required this.quantity,
     required this.unit,
     required this.onQuantityChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<_QuantityControls> createState() => _QuantityControlsState();
@@ -452,7 +469,8 @@ class _QuantityControlsState extends State<_QuantityControls> {
   @override
   void initState() {
     super.initState();
-    _quantityController = TextEditingController(text: _formatQuantity(widget.quantity));
+    _quantityController =
+        TextEditingController(text: _formatQuantity(widget.quantity));
   }
 
   @override
@@ -460,9 +478,9 @@ class _QuantityControlsState extends State<_QuantityControls> {
     super.didUpdateWidget(oldWidget);
     // Only update if the controller is empty or the quantity changed significantly
     // This prevents overriding user input while typing
-    if (widget.quantity != oldWidget.quantity && 
-        (_quantityController.text.isEmpty || 
-         double.tryParse(_quantityController.text) != widget.quantity)) {
+    if (widget.quantity != oldWidget.quantity &&
+        (_quantityController.text.isEmpty ||
+            double.tryParse(_quantityController.text) != widget.quantity)) {
       _quantityController.text = _formatQuantity(widget.quantity);
     }
   }
@@ -484,7 +502,10 @@ class _QuantityControlsState extends State<_QuantityControls> {
 
   @override
   Widget build(BuildContext context) {
-    final increment = (widget.unit == UnitType.kg || widget.unit == UnitType.sqft) ? 0.5 : 1.0;
+    final increment =
+        (widget.unit == UnitType.kg || widget.unit == UnitType.sqft)
+            ? 0.5
+            : 1.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,7 +527,8 @@ class _QuantityControlsState extends State<_QuantityControls> {
             children: [
               IconButton(
                 onPressed: widget.quantity > 0
-                    ? () => widget.onQuantityChanged((widget.quantity - increment).clamp(0, double.infinity))
+                    ? () => widget.onQuantityChanged(
+                        (widget.quantity - increment).clamp(0, double.infinity))
                     : null,
                 icon: const Icon(Icons.remove),
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -516,8 +538,10 @@ class _QuantityControlsState extends State<_QuantityControls> {
                 child: TextField(
                   controller: _quantityController,
                   textAlign: TextAlign.center,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 18),
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     isDense: true,
@@ -529,7 +553,7 @@ class _QuantityControlsState extends State<_QuantityControls> {
                       widget.onQuantityChanged(0);
                       return;
                     }
-                    
+
                     final parsed = double.tryParse(value.replaceAll(',', '.'));
                     if (parsed != null && parsed >= 0) {
                       widget.onQuantityChanged(parsed);
@@ -539,7 +563,8 @@ class _QuantityControlsState extends State<_QuantityControls> {
                 ),
               ),
               IconButton(
-                onPressed: () => widget.onQuantityChanged(widget.quantity + increment),
+                onPressed: () =>
+                    widget.onQuantityChanged(widget.quantity + increment),
                 icon: const Icon(Icons.add),
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 padding: EdgeInsets.zero,
@@ -566,9 +591,7 @@ class _QuantityButton extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Material(
-      color: onPressed != null
-          ? theme.primaryColor
-          : Colors.grey.shade300,
+      color: onPressed != null ? theme.primaryColor : Colors.grey.shade300,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onPressed,

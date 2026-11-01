@@ -3,7 +3,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
-import '../../services/pdf_service.dart';
 import '../../services/invoice_service.dart'; // Added import
 import './product_selection_screen.dart';
 import '../widgets/responsive_page.dart';
@@ -12,16 +11,20 @@ class EditInvoiceScreen extends StatefulWidget {
   final Sale sale;
   final bool isViewOnly;
 
-  const EditInvoiceScreen({super.key, required this.sale, this.isViewOnly = false});
+  const EditInvoiceScreen(
+      {super.key, required this.sale, this.isViewOnly = false});
 
   @override
   State<EditInvoiceScreen> createState() => _EditInvoiceScreenState();
 }
 
-class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProviderStateMixin {
+class _EditInvoiceScreenState extends State<EditInvoiceScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _customerNameController = TextEditingController();
-  final TextEditingController _customerPhoneController = TextEditingController();
-  final TextEditingController _customerGstinController = TextEditingController();
+  final TextEditingController _customerPhoneController =
+      TextEditingController();
+  final TextEditingController _customerGstinController =
+      TextEditingController();
   PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
   final List<SaleItem> _editedItems = [];
   final TextEditingController _discountController = TextEditingController();
@@ -29,7 +32,8 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
   bool _isSaving = false;
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-  final InvoiceService _invoiceService = InvoiceService(); // Instantiated InvoiceService
+  final InvoiceService _invoiceService =
+      InvoiceService(); // Instantiated InvoiceService
 
   @override
   void initState() {
@@ -45,7 +49,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
       parent: _slideController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _customerNameController.text = widget.sale.customerName;
     _customerPhoneController.text = widget.sale.customerPhone;
     _customerGstinController.text = widget.sale.customerGstin;
@@ -61,7 +65,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
         if (_discount > _currentSubtotal) _discount = _currentSubtotal;
       });
     });
-    
+
     _slideController.forward();
   }
 
@@ -76,23 +80,29 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
   }
 
   double _money(double value) => (value * 100).roundToDouble() / 100;
-  double get _currentSubtotal => _money(_editedItems.fold(0.0, (a, it) => a + it.subtotal));
+  double get _currentSubtotal =>
+      _money(_editedItems.fold(0.0, (a, it) => a + it.subtotal));
   double _grossAfterDiscount(SaleItem item) {
     if (_currentSubtotal <= 0) return 0.0;
     return _money((item.subtotal - _discount * item.subtotal / _currentSubtotal)
-        .clamp(0.0, double.infinity).toDouble());
+        .clamp(0.0, double.infinity)
+        .toDouble());
   }
+
   double _rateForItem(SaleItem item) {
     if (item.gstRate != null) return item.gstRate!;
-    final productRate = Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
+    final productRate =
+        Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
     return productRate ?? widget.sale.gstRate;
   }
+
   double _taxableForItem(SaleItem item) {
     final gross = _grossAfterDiscount(item);
     if (!widget.sale.gstEnabled || !widget.sale.gstInclusive) return gross;
     final rate = _rateForItem(item);
     return rate <= 0 ? gross : _money(gross / (1 + rate / 100.0));
   }
+
   double _taxForItem(SaleItem item) {
     if (!widget.sale.gstEnabled) return 0.0;
     final gross = _grossAfterDiscount(item);
@@ -101,18 +111,35 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
         ? gross - taxable
         : _money(taxable * _rateForItem(item) / 100.0);
   }
-  double get _currentTaxable => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _taxableForItem(item)));
-  double get _currentGst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _taxForItem(item)));
-  double _lineCgst(SaleItem item) => widget.sale.gstEnabled && !widget.sale.interstateSale ? _money(_taxForItem(item) / 2) : 0.0;
-  double _lineSgst(SaleItem item) => widget.sale.gstEnabled && !widget.sale.interstateSale ? _money(_taxForItem(item) - _lineCgst(item)) : 0.0;
-  double _lineIgst(SaleItem item) => widget.sale.gstEnabled && widget.sale.interstateSale ? _taxForItem(item) : 0.0;
-  double get _currentCgst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _lineCgst(item)));
-  double get _currentSgst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _lineSgst(item)));
-  double get _currentIgst => _money(_editedItems.fold<double>(0.0, (sum, item) => sum + _lineIgst(item)));
-  double get _currentTotal => _money(widget.sale.gstEnabled && !widget.sale.gstInclusive
-      ? _currentTaxable + _currentGst
-      : _currentSubtotal - _discount);
-  double get _currentCost => _editedItems.fold(0.0, (a, it) => a + (it.costPrice * it.qty));
+
+  double get _currentTaxable => _money(_editedItems.fold<double>(
+      0.0, (sum, item) => sum + _taxableForItem(item)));
+  double get _currentGst => _money(
+      _editedItems.fold<double>(0.0, (sum, item) => sum + _taxForItem(item)));
+  double _lineCgst(SaleItem item) =>
+      widget.sale.gstEnabled && !widget.sale.interstateSale
+          ? _money(_taxForItem(item) / 2)
+          : 0.0;
+  double _lineSgst(SaleItem item) =>
+      widget.sale.gstEnabled && !widget.sale.interstateSale
+          ? _money(_taxForItem(item) - _lineCgst(item))
+          : 0.0;
+  double _lineIgst(SaleItem item) =>
+      widget.sale.gstEnabled && widget.sale.interstateSale
+          ? _taxForItem(item)
+          : 0.0;
+  double get _currentCgst => _money(
+      _editedItems.fold<double>(0.0, (sum, item) => sum + _lineCgst(item)));
+  double get _currentSgst => _money(
+      _editedItems.fold<double>(0.0, (sum, item) => sum + _lineSgst(item)));
+  double get _currentIgst => _money(
+      _editedItems.fold<double>(0.0, (sum, item) => sum + _lineIgst(item)));
+  double get _currentTotal =>
+      _money(widget.sale.gstEnabled && !widget.sale.gstInclusive
+          ? _currentTaxable + _currentGst
+          : _currentSubtotal - _discount);
+  double get _currentCost =>
+      _editedItems.fold(0.0, (a, it) => a + (it.costPrice * it.qty));
   double get _currentProfit => _currentTaxable - _currentCost;
 
   double _getAvailableStock(Product product, SaleItem? currentItem) {
@@ -123,7 +150,8 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     return product.stock + originalQty - cartQty;
   }
 
-  bool _canAddMoreToCart(Product product, SaleItem? currentItem, double quantityToAdd) {
+  bool _canAddMoreToCart(
+      Product product, SaleItem? currentItem, double quantityToAdd) {
     return _getAvailableStock(product, currentItem) >= quantityToAdd;
   }
 
@@ -135,7 +163,8 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             const Icon(Icons.warning, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('Cannot add $productName. Only ${availableStock.toStringAsFixed(1)} units available.'),
+              child: Text(
+                  'Cannot add $productName. Only ${availableStock.toStringAsFixed(1)} units available.'),
             ),
           ],
         ),
@@ -165,7 +194,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
 
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
-    
+
     try {
       for (final item in _editedItems) {
         final product = Hive.box<Product>(Boxes.products).get(item.productId);
@@ -195,7 +224,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
         ..discount = _discount;
 
       await widget.sale.save();
-      
+
       if (mounted) {
         _showSuccessMessage('Invoice updated successfully');
         await Future.delayed(const Duration(seconds: 1));
@@ -275,13 +304,14 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                icon: _isSaving 
+                icon: _isSaving
                     ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(theme.primaryColor),
                         ),
                       )
                     : const Icon(Icons.save, size: 18),
@@ -290,39 +320,41 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             ),
         ],
       ),
-      body: ResponsivePage(maxWidth: 1100, child: SlideTransition(
-        position: _slideAnimation,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Invoice Header
-              _buildInvoiceHeader(theme),
-              const SizedBox(height: 20),
-              
-              // Customer Details Section
-              _buildCustomerSection(theme, isTablet),
-              const SizedBox(height: 20),
-              
-              // Items Section
-              _buildItemsSection(theme, cur, isTablet),
-              const SizedBox(height: 20),
-              
-              // Discount Section
-              _buildDiscountSection(theme),
-              const SizedBox(height: 20),
-              
-              // Totals Summary
-              _buildTotalsSection(theme, cur),
-              const SizedBox(height: 20),
-              
-              // Save Button
-              if (!widget.isViewOnly) _buildSaveButton(theme),
-            ],
-          ),
-        ),
-      )),
+      body: ResponsivePage(
+          maxWidth: 1100,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Invoice Header
+                  _buildInvoiceHeader(theme),
+                  const SizedBox(height: 20),
+
+                  // Customer Details Section
+                  _buildCustomerSection(theme, isTablet),
+                  const SizedBox(height: 20),
+
+                  // Items Section
+                  _buildItemsSection(theme, cur, isTablet),
+                  const SizedBox(height: 20),
+
+                  // Discount Section
+                  _buildDiscountSection(theme),
+                  const SizedBox(height: 20),
+
+                  // Totals Summary
+                  _buildTotalsSection(theme, cur),
+                  const SizedBox(height: 20),
+
+                  // Save Button
+                  if (!widget.isViewOnly) _buildSaveButton(theme),
+                ],
+              ),
+            ),
+          )),
     );
   }
 
@@ -334,7 +366,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            theme.primaryColor.withOpacity(0.8),
+            theme.primaryColor.withValues(alpha: 0.8),
             theme.primaryColor,
           ],
         ),
@@ -345,7 +377,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -371,14 +403,14 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                   'ID: ${widget.sale.id}',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
                 Text(
                   DateFormat('MMM dd, yyyy • hh:mm a').format(widget.sale.date),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -403,7 +435,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -423,7 +455,6 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
               ],
             ),
             const SizedBox(height: 20),
-            
             isTablet
                 ? Row(
                     children: [
@@ -439,7 +470,6 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                       _buildCustomerPhoneField(),
                     ],
                   ),
-            
             if (widget.sale.gstEnabled) ...[
               const SizedBox(height: 16),
               _buildCustomerGstinField(),
@@ -469,14 +499,15 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: TextField(
             controller: _customerNameController,
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.person_outline),
               border: OutlineInputBorder(borderSide: BorderSide.none),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               hintText: 'Enter customer name',
             ),
             readOnly: widget.isViewOnly,
@@ -503,7 +534,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: TextField(
             controller: _customerPhoneController,
@@ -511,7 +542,8 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.phone_outlined),
               border: OutlineInputBorder(borderSide: BorderSide.none),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               hintText: 'Enter phone number',
             ),
             readOnly: widget.isViewOnly,
@@ -525,7 +557,11 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Customer GSTIN (optional)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
+        Text('Customer GSTIN (optional)',
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700])),
         const SizedBox(height: 8),
         TextField(
           controller: _customerGstinController,
@@ -558,19 +594,26 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             final isSelected = _selectedPaymentMethod == method;
             return Expanded(
               child: GestureDetector(
-                onTap: widget.isViewOnly ? null : () {
-                  setState(() {
-                    _selectedPaymentMethod = method;
-                  });
-                },
+                onTap: widget.isViewOnly
+                    ? null
+                    : () {
+                        setState(() {
+                          _selectedPaymentMethod = method;
+                        });
+                      },
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? theme.primaryColor.withOpacity(0.1) : Colors.grey.withOpacity(0.05),
+                    color: isSelected
+                        ? theme.primaryColor.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? theme.primaryColor : Colors.grey.withOpacity(0.3),
+                      color: isSelected
+                          ? theme.primaryColor
+                          : Colors.grey.withValues(alpha: 0.3),
                       width: isSelected ? 2 : 1,
                     ),
                   ),
@@ -578,7 +621,9 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
                         color: isSelected ? theme.primaryColor : Colors.grey,
                         size: 18,
                       ),
@@ -586,8 +631,11 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                       Text(
                         method.name.toUpperCase(),
                         style: TextStyle(
-                          color: isSelected ? theme.primaryColor : Colors.grey[700],
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? theme.primaryColor
+                              : Colors.grey[700],
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
                           fontSize: 12,
                         ),
                       ),
@@ -616,7 +664,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -651,7 +699,6 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
               ],
             ),
             const SizedBox(height: 20),
-            
             if (_editedItems.isEmpty)
               _buildEmptyItemsState()
             else
@@ -683,7 +730,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
           ),
           const SizedBox(height: 8),
           Text(
-            widget.isViewOnly 
+            widget.isViewOnly
                 ? 'This invoice has no items'
                 : 'Tap "Add" to add products to this invoice',
             style: TextStyle(
@@ -699,7 +746,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
 
   List<Widget> _buildItemsList(NumberFormat cur, ThemeData theme) {
     final productsBox = Hive.box<Product>(Boxes.products);
-    
+
     return _editedItems.asMap().entries.map((entry) {
       final index = entry.key;
       final item = entry.value;
@@ -714,15 +761,16 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     }).toList();
   }
 
-  Widget _buildItemCard(SaleItem item, Product product, int index, NumberFormat cur, ThemeData theme) {
+  Widget _buildItemCard(SaleItem item, Product product, int index,
+      NumberFormat cur, ThemeData theme) {
     final increment = product.unit == UnitType.kg ? 0.5 : 1.0;
     final decrement = product.unit == UnitType.kg ? 0.5 : 1.0;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.03),
+        color: Colors.grey.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -735,7 +783,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -778,7 +826,6 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
               ],
             ),
             const SizedBox(height: 16),
-            
             Row(
               children: [
                 // Price Field
@@ -799,15 +846,19 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                          border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.3)),
                         ),
                         child: TextFormField(
                           initialValue: item.sellingPrice.toStringAsFixed(2),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: const InputDecoration(
                             prefixText: '₹',
-                            border: OutlineInputBorder(borderSide: BorderSide.none),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                            border:
+                                OutlineInputBorder(borderSide: BorderSide.none),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 16),
                           ),
                           readOnly: widget.isViewOnly,
                           onChanged: (value) {
@@ -823,42 +874,52 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                   ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Quantity Controls
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                    border:
+                        Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.remove, size: 20),
-                        onPressed: widget.isViewOnly ? null : () {
-                          setState(() {
-                            if (item.qty > decrement) {
-                              item.qty -= decrement;
-                              item.subtotal = item.qty * item.sellingPrice;
-                            }
-                          });
-                        },
+                        onPressed: widget.isViewOnly
+                            ? null
+                            : () {
+                                setState(() {
+                                  if (item.qty > decrement) {
+                                    item.qty -= decrement;
+                                    item.subtotal =
+                                        item.qty * item.sellingPrice;
+                                  }
+                                });
+                              },
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          item.qty.toStringAsFixed(product.unit == UnitType.kg ? 1 : 0),
+                          item.qty.toStringAsFixed(
+                              product.unit == UnitType.kg ? 1 : 0),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.add, size: 20),
-                        onPressed: widget.isViewOnly ? null : (_canAddMoreToCart(product, item, increment) ? () {
-                          setState(() {
-                            item.qty += increment;
-                            item.subtotal = item.qty * item.sellingPrice;
-                          });
-                        } : null),
+                        onPressed: widget.isViewOnly
+                            ? null
+                            : (_canAddMoreToCart(product, item, increment)
+                                ? () {
+                                    setState(() {
+                                      item.qty += increment;
+                                      item.subtotal =
+                                          item.qty * item.sellingPrice;
+                                    });
+                                  }
+                                : null),
                       ),
                     ],
                   ),
@@ -866,7 +927,6 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
               ],
             ),
             const SizedBox(height: 12),
-            
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -907,7 +967,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -943,16 +1003,19 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                    border:
+                        Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                   ),
                   child: TextField(
                     controller: _discountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
                       prefixText: '₹',
                       prefixIcon: Icon(Icons.money_off),
                       border: OutlineInputBorder(borderSide: BorderSide.none),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       hintText: 'Enter discount amount',
                     ),
                     readOnly: widget.isViewOnly,
@@ -960,7 +1023,9 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                       setState(() {
                         _discount = double.tryParse(value) ?? 0.0;
                         if (_discount < 0) _discount = 0.0;
-                        if (_discount > _currentSubtotal) _discount = _currentSubtotal;
+                        if (_discount > _currentSubtotal) {
+                          _discount = _currentSubtotal;
+                        }
                       });
                     },
                   ),
@@ -984,8 +1049,8 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.primaryColor.withOpacity(0.05),
-              theme.primaryColor.withOpacity(0.1),
+              theme.primaryColor.withValues(alpha: 0.05),
+              theme.primaryColor.withValues(alpha: 0.1),
             ],
           ),
         ),
@@ -998,7 +1063,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: theme.primaryColor.withOpacity(0.1),
+                      color: theme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -1018,9 +1083,9 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                 ],
               ),
               const SizedBox(height: 20),
-              
               _buildSummaryRow('Subtotal', cur.format(_currentSubtotal)),
-              _buildSummaryRow('Discount', '- ${cur.format(_discount)}', isDiscount: true),
+              _buildSummaryRow('Discount', '- ${cur.format(_discount)}',
+                  isDiscount: true),
               if (widget.sale.gstEnabled) ...[
                 _buildSummaryRow('Taxable value', cur.format(_currentTaxable)),
                 if (widget.sale.interstateSale)
@@ -1031,9 +1096,11 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
                 ],
               ],
               const Divider(thickness: 2),
-              _buildSummaryRow('Total', cur.format(_currentTotal), isTotal: true, theme: theme),
+              _buildSummaryRow('Total', cur.format(_currentTotal),
+                  isTotal: true, theme: theme),
               const SizedBox(height: 8),
-              _buildSummaryRow('Profit', cur.format(_currentProfit), isProfit: true),
+              _buildSummaryRow('Profit', cur.format(_currentProfit),
+                  isProfit: true),
             ],
           ),
         ),
@@ -1041,7 +1108,11 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false, bool isDiscount = false, bool isProfit = false, ThemeData? theme}) {
+  Widget _buildSummaryRow(String label, String value,
+      {bool isTotal = false,
+      bool isDiscount = false,
+      bool isProfit = false,
+      ThemeData? theme}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -1052,7 +1123,9 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             style: TextStyle(
               fontSize: isTotal ? 18 : 16,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-              color: isTotal ? (theme?.primaryColor ?? Colors.black) : Colors.black87,
+              color: isTotal
+                  ? (theme?.primaryColor ?? Colors.black)
+                  : Colors.black87,
             ),
           ),
           Text(
@@ -1060,10 +1133,13 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
             style: TextStyle(
               fontSize: isTotal ? 20 : 16,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal ? (theme?.primaryColor ?? Colors.black) 
-                    : isDiscount ? Colors.orange 
-                    : isProfit ? Colors.green 
-                    : Colors.black87,
+              color: isTotal
+                  ? (theme?.primaryColor ?? Colors.black)
+                  : isDiscount
+                      ? Colors.orange
+                      : isProfit
+                          ? Colors.green
+                          : Colors.black87,
             ),
           ),
         ],
@@ -1086,7 +1162,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
           elevation: 2,
         ),
         icon: _isSaving
-            ? SizedBox(
+            ? const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
@@ -1109,10 +1185,10 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> with TickerProvid
   Future<void> _addProduct() async {
     final selectedProduct = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ProductSelectionScreen(),
+        builder: (context) => const ProductSelectionScreen(),
       ),
     );
-    
+
     if (selectedProduct != null && selectedProduct is Product) {
       final p = selectedProduct;
       final increment = p.unit == UnitType.kg ? 0.5 : 1.0;

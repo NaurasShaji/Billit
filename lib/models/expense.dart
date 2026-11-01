@@ -24,12 +24,12 @@ class Expense extends HiveObject {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'date': date.toIso8601String(),
-    'category': category,
-    'amount': amount,
-    'description': description,
-  };
+        'id': id,
+        'date': date.toIso8601String(),
+        'category': category,
+        'amount': amount,
+        'description': description,
+      };
 
   static Expense fromJson(Map<String, dynamic> json) {
     return Expense(

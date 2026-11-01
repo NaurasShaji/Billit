@@ -9,7 +9,8 @@ class _GoogleAuthClient extends http.BaseClient {
   final Map<String, String> _headers;
   final http.Client _client;
 
-  _GoogleAuthClient(this._headers, [http.Client? client]) : _client = client ?? http.Client();
+  _GoogleAuthClient(this._headers, [http.Client? client])
+      : _client = client ?? http.Client();
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
@@ -72,7 +73,8 @@ class DriveBackupService {
   }
 
   Future<drive.DriveApi> _getDriveApi({bool interactive = true}) async {
-    final user = _googleSignIn.currentUser ?? await signIn(interactive: interactive);
+    final user =
+        _googleSignIn.currentUser ?? await signIn(interactive: interactive);
     if (user == null) {
       throw StateError('Not signed in to Google Drive');
     }
@@ -99,12 +101,15 @@ class DriveBackupService {
     return created.id!;
   }
 
-  Future<void> uploadJson({required String filename, required Map<String, dynamic> json}) async {
+  Future<void> uploadJson(
+      {required String filename, required Map<String, dynamic> json}) async {
     final api = await _getDriveApi();
     final folderId = await _ensureBackupFolderId(api);
 
-    final mediaBytes = utf8.encode(const JsonEncoder.withIndent('  ').convert(json));
-    final media = drive.Media(Stream<List<int>>.value(mediaBytes), mediaBytes.length);
+    final mediaBytes =
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(json));
+    final media =
+        drive.Media(Stream<List<int>>.value(mediaBytes), mediaBytes.length);
 
     final fileMetadata = drive.File()
       ..name = filename
@@ -142,7 +147,8 @@ class DriveBackupService {
 
   Future<Map<String, dynamic>> downloadJson(String fileId) async {
     final api = await _getDriveApi();
-    final media = await api.files.get(fileId, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
+    final media = await api.files.get(fileId,
+        downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
     final bytesBuilder = BytesBuilder();
     await for (final chunk in media.stream) {
       bytesBuilder.add(chunk);
@@ -155,5 +161,3 @@ class DriveBackupService {
     throw StateError('Unexpected JSON format');
   }
 }
-
-

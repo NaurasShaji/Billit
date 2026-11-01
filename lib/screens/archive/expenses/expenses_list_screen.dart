@@ -5,13 +5,14 @@ import '../../../services/boxes.dart';
 import '../../../models/expense.dart';
 
 class ExpensesListScreen extends StatefulWidget {
-  const ExpensesListScreen({Key? key}) : super(key: key);
+  const ExpensesListScreen({super.key});
 
   @override
   State<ExpensesListScreen> createState() => _ExpensesListScreenState();
 }
 
-class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTickerProviderStateMixin {
+class _ExpensesListScreenState extends State<ExpensesListScreen>
+    with SingleTickerProviderStateMixin {
   String _filter = 'all';
   late TabController _tab;
   DateTime _anchor = DateTime.now();
@@ -37,9 +38,10 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
     final currency = NumberFormat.simpleCurrency(locale: 'en_IN');
     final dateFmt = DateFormat('dd MMM yyyy');
     final monthFmt = DateFormat('MMMM yyyy');
-    
+
     return Scaffold(
-      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+      backgroundColor:
+          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
         title: const Text('Expense Records'),
         backgroundColor: Colors.red.shade600,
@@ -51,13 +53,15 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TabBar(
               controller: _tab,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+              labelStyle:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              unselectedLabelStyle:
+                  const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               indicator: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
@@ -80,7 +84,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
         builder: (context, Box<Expense> box, _) {
           DateTime rangeStart;
           DateTime rangeEnd;
-          
+
           if (_tab.index == 0) {
             rangeStart = DateTime(_anchor.year, _anchor.month, _anchor.day);
             rangeEnd = rangeStart.add(const Duration(days: 1));
@@ -93,22 +97,36 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
           }
 
           final all = box.values
-              .where((e) => !e.date.isBefore(rangeStart) && e.date.isBefore(rangeEnd))
+              .where((e) =>
+                  !e.date.isBefore(rangeStart) && e.date.isBefore(rangeEnd))
               .toList()
             ..sort((a, b) => b.date.compareTo(a.date));
 
-          final salaryMonthly = all.where((e) => e.category == 'Salary-Monthly').fold<double>(0, (s, e) => s + e.amount);
-          final salaryDaily = all.where((e) => e.category == 'Salary-Daily').fold<double>(0, (s, e) => s + e.amount);
-          final otherExpenses = all.where((e) => !(e.category == 'Salary-Monthly' || e.category == 'Salary-Daily'))
+          final salaryMonthly = all
+              .where((e) => e.category == 'Salary-Monthly')
+              .fold<double>(0, (s, e) => s + e.amount);
+          final salaryDaily = all
+              .where((e) => e.category == 'Salary-Daily')
+              .fold<double>(0, (s, e) => s + e.amount);
+          final otherExpenses = all
+              .where((e) => !(e.category == 'Salary-Monthly' ||
+                  e.category == 'Salary-Daily'))
               .fold<double>(0, (s, e) => s + e.amount);
           final totalSalary = salaryMonthly + salaryDaily;
           final netExpenses = totalSalary + otherExpenses;
 
           List<Expense> filtered = all;
           if (_filter == 'salary') {
-            filtered = all.where((e) => e.category == 'Salary-Monthly' || e.category == 'Salary-Daily').toList();
+            filtered = all
+                .where((e) =>
+                    e.category == 'Salary-Monthly' ||
+                    e.category == 'Salary-Daily')
+                .toList();
           } else if (_filter == 'other') {
-            filtered = all.where((e) => !(e.category == 'Salary-Monthly' || e.category == 'Salary-Daily')).toList();
+            filtered = all
+                .where((e) => !(e.category == 'Salary-Monthly' ||
+                    e.category == 'Salary-Daily'))
+                .toList();
           }
 
           return Column(
@@ -121,14 +139,16 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.onSurface.withOpacity(0.08),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
                       offset: const Offset(0, 2),
                       blurRadius: 12,
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
                       Container(
@@ -138,8 +158,10 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                         ),
                         child: IconButton(
                           tooltip: 'Previous',
-                          icon: Icon(Icons.chevron_left, color: Colors.red.shade600),
-                          onPressed: () => setState(() => _anchor = _previous(_anchor)),
+                          icon: Icon(Icons.chevron_left,
+                              color: Colors.red.shade600),
+                          onPressed: () =>
+                              setState(() => _anchor = _previous(_anchor)),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -151,7 +173,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                           ),
                           child: TextButton.icon(
                             onPressed: _pickPeriod,
-                            icon: Icon(Icons.calendar_today, color: Colors.blue.shade600, size: 20),
+                            icon: Icon(Icons.calendar_today,
+                                color: Colors.blue.shade600, size: 20),
                             label: Text(
                               _tab.index == 0
                                   ? dateFmt.format(_anchor)
@@ -175,8 +198,10 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                         ),
                         child: IconButton(
                           tooltip: 'Next',
-                          icon: Icon(Icons.chevron_right, color: Colors.red.shade600),
-                          onPressed: () => setState(() => _anchor = _next(_anchor)),
+                          icon: Icon(Icons.chevron_right,
+                              color: Colors.red.shade600),
+                          onPressed: () =>
+                              setState(() => _anchor = _next(_anchor)),
                         ),
                       ),
                     ],
@@ -196,7 +221,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.onSurface.withOpacity(0.08),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.08),
                               offset: const Offset(0, 4),
                               blurRadius: 16,
                             ),
@@ -225,7 +251,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Financial Summary',
@@ -240,7 +267,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                           'Expense breakdown for selected period',
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
                                           ),
                                         ),
                                       ],
@@ -248,9 +276,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                   ),
                                 ],
                               ),
-                              
+
                               const SizedBox(height: 24),
-                              
+
                               // Expense Categories
                               _buildSummaryRow(
                                 'Monthly Salaries',
@@ -272,11 +300,13 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                 Icons.receipt_long_outlined,
                                 Colors.purple,
                               ),
-                              
+
                               const SizedBox(height: 16),
-                              Divider(color: theme.colorScheme.outline.withOpacity(0.2)),
+                              Divider(
+                                  color: theme.colorScheme.outline
+                                      .withValues(alpha: 0.2)),
                               const SizedBox(height: 16),
-                              
+
                               // Total
                               _buildSummaryRow(
                                 'Total Expenses',
@@ -289,9 +319,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Enhanced Filter Chips
                       Container(
                         decoration: BoxDecoration(
@@ -299,7 +329,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.onSurface.withOpacity(0.08),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.08),
                               offset: const Offset(0, 2),
                               blurRadius: 12,
                             ),
@@ -333,18 +364,21 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                 spacing: 12,
                                 runSpacing: 8,
                                 children: [
-                                  _buildFilterChip('All Expenses', 'all', Icons.list_alt_outlined),
-                                  _buildFilterChip('Salary Only', 'salary', Icons.payments_outlined),
-                                  _buildFilterChip('Other Only', 'other', Icons.receipt_outlined),
+                                  _buildFilterChip('All Expenses', 'all',
+                                      Icons.list_alt_outlined),
+                                  _buildFilterChip('Salary Only', 'salary',
+                                      Icons.payments_outlined),
+                                  _buildFilterChip('Other Only', 'other',
+                                      Icons.receipt_outlined),
                                 ],
                               ),
                             ],
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Enhanced Expenses List
                       Container(
                         decoration: BoxDecoration(
@@ -352,7 +386,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.onSurface.withOpacity(0.08),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.08),
                               offset: const Offset(0, 4),
                               blurRadius: 16,
                             ),
@@ -391,7 +426,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                 ],
                               ),
                             ),
-                            
+
                             // List Content
                             if (filtered.isEmpty)
                               Padding(
@@ -401,7 +436,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                     Icon(
                                       Icons.inbox_outlined,
                                       size: 48,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.3),
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.3),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
@@ -409,7 +445,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                        color: theme.colorScheme.onSurface
+                                            .withValues(alpha: 0.6),
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -417,7 +454,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                       'Expenses will appear here once recorded',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                        color: theme.colorScheme.onSurface
+                                            .withValues(alpha: 0.5),
                                       ),
                                     ),
                                   ],
@@ -429,15 +467,17 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                   final index = entry.key;
                                   final expense = entry.value;
                                   final isLast = index == filtered.length - 1;
-                                  
+
                                   return Column(
                                     children: [
-                                      _buildExpenseItem(expense, currency, dateFmt, theme),
+                                      _buildExpenseItem(
+                                          expense, currency, dateFmt, theme),
                                       if (!isLast)
                                         Divider(
                                           height: 1,
                                           thickness: 0.5,
-                                          color: theme.colorScheme.outline.withOpacity(0.2),
+                                          color: theme.colorScheme.outline
+                                              .withValues(alpha: 0.2),
                                           indent: 56,
                                           endIndent: 20,
                                         ),
@@ -445,12 +485,12 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                                   );
                                 }).toList(),
                               ),
-                            
+
                             const SizedBox(height: 8),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
                     ],
                   ),
@@ -463,7 +503,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
     );
   }
 
-  Widget _buildSummaryRow(String title, String value, IconData icon, MaterialColor color, {bool isBold = false}) {
+  Widget _buildSummaryRow(
+      String title, String value, IconData icon, MaterialColor color,
+      {bool isBold = false}) {
     return Row(
       children: [
         Container(
@@ -494,7 +536,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
           style: TextStyle(
             fontSize: isBold ? 16 : 15,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-            color: isBold ? color.shade700 : Theme.of(context).colorScheme.onSurface,
+            color: isBold
+                ? color.shade700
+                : Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -504,7 +548,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
   Widget _buildFilterChip(String label, String value, IconData icon) {
     final isSelected = _filter == value;
     final theme = Theme.of(context);
-    
+
     return Material(
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
@@ -513,10 +557,15 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withOpacity(0.3),
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -525,7 +574,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.7),
+                color: isSelected
+                    ? Colors.white
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 8),
               Text(
@@ -533,7 +584,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.8),
+                  color: isSelected
+                      ? Colors.white
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -543,11 +596,13 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
     );
   }
 
-  Widget _buildExpenseItem(Expense expense, NumberFormat currency, DateFormat dateFmt, ThemeData theme) {
-    final isSalary = expense.category == 'Salary-Monthly' || expense.category == 'Salary-Daily';
+  Widget _buildExpenseItem(Expense expense, NumberFormat currency,
+      DateFormat dateFmt, ThemeData theme) {
+    final isSalary = expense.category == 'Salary-Monthly' ||
+        expense.category == 'Salary-Daily';
     final color = isSalary ? Colors.blue : Colors.orange;
     final icon = isSalary ? Icons.payments_outlined : Icons.receipt_outlined;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
@@ -570,7 +625,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  expense.description.isNotEmpty ? expense.description : expense.category,
+                  expense.description.isNotEmpty
+                      ? expense.description
+                      : expense.category,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -591,7 +648,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                       ' • ${dateFmt.format(expense.date)}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -685,7 +743,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text('Select Year'),
             content: SizedBox(
               width: 300,
@@ -744,7 +803,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    expense.description.isNotEmpty ? expense.description : expense.category,
+                    expense.description.isNotEmpty
+                        ? expense.description
+                        : expense.category,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -783,7 +844,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Delete'),
           ),
@@ -797,20 +859,21 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
+              content: const Row(
                 children: [
                   Icon(
                     Icons.check_circle_outline,
                     color: Colors.white,
                     size: 20,
                   ),
-                  const SizedBox(width: 12),
-                  const Text('Expense deleted successfully'),
+                  SizedBox(width: 12),
+                  Text('Expense deleted successfully'),
                 ],
               ),
               backgroundColor: Colors.green.shade600,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -821,7 +884,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
             SnackBar(
               content: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.error_outline,
                     color: Colors.white,
                     size: 20,
@@ -832,7 +895,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
               ),
               backgroundColor: Colors.red.shade600,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -854,7 +918,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: const Text('Select Month and Year'),
               content: SizedBox(
                 width: 360,
@@ -883,7 +948,8 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                         final m = i + 1;
                         final isSelected = m == selectedMonth;
                         return ChoiceChip(
-                          label: Text(DateFormat('MMM').format(DateTime(2000, m, 1))),
+                          label: Text(
+                              DateFormat('MMM').format(DateTime(2000, m, 1))),
                           selected: isSelected,
                           onSelected: (_) {
                             setStateDialog(() {
@@ -903,10 +969,12 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> with SingleTick
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(ctx).pop(DateTime(selectedYear, selectedMonth, 1));
+                    Navigator.of(ctx)
+                        .pop(DateTime(selectedYear, selectedMonth, 1));
                   },
                   style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text('Select'),
                 ),

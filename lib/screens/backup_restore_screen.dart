@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 import '../services/drive_backup_service.dart';
 import '../services/drive_sync_service.dart';
@@ -65,13 +63,24 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
 
       // Collect data from all boxes
       final data = {
-        'products': Hive.box<Product>(Boxes.products).values.map((e) => e.toJson()).toList(),
-        'sales': Hive.box<Sale>(Boxes.sales).values.map((e) => e.toJson()).toList(),
-        'expenses': Hive.box<Expense>(Boxes.expenses).values.map((e) => e.toJson()).toList(),
-        'employees': Hive.box<Employee>(Boxes.employees).values.map((e) => e.toJson()).toList(),
+        'products': Hive.box<Product>(Boxes.products)
+            .values
+            .map((e) => e.toJson())
+            .toList(),
+        'sales':
+            Hive.box<Sale>(Boxes.sales).values.map((e) => e.toJson()).toList(),
+        'expenses': Hive.box<Expense>(Boxes.expenses)
+            .values
+            .map((e) => e.toJson())
+            .toList(),
+        'employees': Hive.box<Employee>(Boxes.employees)
+            .values
+            .map((e) => e.toJson())
+            .toList(),
       };
 
-      await DriveBackupService.instance.uploadJson(filename: filename, json: data);
+      await DriveBackupService.instance
+          .uploadJson(filename: filename, json: data);
       await _refreshBackups();
 
       if (!mounted) return;
@@ -114,7 +123,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Restore'),
-        content: Text('Restore data from ${file.name}? This will replace all current data.'),
+        content: Text(
+            'Restore data from ${file.name}? This will replace all current data.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -147,22 +157,26 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       // Restore data
       if (data['products'] != null) {
         await Hive.box<Product>(Boxes.products).addAll(
-          (data['products'] as List).map((e) => Product.fromJson(e as Map<String, dynamic>)),
+          (data['products'] as List)
+              .map((e) => Product.fromJson(e as Map<String, dynamic>)),
         );
       }
       if (data['sales'] != null) {
         await Hive.box<Sale>(Boxes.sales).addAll(
-          (data['sales'] as List).map((e) => Sale.fromJson(e as Map<String, dynamic>)),
+          (data['sales'] as List)
+              .map((e) => Sale.fromJson(e as Map<String, dynamic>)),
         );
       }
       if (data['expenses'] != null) {
         await Hive.box<Expense>(Boxes.expenses).addAll(
-          (data['expenses'] as List).map((e) => Expense.fromJson(e as Map<String, dynamic>)),
+          (data['expenses'] as List)
+              .map((e) => Expense.fromJson(e as Map<String, dynamic>)),
         );
       }
       if (data['employees'] != null) {
         await Hive.box<Employee>(Boxes.employees).addAll(
-          (data['employees'] as List).map((e) => Employee.fromJson(e as Map<String, dynamic>)),
+          (data['employees'] as List)
+              .map((e) => Employee.fromJson(e as Map<String, dynamic>)),
         );
       }
 
@@ -230,9 +244,12 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                   },
                   icon: Icon(
                     autoSync ? Icons.sync : Icons.sync_disabled,
-                    color: autoSync ? Colors.white : Colors.white.withOpacity(0.7),
+                    color: autoSync
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.7),
                   ),
-                  tooltip: autoSync ? 'Auto sync enabled' : 'Auto sync disabled',
+                  tooltip:
+                      autoSync ? 'Auto sync enabled' : 'Auto sync disabled',
                 );
               },
             ),
@@ -332,7 +349,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                             ),
                           ),
                           child: ListTile(
@@ -343,7 +360,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: theme.primaryColor.withOpacity(0.1),
+                                color:
+                                    theme.primaryColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(

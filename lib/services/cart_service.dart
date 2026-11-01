@@ -27,10 +27,12 @@ class CartService extends ChangeNotifier {
 
   // Cart operations
   void addItem(SaleItem item) {
-    final existingIndex = _items.indexWhere((i) => i.productId == item.productId);
+    final existingIndex =
+        _items.indexWhere((i) => i.productId == item.productId);
     if (existingIndex != -1) {
       _items[existingIndex].qty += item.qty;
-      _items[existingIndex].subtotal = _items[existingIndex].qty * _items[existingIndex].sellingPrice;
+      _items[existingIndex].subtotal =
+          _items[existingIndex].qty * _items[existingIndex].sellingPrice;
     } else {
       _items.add(item);
     }

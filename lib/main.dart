@@ -41,8 +41,11 @@ Future<void> main() async {
   Future<void> setDefaultSetting(String key, dynamic value) async {
     if (!settings.containsKey(key)) await settings.put(key, value);
   }
+
   final savedAppName = settings.get('app_name');
-  if (savedAppName == null || savedAppName == 'Floral Bill' || savedAppName == 'Floral Billing') {
+  if (savedAppName == null ||
+      savedAppName == 'Floral Bill' ||
+      savedAppName == 'Floral Billing') {
     await settings.put('app_name', 'Billit');
   }
   await setDefaultSetting('app_logo_base64', '');
@@ -55,12 +58,14 @@ Future<void> main() async {
   await setDefaultSetting('corner_radius', 16.0);
   await setDefaultSetting('low_stock_threshold', 10);
   await setDefaultSetting('invoice_accent', 'blue');
-  await setDefaultSetting('invoice_footer_text', 'Thank you for your business.');
+  await setDefaultSetting(
+      'invoice_footer_text', 'Thank you for your business.');
   await setDefaultSetting('upi_id', '');
   await setDefaultSetting('upi_payee_name', '');
   await setDefaultSetting('upi_note_prefix', 'Invoice');
   await setDefaultSetting('business_name', 'Royal Garden');
-  await setDefaultSetting('business_address', 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
+  await setDefaultSetting('business_address',
+      'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
   await setDefaultSetting('business_phone', '9562291843, 9446932750');
   await setDefaultSetting('business_email', '');
   await setDefaultSetting('business_gstin', '');
@@ -69,11 +74,11 @@ Future<void> main() async {
   await setDefaultSetting('gst_price_inclusive', false);
   await setDefaultSetting('invoice_prefix', 'INV');
   await setDefaultSetting('next_invoice_number', 1);
-    
+
   // Initialize services
   final auth = AuthService();
   await auth.ensureSeedUsers();
-    
+
   // Initialize Drive sync service and attempt auto sign-in
   final driveSync = DriveSyncService.instance;
   await driveSync.init();
@@ -84,31 +89,53 @@ Future<void> main() async {
 
 Color _themeSeedColor(String theme) {
   switch (theme) {
-    case 'blue': return const Color(0xFF2864C5);
-    case 'purple': return const Color(0xFF7651B5);
-    case 'amber': return const Color(0xFFB77916);
-    case 'teal': return const Color(0xFF168A8A);
-    case 'rose': return const Color(0xFFB83280);
-    case 'indigo': return const Color(0xFF4F46B8);
-    case 'slate': return const Color(0xFF475569);
-    case 'coral': return const Color(0xFFD45D45);
-    case 'ocean': return const Color(0xFF087EAA);
+    case 'blue':
+      return const Color(0xFF2864C5);
+    case 'purple':
+      return const Color(0xFF7651B5);
+    case 'amber':
+      return const Color(0xFFB77916);
+    case 'teal':
+      return const Color(0xFF168A8A);
+    case 'rose':
+      return const Color(0xFFB83280);
+    case 'indigo':
+      return const Color(0xFF4F46B8);
+    case 'slate':
+      return const Color(0xFF475569);
+    case 'coral':
+      return const Color(0xFFD45D45);
+    case 'ocean':
+      return const Color(0xFF087EAA);
     case 'green':
-    default: return const Color(0xFF25855A);
+    default:
+      return const Color(0xFF25855A);
   }
 }
 
 ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
   final themeName = settings.get('app_theme', defaultValue: 'green').toString();
-  final radius = (settings.get('corner_radius', defaultValue: 16.0) as num).toDouble();
-  final compact = settings.get('ui_density', defaultValue: 'comfortable') == 'compact';
-  final surfaceStyle = settings.get('surface_style', defaultValue: 'outlined').toString();
-  final appBarStyle = settings.get('app_bar_style', defaultValue: 'surface').toString();
-  final fontStyle = settings.get('font_style', defaultValue: 'system').toString();
-  final backgroundStyle = settings.get('background_style', defaultValue: 'tinted').toString();
-  final inputStyle = settings.get('input_style', defaultValue: 'filled').toString();
-  final buttonStyle = settings.get('button_style', defaultValue: 'filled').toString();
-  final fontFamily = fontStyle == 'serif' ? 'serif' : fontStyle == 'monospace' ? 'monospace' : 'sans-serif';
+  final radius =
+      (settings.get('corner_radius', defaultValue: 16.0) as num).toDouble();
+  final compact =
+      settings.get('ui_density', defaultValue: 'comfortable') == 'compact';
+  final surfaceStyle =
+      settings.get('surface_style', defaultValue: 'outlined').toString();
+  final appBarStyle =
+      settings.get('app_bar_style', defaultValue: 'surface').toString();
+  final fontStyle =
+      settings.get('font_style', defaultValue: 'system').toString();
+  final backgroundStyle =
+      settings.get('background_style', defaultValue: 'tinted').toString();
+  final inputStyle =
+      settings.get('input_style', defaultValue: 'filled').toString();
+  final buttonStyle =
+      settings.get('button_style', defaultValue: 'filled').toString();
+  final fontFamily = fontStyle == 'serif'
+      ? 'serif'
+      : fontStyle == 'monospace'
+          ? 'monospace'
+          : 'sans-serif';
   final scheme = ColorScheme.fromSeed(
     seedColor: _themeSeedColor(themeName),
     brightness: brightness,
@@ -120,18 +147,29 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     useMaterial3: true,
     visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
     scaffoldBackgroundColor: dark
-        ? (backgroundStyle == 'plain' ? const Color(0xFF0B0E11) : const Color(0xFF101418))
-        : (backgroundStyle == 'plain' ? scheme.surface : Color.alphaBlend(scheme.primary.withOpacity(0.035), scheme.surface)),
+        ? (backgroundStyle == 'plain'
+            ? const Color(0xFF0B0E11)
+            : const Color(0xFF101418))
+        : (backgroundStyle == 'plain'
+            ? scheme.surface
+            : Color.alphaBlend(
+                scheme.primary.withValues(alpha: 0.035), scheme.surface)),
     textTheme: base.textTheme,
     fontFamily: fontFamily,
     primaryColor: scheme.primary,
     appBarTheme: AppBarTheme(
-      backgroundColor: appBarStyle == 'brand' ? scheme.primary : (dark ? const Color(0xFF171D22) : scheme.surface),
-      foregroundColor: appBarStyle == 'brand' ? scheme.onPrimary : scheme.onSurface,
+      backgroundColor: appBarStyle == 'brand'
+          ? scheme.primary
+          : (dark ? const Color(0xFF171D22) : scheme.surface),
+      foregroundColor:
+          appBarStyle == 'brand' ? scheme.onPrimary : scheme.onSurface,
       elevation: 0,
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
-      iconTheme: IconThemeData(color: appBarStyle == 'brand' ? scheme.onPrimary : scheme.onSurfaceVariant),
+      iconTheme: IconThemeData(
+          color: appBarStyle == 'brand'
+              ? scheme.onPrimary
+              : scheme.onSurfaceVariant),
     ),
     cardTheme: CardThemeData(
       color: dark ? const Color(0xFF1A2229) : scheme.surface,
@@ -141,24 +179,29 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
         side: surfaceStyle == 'outlined'
-            ? BorderSide(color: scheme.outlineVariant.withOpacity(dark ? 0.45 : 0.65))
+            ? BorderSide(
+                color:
+                    scheme.outlineVariant.withValues(alpha: dark ? 0.45 : 0.65))
             : BorderSide.none,
       ),
     ),
     dividerTheme: DividerThemeData(
-      color: scheme.outlineVariant.withOpacity(dark ? 0.35 : 0.6),
+      color: scheme.outlineVariant.withValues(alpha: dark ? 0.35 : 0.6),
       thickness: 1,
       space: 1,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: inputStyle == 'filled',
-      fillColor: inputStyle == 'filled' ? (dark ? const Color(0xFF202830) : scheme.surface) : null,
+      fillColor: inputStyle == 'filled'
+          ? (dark ? const Color(0xFF202830) : scheme.surface)
+          : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: BorderSide(color: scheme.outlineVariant.withOpacity(dark ? 0.55 : 1)),
+        borderSide: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: dark ? 0.55 : 1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
@@ -167,26 +210,45 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: buttonStyle == 'tonal' ? scheme.secondaryContainer : buttonStyle == 'minimal' ? scheme.surfaceContainerHighest : scheme.primary,
-        foregroundColor: buttonStyle == 'tonal' ? scheme.onSecondaryContainer : buttonStyle == 'minimal' ? scheme.onSurface : scheme.onPrimary,
+        backgroundColor: buttonStyle == 'tonal'
+            ? scheme.secondaryContainer
+            : buttonStyle == 'minimal'
+                ? scheme.surfaceContainerHighest
+                : scheme.primary,
+        foregroundColor: buttonStyle == 'tonal'
+            ? scheme.onSecondaryContainer
+            : buttonStyle == 'minimal'
+                ? scheme.onSurface
+                : scheme.onPrimary,
         elevation: buttonStyle == 'minimal' ? 0 : 1,
         minimumSize: const Size(44, 44),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: buttonStyle == 'tonal' ? scheme.secondaryContainer : buttonStyle == 'minimal' ? scheme.surfaceContainerHighest : scheme.primary,
-        foregroundColor: buttonStyle == 'tonal' ? scheme.onSecondaryContainer : buttonStyle == 'minimal' ? scheme.onSurface : scheme.onPrimary,
+        backgroundColor: buttonStyle == 'tonal'
+            ? scheme.secondaryContainer
+            : buttonStyle == 'minimal'
+                ? scheme.surfaceContainerHighest
+                : scheme.primary,
+        foregroundColor: buttonStyle == 'tonal'
+            ? scheme.onSecondaryContainer
+            : buttonStyle == 'minimal'
+                ? scheme.onSurface
+                : scheme.onPrimary,
         elevation: buttonStyle == 'minimal' ? 0 : 1,
         minimumSize: const Size(44, 44),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(44, 44),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
     ),
     listTileTheme: ListTileThemeData(
@@ -194,56 +256,70 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       textColor: scheme.onSurface,
       subtitleTextStyle: TextStyle(color: scheme.onSurfaceVariant),
       selectedColor: scheme.primary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
-        foregroundColor: MaterialStateProperty.resolveWith((states) =>
-          states.contains(MaterialState.selected) ? scheme.onSecondaryContainer : scheme.onSurfaceVariant),
-        backgroundColor: MaterialStateProperty.resolveWith((states) =>
-          states.contains(MaterialState.selected) ? scheme.secondaryContainer : scheme.surface),
-        side: MaterialStateProperty.all(BorderSide(color: scheme.outlineVariant)),
-        shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius))),
+        foregroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected)
+                ? scheme.onSecondaryContainer
+                : scheme.onSurfaceVariant),
+        backgroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected)
+                ? scheme.secondaryContainer
+                : scheme.surface),
+        side: WidgetStateProperty.all(BorderSide(color: scheme.outlineVariant)),
+        shape: WidgetStateProperty.all(RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radius))),
       ),
     ),
     sliderTheme: SliderThemeData(
       activeTrackColor: scheme.primary,
       inactiveTrackColor: scheme.surfaceContainerHighest,
       thumbColor: scheme.primary,
-      overlayColor: scheme.primary.withOpacity(0.12),
+      overlayColor: scheme.primary.withValues(alpha: 0.12),
       valueIndicatorColor: scheme.inverseSurface,
       valueIndicatorTextStyle: TextStyle(color: scheme.onInverseSurface),
     ),
     radioTheme: RadioThemeData(
-      fillColor: MaterialStateProperty.resolveWith((states) =>
-        states.contains(MaterialState.selected) ? scheme.primary : scheme.onSurfaceVariant),
+      fillColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.selected)
+              ? scheme.primary
+              : scheme.onSurfaceVariant),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: MaterialStateProperty.resolveWith((states) =>
-        states.contains(MaterialState.selected) ? scheme.primary : Colors.transparent),
-      checkColor: MaterialStateProperty.all(scheme.onPrimary),
+      fillColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.selected)
+              ? scheme.primary
+              : Colors.transparent),
+      checkColor: WidgetStateProperty.all(scheme.onPrimary),
       side: BorderSide(color: scheme.outline),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith((states) =>
-        states.contains(MaterialState.selected) ? scheme.onPrimary : scheme.onSurfaceVariant),
-      trackColor: MaterialStateProperty.resolveWith((states) =>
-        states.contains(MaterialState.selected) ? scheme.primary : scheme.surfaceContainerHighest),
+      thumbColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.selected)
+              ? scheme.onPrimary
+              : scheme.onSurfaceVariant),
+      trackColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.selected)
+              ? scheme.primary
+              : scheme.surfaceContainerHighest),
     ),
     dropdownMenuTheme: DropdownMenuThemeData(
       textStyle: TextStyle(color: scheme.onSurface),
       menuStyle: MenuStyle(
-        backgroundColor: MaterialStateProperty.all(scheme.surface),
-        surfaceTintColor: MaterialStateProperty.all(Colors.transparent),
+        backgroundColor: WidgetStateProperty.all(scheme.surface),
+        surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: dark ? const Color(0xFF171D22) : scheme.surface,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: scheme.primary.withOpacity(dark ? 0.28 : 0.14),
-      labelTextStyle: MaterialStateProperty.resolveWith((states) {
-        final selected = states.contains(MaterialState.selected);
+      indicatorColor: scheme.primary.withValues(alpha: dark ? 0.28 : 0.14),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
         return TextStyle(
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           fontSize: 12,
@@ -272,12 +348,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()..restoreSessionIfAny())
+        ChangeNotifierProvider(
+            create: (_) => AuthService()..restoreSessionIfAny())
       ],
       child: ValueListenableBuilder<Box<dynamic>>(
         valueListenable: Hive.box<dynamic>('app_settings').listenable(),
         builder: (context, settings, _) {
-          final modeName = settings.get('theme_mode', defaultValue: 'system').toString();
+          final modeName =
+              settings.get('theme_mode', defaultValue: 'system').toString();
           final mode = modeName == 'dark'
               ? ThemeMode.dark
               : modeName == 'light'
@@ -290,10 +368,11 @@ class MyApp extends StatelessWidget {
             themeMode: mode,
             debugShowCheckedModeBanner: false,
             builder: (context, child) {
-              final scale = (settings.get('text_scale', defaultValue: 1.0) as num)
-                  .toDouble()
-                  .clamp(0.9, 1.2)
-                  .toDouble();
+              final scale =
+                  (settings.get('text_scale', defaultValue: 1.0) as num)
+                      .toDouble()
+                      .clamp(0.9, 1.2)
+                      .toDouble();
               return MediaQuery(
                 data: MediaQuery.of(context).copyWith(
                   textScaler: TextScaler.linear(scale),
@@ -301,7 +380,7 @@ class MyApp extends StatelessWidget {
                 child: child ?? const SizedBox.shrink(),
               );
             },
-            home: AppWrapper(),
+            home: const AppWrapper(),
           );
         },
       ),
@@ -310,22 +389,23 @@ class MyApp extends StatelessWidget {
 }
 
 class AppWrapper extends StatelessWidget {
+  const AppWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-        
+
         final shouldExit = await _showExitConfirmationDialog(context);
         if (shouldExit == true) {
           SystemNavigator.pop();
         }
       },
       child: Consumer<AuthService>(
-        builder: (_, auth, __) => auth.currentUser == null 
-            ? const LoginScreen() 
-            : const HomeScreen(),
+        builder: (_, auth, __) =>
+            auth.currentUser == null ? const LoginScreen() : const HomeScreen(),
       ),
     );
   }
@@ -365,7 +445,8 @@ class AppWrapper extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(false),
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
               child: const Text(
                 'Cancel',
@@ -380,7 +461,8 @@ class AppWrapper extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.error,
                 foregroundColor: Theme.of(context).colorScheme.onError,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

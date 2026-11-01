@@ -3,7 +3,7 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../services/invoice_service.dart';
 
 class PrinterSelectionDialog extends StatefulWidget {
-  const PrinterSelectionDialog({Key? key}) : super(key: key);
+  const PrinterSelectionDialog({super.key});
 
   @override
   State<PrinterSelectionDialog> createState() => _PrinterSelectionDialogState();
@@ -30,7 +30,7 @@ class _PrinterSelectionDialogState extends State<PrinterSelectionDialog> {
       });
 
       final devices = await _invoiceService.getAvailablePrinters();
-      
+
       setState(() {
         _devices = devices;
         _isLoading = false;
@@ -51,7 +51,7 @@ class _PrinterSelectionDialogState extends State<PrinterSelectionDialog> {
       });
 
       await _invoiceService.connectPrinter(device);
-      
+
       setState(() {
         _selectedDevice = device;
         _isLoading = false;
@@ -72,7 +72,7 @@ class _PrinterSelectionDialogState extends State<PrinterSelectionDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Select Printer'),
-      content: Container(
+      content: SizedBox(
         width: double.maxFinite,
         child: _buildContent(),
       ),

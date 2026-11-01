@@ -27,13 +27,13 @@ class Employee extends HiveObject {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'type': type,
-    'wage': wage,
-    'attendance': attendance,
-    'salaryPaid': salaryPaid,
-  };
+        'id': id,
+        'name': name,
+        'type': type,
+        'wage': wage,
+        'attendance': attendance,
+        'salaryPaid': salaryPaid,
+      };
 
   static Employee fromJson(Map<String, dynamic> json) {
     return Employee(

@@ -17,12 +17,13 @@ class DriveSyncService {
     _initialized = true;
   }
 
-  bool get isAutoSyncEnabled => _settingsBox.get(_autoSyncKey, defaultValue: true);
+  bool get isAutoSyncEnabled =>
+      _settingsBox.get(_autoSyncKey, defaultValue: true);
   set isAutoSyncEnabled(bool value) => _settingsBox.put(_autoSyncKey, value);
 
   Future<void> tryAutoSignIn() async {
     if (!isAutoSyncEnabled) return;
-    
+
     try {
       await DriveBackupService.instance.signIn(interactive: false);
     } catch (e) {

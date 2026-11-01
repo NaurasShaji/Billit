@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
@@ -191,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              
+
               // Subtitle
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -200,13 +200,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     'Frequently Asked Questions',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                   ),
                 ),
               ),
-              
+
               // FAQ Content
               Flexible(
                 child: SingleChildScrollView(
@@ -253,13 +253,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         'How do I backup my data?',
                         'Admin users can access backup options in the Archive tab. Regular backups are recommended to prevent data loss.',
                       ),
-                      
-                      
                     ],
                   ),
                 ),
               ),
-              
+
               // Close button
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -277,7 +275,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: const Text(
                       'Close',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -319,7 +318,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(icon,
+            size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -386,23 +386,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
   IconData _iconFromChoice(String choice, IconData fallback) {
     switch (choice) {
-      case 'home': return Icons.home_outlined;
-      case 'dashboard': return Icons.dashboard_outlined;
-      case 'grid': return Icons.grid_view_rounded;
-      case 'receipt': return Icons.receipt_long_outlined;
-      case 'cart': return Icons.shopping_cart_outlined;
-      case 'calculator': return Icons.calculate_outlined;
-      case 'inventory': return Icons.inventory_2_outlined;
-      case 'box': return Icons.widgets_outlined;
-      case 'package': return Icons.inventory_2_outlined;
-      case 'warehouse': return Icons.warehouse_outlined;
-      case 'chart': return Icons.bar_chart_outlined;
-      case 'analytics': return Icons.analytics_outlined;
-      case 'trending': return Icons.trending_up_outlined;
-      case 'archive': return Icons.archive_outlined;
-      case 'folder': return Icons.folder_open_outlined;
-      case 'history': return Icons.history;
-      default: return fallback;
+      case 'home':
+        return Icons.home_outlined;
+      case 'dashboard':
+        return Icons.dashboard_outlined;
+      case 'grid':
+        return Icons.grid_view_rounded;
+      case 'receipt':
+        return Icons.receipt_long_outlined;
+      case 'cart':
+        return Icons.shopping_cart_outlined;
+      case 'calculator':
+        return Icons.calculate_outlined;
+      case 'inventory':
+        return Icons.inventory_2_outlined;
+      case 'box':
+        return Icons.widgets_outlined;
+      case 'package':
+        return Icons.inventory_2_outlined;
+      case 'warehouse':
+        return Icons.warehouse_outlined;
+      case 'chart':
+        return Icons.bar_chart_outlined;
+      case 'analytics':
+        return Icons.analytics_outlined;
+      case 'trending':
+        return Icons.trending_up_outlined;
+      case 'archive':
+        return Icons.archive_outlined;
+      case 'folder':
+        return Icons.folder_open_outlined;
+      case 'history':
+        return Icons.history;
+      default:
+        return fallback;
     }
   }
 
@@ -438,16 +455,25 @@ class _HomeScreenState extends State<HomeScreen> {
     final scheme = Theme.of(context).colorScheme;
     final floating = style == 'floating';
     return Container(
-      margin: floating ? const EdgeInsets.fromLTRB(12, 0, 12, 10) : EdgeInsets.zero,
-      padding: EdgeInsets.fromLTRB(8, floating ? 8 : 4, 8, MediaQuery.paddingOf(context).bottom > 0 ? 4 : 8),
+      margin:
+          floating ? const EdgeInsets.fromLTRB(12, 0, 12, 10) : EdgeInsets.zero,
+      padding: EdgeInsets.fromLTRB(8, floating ? 8 : 4, 8,
+          MediaQuery.paddingOf(context).bottom > 0 ? 4 : 8),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(floating ? 24 : 0),
         boxShadow: floating
-            ? [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 18, offset: const Offset(0, 4))]
+            ? [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 4))
+              ]
             : null,
         border: style == 'underline'
-            ? Border(top: BorderSide(color: scheme.outlineVariant.withOpacity(0.6)))
+            ? Border(
+                top: BorderSide(
+                    color: scheme.outlineVariant.withValues(alpha: 0.6)))
             : null,
       ),
       child: Row(
@@ -459,7 +485,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => onSelect(i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 3),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 7, horizontal: 3),
                   decoration: BoxDecoration(
                     color: style == 'floating' && i == selectedIndex
                         ? scheme.primaryContainer
@@ -472,7 +499,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         icons[i],
                         size: 23,
-                        color: i == selectedIndex ? scheme.primary : scheme.onSurfaceVariant,
+                        color: i == selectedIndex
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -481,8 +510,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11,
-                          fontWeight: i == selectedIndex ? FontWeight.w700 : FontWeight.w500,
-                          color: i == selectedIndex ? scheme.primary : scheme.onSurfaceVariant,
+                          fontWeight: i == selectedIndex
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: i == selectedIndex
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant,
                         ),
                       ),
                       if (style == 'underline')
@@ -515,8 +548,9 @@ class _HomeScreenState extends State<HomeScreen> {
         : ['Overview', 'Billing', 'Inventory', 'Reports'];
 
     final settingsBox = Hive.box<dynamic>('app_settings');
-    final navigationIconStyle =
-        settingsBox.get('navigation_icon_style', defaultValue: 'outlined').toString();
+    final navigationIconStyle = settingsBox
+        .get('navigation_icon_style', defaultValue: 'outlined')
+        .toString();
 
     final List<IconData> defaultIcons = _navigationIcons(
       isAdmin: isAdmin,
@@ -525,8 +559,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final navigationKeys = isAdmin
         ? ['overview', 'billing', 'inventory', 'reports', 'archive']
         : ['overview', 'billing', 'inventory', 'reports'];
-    final rawOverrides = settingsBox.get('navigation_icon_overrides', defaultValue: <String, String>{});
-    final navigationOverrides = rawOverrides is Map ? rawOverrides : <String, String>{};
+    final rawOverrides = settingsBox
+        .get('navigation_icon_overrides', defaultValue: <String, String>{});
+    final navigationOverrides =
+        rawOverrides is Map ? rawOverrides : <String, String>{};
     final List<IconData> icons = _applyCustomNavigationIcons(
       defaultIcons,
       navigationKeys,
@@ -548,7 +584,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Ensure _index is within bounds for worker
     if (!isAdmin && _index >= tabs.length) {
-      _index = 0; // Default to Billing tab for worker if current index is out of bounds
+      _index =
+          0; // Default to Billing tab for worker if current index is out of bounds
     }
 
     return Scaffold(
@@ -557,14 +594,17 @@ class _HomeScreenState extends State<HomeScreen> {
         title: ValueListenableBuilder<Box<dynamic>>(
           valueListenable: Hive.box<dynamic>('app_settings').listenable(),
           builder: (context, settings, _) {
-            final appName = settings.get('app_name', defaultValue: 'Floral Bill').toString();
+            final appName = settings
+                .get('app_name', defaultValue: 'Floral Bill')
+                .toString();
             final logoBase64 = settings.get('app_logo_base64') as String?;
             Widget? logo;
             if (logoBase64 != null && logoBase64.isNotEmpty) {
               try {
                 logo = ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: Image.memory(base64Decode(logoBase64), width: 32, height: 32, fit: BoxFit.contain),
+                  child: Image.memory(base64Decode(logoBase64),
+                      width: 32, height: 32, fit: BoxFit.contain),
                 );
               } catch (_) {
                 logo = null;
@@ -572,16 +612,30 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             return Row(
               children: [
-                if (logo != null) ...[logo, const SizedBox(width: 8)] else ...[ClipRRect(borderRadius: BorderRadius.circular(8), child: SvgPicture.asset('assets/icon/billit_logo.svg', width: 34, height: 34)), const SizedBox(width: 8)],
+                if (logo != null) ...[
+                  logo,
+                  const SizedBox(width: 8)
+                ] else ...[
+                  ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SvgPicture.asset('assets/icon/billit_logo.svg',
+                          width: 34, height: 34)),
+                  const SizedBox(width: 8)
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(appName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                      Text(labels[_index], maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12)),
+                      Text(appName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600)),
+                      Text(labels[_index],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
@@ -643,7 +697,8 @@ class _HomeScreenState extends State<HomeScreen> {
           return IndexedStack(index: _index, children: tabs);
         },
       ),
-      bottomNavigationBar: MediaQuery.sizeOf(context).width < ResponsiveBreakpoints.desktop
+      bottomNavigationBar: MediaQuery.sizeOf(context).width <
+              ResponsiveBreakpoints.desktop
           ? ValueListenableBuilder<Box<dynamic>>(
               valueListenable: Hive.box<dynamic>('app_settings').listenable(),
               builder: (context, settings, _) => _buildBottomNavigation(
@@ -651,17 +706,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 icons: _applyCustomNavigationIcons(
                   _navigationIcons(
                     isAdmin: isAdmin,
-                    style: settings.get('navigation_icon_style', defaultValue: 'outlined').toString(),
+                    style: settings
+                        .get('navigation_icon_style', defaultValue: 'outlined')
+                        .toString(),
                   ),
                   isAdmin
-                      ? ['overview', 'billing', 'inventory', 'reports', 'archive']
+                      ? [
+                          'overview',
+                          'billing',
+                          'inventory',
+                          'reports',
+                          'archive'
+                        ]
                       : ['overview', 'billing', 'inventory', 'reports'],
-                  settings.get('navigation_icon_overrides', defaultValue: <String, String>{}) is Map
-                      ? settings.get('navigation_icon_overrides', defaultValue: <String, String>{}) as Map
+                  settings.get('navigation_icon_overrides',
+                          defaultValue: <String, String>{}) is Map
+                      ? settings.get('navigation_icon_overrides',
+                          defaultValue: <String, String>{}) as Map
                       : <String, String>{},
                 ),
                 selectedIndex: _index,
-                style: settings.get('navigation_style', defaultValue: 'classic').toString(),
+                style: settings
+                    .get('navigation_style', defaultValue: 'classic')
+                    .toString(),
                 onSelect: (i) => setState(() => _index = i),
               ),
             )

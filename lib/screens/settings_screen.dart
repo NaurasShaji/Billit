@@ -41,7 +41,8 @@ class SettingsScreen extends StatelessWidget {
             _SettingsItem(
               icon: Icons.design_services_outlined,
               title: 'Invoice Customisation',
-              subtitle: 'Paper sizes, invoice layout, table, header and footer templates',
+              subtitle:
+                  'Paper sizes, invoice layout, table, header and footer templates',
               onTap: () => _open(context, const InvoiceCustomisationScreen()),
             ),
             _SettingsItem(
@@ -91,7 +92,8 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text('Settings',
+            style: TextStyle(fontWeight: FontWeight.w700)),
       ),
       body: SafeArea(
         child: ListView(
@@ -108,7 +110,7 @@ class SettingsScreen extends StatelessWidget {
             Text(
               'Manage your business setup, app appearance and connected devices.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurface.withOpacity(0.62),
+                color: scheme.onSurface.withValues(alpha: 0.62),
               ),
             ),
             const SizedBox(height: 26),
@@ -120,7 +122,7 @@ class SettingsScreen extends StatelessWidget {
                       Text(
                         section.heading.toUpperCase(),
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: scheme.onSurface.withOpacity(0.55),
+                          color: scheme.onSurface.withValues(alpha: 0.55),
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.1,
                         ),
@@ -197,7 +199,8 @@ class _SettingsTile extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: (item.isDestructive ? scheme.error : scheme.primary).withOpacity(0.10),
+          color: (item.isDestructive ? scheme.error : scheme.primary)
+              .withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(item.icon, color: foreground, size: 22),
@@ -212,7 +215,7 @@ class _SettingsTile extends StatelessWidget {
       subtitle: Text(item.subtitle),
       trailing: Icon(
         Icons.chevron_right_rounded,
-        color: scheme.onSurface.withOpacity(0.42),
+        color: scheme.onSurface.withValues(alpha: 0.42),
       ),
       onTap: item.onTap,
     );
