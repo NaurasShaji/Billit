@@ -61,7 +61,8 @@ class DriveBackupService {
     ],
   );
 
-  bool get _isWindows => !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+  bool get _isWindows =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
 
   DriveAccount? get currentUser {
     if (_isWindows) {
@@ -126,11 +127,11 @@ class DriveBackupService {
       return drive.DriveApi(_GoogleAuthClient(headers));
     }
 
-    final user = _googleSignIn.currentUser;
-    final signedInUser = user ??
-        (await signIn(interactive: interactive)) == null
-            ? null
-            : _googleSignIn.currentUser;
+    var signedInUser = _googleSignIn.currentUser;
+    if (signedInUser == null) {
+      await signIn(interactive: interactive);
+      signedInUser = _googleSignIn.currentUser;
+    }
     if (signedInUser == null) {
       throw StateError('Not signed in to Google Drive');
     }
