@@ -105,6 +105,9 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
   final surfaceStyle = settings.get('surface_style', defaultValue: 'outlined').toString();
   final appBarStyle = settings.get('app_bar_style', defaultValue: 'surface').toString();
   final fontStyle = settings.get('font_style', defaultValue: 'system').toString();
+  final backgroundStyle = settings.get('background_style', defaultValue: 'tinted').toString();
+  final inputStyle = settings.get('input_style', defaultValue: 'filled').toString();
+  final buttonStyle = settings.get('button_style', defaultValue: 'filled').toString();
   final fontFamily = fontStyle == 'serif' ? 'serif' : fontStyle == 'monospace' ? 'monospace' : 'sans-serif';
   final scheme = ColorScheme.fromSeed(
     seedColor: _themeSeedColor(themeName),
@@ -116,10 +119,9 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     colorScheme: scheme,
     useMaterial3: true,
     visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
-    scaffoldBackgroundColor: dark ? const Color(0xFF101418) : Color.alphaBlend(
-      scheme.primary.withOpacity(0.025),
-      scheme.surface,
-    ),
+    scaffoldBackgroundColor: dark
+        ? (backgroundStyle == 'plain' ? const Color(0xFF0B0E11) : const Color(0xFF101418))
+        : (backgroundStyle == 'plain' ? scheme.surface : Color.alphaBlend(scheme.primary.withOpacity(0.035), scheme.surface)),
     textTheme: base.textTheme,
     fontFamily: fontFamily,
     primaryColor: scheme.primary,
@@ -149,8 +151,8 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       space: 1,
     ),
     inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: dark ? const Color(0xFF202830) : scheme.surface,
+      filled: inputStyle == 'filled',
+      fillColor: inputStyle == 'filled' ? (dark ? const Color(0xFF202830) : scheme.surface) : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
       ),
@@ -165,12 +167,18 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
+        backgroundColor: buttonStyle == 'tonal' ? scheme.secondaryContainer : buttonStyle == 'minimal' ? scheme.surfaceContainerHighest : scheme.primary,
+        foregroundColor: buttonStyle == 'tonal' ? scheme.onSecondaryContainer : buttonStyle == 'minimal' ? scheme.onSurface : scheme.onPrimary,
+        elevation: buttonStyle == 'minimal' ? 0 : 1,
         minimumSize: const Size(44, 44),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
+        backgroundColor: buttonStyle == 'tonal' ? scheme.secondaryContainer : buttonStyle == 'minimal' ? scheme.surfaceContainerHighest : scheme.primary,
+        foregroundColor: buttonStyle == 'tonal' ? scheme.onSecondaryContainer : buttonStyle == 'minimal' ? scheme.onSurface : scheme.onPrimary,
+        elevation: buttonStyle == 'minimal' ? 0 : 1,
         minimumSize: const Size(44, 44),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
