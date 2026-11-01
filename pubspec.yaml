@@ -1,5 +1,5 @@
 name: floralbill
-description: Floral shop billing app (Billing, Products, Reports, Settings) with Hive, web-ready.
+description: Ventro retail management and point-of-sale app with billing, inventory, GST, reports, and backups.
 publish_to: "none"
 version: 0.2.1+3
 
