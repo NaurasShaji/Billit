@@ -79,32 +79,18 @@ class ArchiveTab extends StatelessWidget {
             ),
           ],
         ),
+
         _ArchiveCategory(
-          title: 'GST & Accounting',
-          subtitle: 'GST registers and financial exports',
-          description: 'Export GST sales, item-wise tax details and expense registers as CSV files.',
-          icon: Icons.request_quote_outlined,
+          title: 'Reports & Statements',
+          subtitle: 'Sales statements and GST exports',
+          description: 'Download day-wise or date-range sales statements, GST registers and expense exports.',
+          icon: Icons.assessment_outlined,
           color: Colors.deepOrange,
           items: [
             ArchiveCategoryItem(
               icon: Icons.file_download_outlined,
-              title: 'GST & Accounting Exports',
-              subtitle: 'Generate GST sales, item and expenses registers',
-              builder: (_) => const GstExportsScreen(),
-            ),
-          ],
-        ),
-        _ArchiveCategory(
-          title: 'GST & Tax Exports',
-          subtitle: 'GST registers and accounting exports',
-          description: 'Generate GST sales, item-wise tax and expense registers in CSV format.',
-          icon: Icons.receipt_long_outlined,
-          color: Colors.deepOrange,
-          items: [
-            ArchiveCategoryItem(
-              icon: Icons.file_download_outlined,
-              title: 'GST & Accounting Exports',
-              subtitle: 'Export GST sales, GST item and expense registers',
+              title: 'Reports & Statements',
+              subtitle: 'Sales statements, GST sales, item and expense registers',
               builder: (_) => const GstExportsScreen(),
             ),
           ],
