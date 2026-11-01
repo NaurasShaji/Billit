@@ -743,36 +743,22 @@ class PdfService {
                     mainAxisAlignment: pw.MainAxisAlignment.center,
                     children: [
                       pw.Text(
-                        'Royal',
+                        Hive.box<dynamic>('app_settings')
+                            .get('business_name', defaultValue: '')
+                            .toString()
+                            .trim()
+                            .isEmpty
+                            ? 'INVOICE'
+                            : Hive.box<dynamic>('app_settings')
+                                .get('business_name', defaultValue: '')
+                                .toString()
+                                .trim(),
                         style: pw.TextStyle(
                           fontSize: is58mm ? 16 : (isWide ? 24 : 20),
                           fontWeight: pw.FontWeight.bold,
-                          letterSpacing: 2.0,
                         ),
                         textAlign: pw.TextAlign.center,
                       ),
-                      pw.Text(
-                        'garden',
-                        style: pw.TextStyle(
-                          fontSize: is58mm ? 14 : (isWide ? 20 : 17),
-                          fontWeight: pw.FontWeight.normal,
-                          letterSpacing: 1.5,
-                        ),
-                        textAlign: pw.TextAlign.center,
-                      ),
-                      if (!is58mm) ...[
-                        pw.SizedBox(height: 2),
-                        pw.Text(
-                          'TANGERANG',
-                          style: pw.TextStyle(
-                            fontSize: isWide ? 8 : 7,
-                            fontWeight: pw.FontWeight.normal,
-                            letterSpacing: 1.0,
-                            color: PdfColors.grey700,
-                          ),
-                          textAlign: pw.TextAlign.center,
-                        ),
-                      ],
                     ],
                   ),
                 ),
