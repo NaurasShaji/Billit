@@ -42,9 +42,10 @@ class _InvoiceCustomisationScreenState
     try {
       await InvoiceTemplateService.save(size, value);
       await InvoiceTemplateService.select(size);
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('$size template saved')));
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -287,7 +288,7 @@ class _InvoiceCustomisationScreenState
           ]);
           final view =
               TemplatePreview(size: size, value: value, warnings: warnings);
-          if (wide)
+          if (wide) {
             return Row(children: [
               Expanded(flex: 5, child: editor),
               if (preview) const VerticalDivider(width: 1),
@@ -297,6 +298,7 @@ class _InvoiceCustomisationScreenState
                     child: SingleChildScrollView(
                         padding: const EdgeInsets.all(20), child: view))
             ]);
+          }
           return Column(children: [
             if (preview)
               Expanded(

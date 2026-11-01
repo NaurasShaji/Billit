@@ -49,14 +49,17 @@ class _BulkProductImportScreenState extends State<BulkProductImportScreen> {
         return;
       }
       final file = picked.files.single;
-      if (file.bytes == null || file.bytes!.isEmpty)
+      if (file.bytes == null || file.bytes!.isEmpty) {
         throw Exception('Could not read this file. Please select it again.');
+      }
       final workbook = Excel.decodeBytes(file.bytes!);
-      if (workbook.tables.isEmpty)
+      if (workbook.tables.isEmpty) {
         throw Exception('No worksheet found in this workbook.');
+      }
       final sheet = workbook.tables.values.first;
-      if (sheet.rows.length < 2)
+      if (sheet.rows.length < 2) {
         throw Exception('Add a header row and at least one product row.');
+      }
       final headers = sheet.rows.first
           .map((c) => _norm(c?.value?.toString() ?? ''))
           .toList();
@@ -80,8 +83,9 @@ class _BulkProductImportScreenState extends State<BulkProductImportScreen> {
             : (cells[index]?.value?.toString().trim() ?? '');
         double? numAt(int index) =>
             double.tryParse(val(index).replaceAll(',', ''));
-        if (cells.every((c) => (c?.value?.toString().trim() ?? '').isEmpty))
+        if (cells.every((c) => (c?.value?.toString().trim() ?? '').isEmpty)) {
           continue;
+        }
         final name = val(nameCol);
         final selling = numAt(sellCol);
         final cost = numAt(costCol);
@@ -141,11 +145,12 @@ class _BulkProductImportScreenState extends State<BulkProductImportScreen> {
         _busy = false;
       });
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
           _busy = false;
         });
+      }
     }
   }
 

@@ -256,41 +256,51 @@ class ThermalPrinterService {
 
     if (is58mm) {
       if (invoiceLogo != null) bytes += generator.image(invoiceLogo);
-      if (template['showBusinessName'] == true)
+      if (template['showBusinessName'] == true) {
         bytes += generator.text(businessName,
             styles: PosStyles(
                 align: headerPosAlignment,
                 bold: true,
                 height: PosTextSize.size2));
-      if (template['showAddress'] == true && businessAddress.isNotEmpty)
+      }
+      if (template['showAddress'] == true && businessAddress.isNotEmpty) {
         bytes += generator.text(businessAddress,
             styles: PosStyles(align: headerPosAlignment));
-      if (template['showPhone'] == true && businessPhone.isNotEmpty)
+      }
+      if (template['showPhone'] == true && businessPhone.isNotEmpty) {
         bytes += generator.text(businessPhone,
             styles: const PosStyles(align: PosAlign.center));
-      if (template['showEmail'] == true && businessEmail.isNotEmpty)
+      }
+      if (template['showEmail'] == true && businessEmail.isNotEmpty) {
         bytes += generator.text(businessEmail,
             styles: PosStyles(align: headerPosAlignment));
-      if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty)
+      }
+      if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) {
         bytes += generator.text('GSTIN: $businessGstin',
             styles: PosStyles(align: headerPosAlignment));
+      }
       bytes += generator.text(invoiceHeading,
           styles: PosStyles(align: headerPosAlignment, bold: true));
       bytes += generator.text('ID: ${sale.id}');
       bytes += generator.text(
           'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())}');
-      if (sale.customerName.isNotEmpty)
+      if (sale.customerName.isNotEmpty) {
         bytes += generator.text('Customer: ${sale.customerName}');
+      }
       if (template['showCustomerGstin'] == true &&
-          sale.customerGstin.isNotEmpty)
+          sale.customerGstin.isNotEmpty) {
         bytes += generator.text('GSTIN: ${sale.customerGstin}');
+      }
       if (template['showCustomerPhone'] == true &&
-          sale.customerPhone.isNotEmpty)
+          sale.customerPhone.isNotEmpty) {
         bytes += generator.text('Phone: ${sale.customerPhone}');
-      if (template['showPaymentMethod'] == true)
+      }
+      if (template['showPaymentMethod'] == true) {
         bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
-      if (template['showTableBorders'] == true)
+      }
+      if (template['showTableBorders'] == true) {
         bytes += generator.text('--------------------------------');
+      }
       final receiptColumns = (template['columns'] as List).cast<String>();
       const receiptLabels = {
         'serial': '#',
@@ -337,16 +347,19 @@ class ThermalPrinterService {
           final value = rowValues[id] ?? '';
           bytes += generator.text(id == 'product' ? value : '$label: $value');
         }
-        if (template['showTableBorders'] == true)
+        if (template['showTableBorders'] == true) {
           bytes += generator.text('--------------------------------');
+        }
       }
-      if (template['showTableBorders'] == true)
+      if (template['showTableBorders'] == true) {
         bytes += generator.text('--------------------------------');
+      }
       final subtotal =
           sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
       bytes += generator.text('Subtotal: ${_formatRupees(subtotal)}');
-      if (sale.discount > 0)
+      if (sale.discount > 0) {
         bytes += generator.text('Discount: -${_formatRupees(sale.discount)}');
+      }
       if (sale.gstEnabled) {
         bytes +=
             generator.text('Taxable: ${_formatRupees(sale.taxableAmount)}');
@@ -377,13 +390,15 @@ class ThermalPrinterService {
           print('Error generating payment QR: $e');
         }
       }
-      if (footerText.trim().isNotEmpty)
+      if (footerText.trim().isNotEmpty) {
         bytes += generator.text(footerText,
             styles: PosStyles(align: footerPosAlignment));
+      }
       final receiptTerms = template['termsText']?.toString() ?? '';
-      if (receiptTerms.isNotEmpty)
+      if (receiptTerms.isNotEmpty) {
         bytes += generator.text(receiptTerms,
             styles: PosStyles(align: footerPosAlignment));
+      }
       bytes += generator.feed(3);
       bytes += <int>[0x1D, 0x56, 0x00];
       return bytes;
@@ -409,18 +424,22 @@ class ThermalPrinterService {
     }
 
     // Business contact info - centered
-    if (template['showAddress'] == true && businessAddress.isNotEmpty)
+    if (template['showAddress'] == true && businessAddress.isNotEmpty) {
       bytes += generator.text(businessAddress,
           styles: PosStyles(align: headerPosAlignment));
-    if (template['showPhone'] == true && businessPhone.isNotEmpty)
+    }
+    if (template['showPhone'] == true && businessPhone.isNotEmpty) {
       bytes += generator.text('ph: $businessPhone',
           styles: PosStyles(align: headerPosAlignment));
-    if (template['showEmail'] == true && businessEmail.isNotEmpty)
+    }
+    if (template['showEmail'] == true && businessEmail.isNotEmpty) {
       bytes += generator.text(businessEmail,
           styles: const PosStyles(align: PosAlign.center));
-    if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty)
+    }
+    if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) {
       bytes += generator.text('GSTIN: $businessGstin',
           styles: const PosStyles(align: PosAlign.center));
+    }
     bytes += generator.text(invoiceHeading,
         styles: PosStyles(align: headerPosAlignment, bold: true));
     bytes += generator.text('');
@@ -433,14 +452,17 @@ class ThermalPrinterService {
     if (sale.customerName.isNotEmpty) {
       bytes += generator.text('Customer: ${sale.customerName}');
     }
-    if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty)
+    if (template['showCustomerGstin'] == true &&
+        sale.customerGstin.isNotEmpty) {
       bytes += generator.text('Customer GSTIN: ${sale.customerGstin}');
+    }
     if (template['showCustomerPhone'] == true &&
         sale.customerPhone.isNotEmpty) {
       bytes += generator.text('Phone: ${sale.customerPhone}');
     }
-    if (template['showPaymentMethod'] == true)
+    if (template['showPaymentMethod'] == true) {
       bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
+    }
     bytes += generator.text('');
 
     // Build the 80mm table from the selected template columns.
@@ -594,13 +616,15 @@ class ThermalPrinterService {
     }
 
     // Footer
-    if (footerText.trim().isNotEmpty)
+    if (footerText.trim().isNotEmpty) {
       bytes += generator.text(footerText,
           styles: PosStyles(align: footerPosAlignment));
+    }
     final terms = template['termsText']?.toString() ?? '';
-    if (terms.isNotEmpty)
+    if (terms.isNotEmpty) {
       bytes +=
           generator.text(terms, styles: PosStyles(align: footerPosAlignment));
+    }
     bytes += generator.text('');
     // bytes += generator.text('      Royal Garden',
     //     styles: PosStyles(align: PosAlign.center));

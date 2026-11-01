@@ -41,12 +41,14 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
         _statementEnd = picked;
       } else if (isStart) {
         _statementStart = picked;
-        if (_statementEnd.isBefore(_statementStart))
+        if (_statementEnd.isBefore(_statementStart)) {
           _statementEnd = _statementStart;
+        }
       } else {
         _statementEnd = picked;
-        if (_statementEnd.isBefore(_statementStart))
+        if (_statementEnd.isBefore(_statementStart)) {
           _statementStart = _statementEnd;
+        }
       }
     });
   }

@@ -214,8 +214,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             subtitle: const Text('Light, clean line icons.'),
                             secondary: const Icon(Icons.dashboard_outlined),
                             onChanged: (value) {
-                              if (value != null)
+                              if (value != null) {
                                 _save('navigation_icon_style', value);
+                              }
                             },
                           ),
                           RadioListTile<String>(
@@ -225,8 +226,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             subtitle: const Text('Soft rounded icon shapes.'),
                             secondary: const Icon(Icons.dashboard_rounded),
                             onChanged: (value) {
-                              if (value != null)
+                              if (value != null) {
                                 _save('navigation_icon_style', value);
+                              }
                             },
                           ),
                           RadioListTile<String>(
@@ -236,8 +238,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             subtitle: const Text('Bold solid icons.'),
                             secondary: const Icon(Icons.dashboard),
                             onChanged: (value) {
-                              if (value != null)
+                              if (value != null) {
                                 _save('navigation_icon_style', value);
+                              }
                             },
                           ),
                         ],
@@ -312,8 +315,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                                 const Text('Standard Material navigation bar.'),
                             secondary: const Icon(Icons.view_day_outlined),
                             onChanged: (value) {
-                              if (value != null)
+                              if (value != null) {
                                 _save('navigation_style', value);
+                              }
                             },
                           ),
                           RadioListTile<String>(
@@ -325,8 +329,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             secondary:
                                 const Icon(Icons.space_dashboard_outlined),
                             onChanged: (value) {
-                              if (value != null)
+                              if (value != null) {
                                 _save('navigation_style', value);
+                              }
                             },
                           ),
                           RadioListTile<String>(
@@ -337,8 +342,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                                 'Clean layout with a slim active indicator.'),
                             secondary: const Icon(Icons.horizontal_rule),
                             onChanged: (value) {
-                              if (value != null)
+                              if (value != null) {
                                 _save('navigation_style', value);
+                              }
                             },
                           ),
                           RadioListTile<String>(
@@ -349,8 +355,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
                                 'Simple icons and labels without a selected background.'),
                             secondary: const Icon(Icons.more_horiz),
                             onChanged: (value) {
-                              if (value != null)
+                              if (value != null) {
                                 _save('navigation_style', value);
+                              }
                             },
                           ),
                         ],

@@ -1023,8 +1023,9 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen>
                       setState(() {
                         _discount = double.tryParse(value) ?? 0.0;
                         if (_discount < 0) _discount = 0.0;
-                        if (_discount > _currentSubtotal)
+                        if (_discount > _currentSubtotal) {
                           _discount = _currentSubtotal;
+                        }
                       });
                     },
                   ),

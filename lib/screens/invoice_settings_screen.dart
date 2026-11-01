@@ -71,7 +71,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _invoiceAccent =
         _settings.get('invoice_accent', defaultValue: 'blue').toString();
     if (!const ['blue', 'green', 'purple', 'teal', 'orange', 'pink', 'indigo']
-        .contains(_invoiceAccent)) _invoiceAccent = 'blue';
+        .contains(_invoiceAccent)) {
+      _invoiceAccent = 'blue';
+    }
     _invoiceFooter = TextEditingController(
         text: _settings
             .get('invoice_footer_text',
@@ -117,7 +119,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     );
     if (result == null ||
         result.files.isEmpty ||
-        result.files.single.bytes == null) return;
+        result.files.single.bytes == null) {
+      return;
+    }
     final bytes = result.files.single.bytes!;
     setState(() {
       if (key == 'app') {
@@ -399,8 +403,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                   validator: (value) {
                     final upi = value?.trim() ?? '';
                     if (upi.isNotEmpty &&
-                        (!upi.contains('@') || upi.contains(' ')))
+                        (!upi.contains('@') || upi.contains(' '))) {
                       return 'Enter a valid UPI ID or leave it blank';
+                    }
                     return null;
                   },
                 ),
@@ -448,8 +453,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                       'Next invoice number', Icons.format_list_numbered),
                   validator: (value) {
                     final number = int.tryParse(value?.trim() ?? '');
-                    if (number == null || number < 1)
+                    if (number == null || number < 1) {
                       return 'Enter a positive integer';
+                    }
                     return null;
                   },
                 ),

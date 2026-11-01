@@ -472,8 +472,9 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                         ),
                         validator: (value) {
                           final rate = double.tryParse(value?.trim() ?? '');
-                          if (rate == null || rate < 0 || rate > 100)
+                          if (rate == null || rate < 0 || rate > 100) {
                             return 'Enter a rate from 0 to 100';
+                          }
                           return null;
                         },
                       ),

@@ -103,8 +103,9 @@ class InvoiceTemplateService {
   }
 
   static Future<void> select(String size) async {
-    if (paperSizes.contains(size))
+    if (paperSizes.contains(size)) {
       await Hive.box<dynamic>('app_settings').put(selectedPaperKey, size);
+    }
   }
 
   static Future<void> restore(String size) async {
@@ -182,28 +183,36 @@ class InvoiceTemplateService {
                 : 130;
     final warnings = <String>[];
     if (selected.isEmpty) warnings.add('Add at least one table column.');
-    if (selected.toSet().length != selected.length)
+    if (selected.toSet().length != selected.length) {
       warnings.add('Remove duplicate table columns.');
-    if (compact && used > limit)
+    }
+    if (compact && used > limit) {
       warnings.add(
           'Selected columns may exceed printable width. Hide optional columns or choose a wider paper size.');
+    }
     final font = (value['fontSize'] as num).toDouble();
-    if (font < (size == '58mm' ? 6 : 7))
+    if (font < (size == '58mm' ? 6 : 7)) {
       warnings.add('Font size is below the recommended readable minimum.');
-    if (font > (compact ? 12 : 18))
+    }
+    if (font > (compact ? 12 : 18)) {
       warnings.add('Font size may cause wrapping or page overflow.');
+    }
     final margin = (value['marginMm'] as num).toDouble();
-    if (compact && margin > 5)
+    if (compact && margin > 5) {
       warnings.add('Large margins reduce usable thermal paper width.');
+    }
     final header = value['headerTitle']?.toString() ?? '';
-    if (compact && header.length > 24)
+    if (compact && header.length > 24) {
       warnings.add(
           'Long invoice heading may wrap or exceed the thermal receipt width.');
-    if (compact && value['footerText'].toString().length > 80)
+    }
+    if (compact && value['footerText'].toString().length > 80) {
       warnings.add('Long footer may wrap across several receipt lines.');
-    if (compact && value['termsText'].toString().length > 100)
+    }
+    if (compact && value['termsText'].toString().length > 100) {
       warnings.add(
           'Long terms and conditions may make the thermal receipt unusually long.');
+    }
     return warnings;
   }
 }
