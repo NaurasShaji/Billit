@@ -104,32 +104,26 @@ class PdfService {
     final taxTotal = sale.cgstAmount + sale.sgstAmount + sale.igstAmount;
     final displayGst = includeGST && sale.gstEnabled;
     final productsBox = Hive.box<Product>(Boxes.products);
+    final configuredColumns = (template['columns'] as List).cast<String>();
     final itemRows = <List<String>>[
-      if (displayGst)
-        ['#', 'Description', 'HSN/SAC', 'Qty', 'Rate', 'Taxable', 'GST %', 'Tax', 'Line total']
-      else
-        ['#', 'Description', 'Qty', 'Rate', 'Amount'],
+      configuredColumns.map((id) => _invoiceColumnLabel(id)).toList(),
       for (var i = 0; i < sale.items.length; i++)
-        if (displayGst)
-          [
-            '${i + 1}',
-            productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
-            sale.items[i].hsnCode.isNotEmpty ? sale.items[i].hsnCode : (productsBox.get(sale.items[i].productId)?.hsnCode ?? '-'),
-            '${sale.items[i].qty} ${sale.items[i].unitLabel}',
-            currency.format(sale.items[i].sellingPrice),
-            currency.format(sale.items[i].taxableAmount),
-            '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%',
-            currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
-            currency.format(sale.items[i].taxableAmount + sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount),
-          ]
-        else
-          [
-            '${i + 1}',
-            productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
-            '${sale.items[i].qty} ${sale.items[i].unitLabel}',
-            currency.format(sale.items[i].sellingPrice),
-            currency.format(sale.items[i].subtotal),
-          ],
+        [
+          for (final id in configuredColumns)
+            switch (id) {
+              'serial' => '${i + 1}',
+              'product' => productsBox.get(sale.items[i].productId)?.name ?? 'Unknown Product',
+              'hsn' => sale.items[i].hsnCode.isNotEmpty ? sale.items[i].hsnCode : (productsBox.get(sale.items[i].productId)?.hsnCode ?? '-'),
+              'quantity' => sale.items[i].qty.toString(),
+              'unit' => sale.items[i].unitLabel,
+              'rate' => currency.format(sale.items[i].sellingPrice),
+              'discount' => '-',
+              'gst_rate' => displayGst ? '${(sale.items[i].gstRate ?? 0.0).toStringAsFixed(2)}%' : '-',
+              'tax' => displayGst ? currency.format(sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount) : '-',
+              'amount' => currency.format(displayGst ? sale.items[i].taxableAmount + sale.items[i].cgstAmount + sale.items[i].sgstAmount + sale.items[i].igstAmount : sale.items[i].subtotal),
+              _ => '',
+            },
+        ],
     ];
 
     return [
@@ -142,7 +136,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  if (businessLogo != null) ...[
+                  if (template['showLogo'] == true && businessLogo != null) ...[
                     pw.Container(width: 110, height: 60, alignment: pw.Alignment.centerLeft, child: pw.Image(businessLogo, fit: pw.BoxFit.contain)),
                     pw.SizedBox(height: 6),
                   ],
@@ -205,41 +199,17 @@ class PdfService {
         cellStyle: const pw.TextStyle(fontSize: 9),
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 8),
         border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-        columnWidths: displayGst
-            ? {
-                0: const pw.FixedColumnWidth(20),
-                1: const pw.FlexColumnWidth(3.5),
-                2: const pw.FlexColumnWidth(1.6),
-                3: const pw.FlexColumnWidth(1.4),
-                4: const pw.FlexColumnWidth(1.7),
-                5: const pw.FlexColumnWidth(1.8),
-                6: const pw.FlexColumnWidth(1.2),
-                7: const pw.FlexColumnWidth(1.7),
-                8: const pw.FlexColumnWidth(1.8),
-              }
-            : {
-                0: const pw.FixedColumnWidth(20),
-                1: const pw.FlexColumnWidth(4),
-                2: const pw.FlexColumnWidth(1.5),
-                3: const pw.FlexColumnWidth(1.8),
-                4: const pw.FlexColumnWidth(2),
-              },
-        cellAlignments: displayGst
-            ? {
-                0: pw.Alignment.center,
-                3: pw.Alignment.centerRight,
-                4: pw.Alignment.centerRight,
-                5: pw.Alignment.centerRight,
-                6: pw.Alignment.centerRight,
-                7: pw.Alignment.centerRight,
-                8: pw.Alignment.centerRight,
-              }
-            : {
-                0: pw.Alignment.center,
-                2: pw.Alignment.centerRight,
-                3: pw.Alignment.centerRight,
-                4: pw.Alignment.centerRight,
-              },
+        columnWidths: {
+          for (var i = 0; i < configuredColumns.length; i++)
+            i: pw.FlexColumnWidth(configuredColumns[i] == 'product' ? 4 : 1.3),
+        },
+        cellAlignments: {
+          for (var i = 0; i < configuredColumns.length; i++)
+            i: configuredColumns[i] == 'product' ? pw.Alignment.centerLeft : pw.Alignment.centerRight,
+        },
+        border: template['showTableBorders'] == true
+            ? pw.TableBorder.all(color: PdfColors.grey300, width: 0.5)
+            : pw.TableBorder.symmetric(inside: const pw.BorderSide(color: PdfColors.white, width: 0.1)),
       ),
       pw.SizedBox(height: 18),
       pw.Row(
@@ -308,6 +278,16 @@ class PdfService {
         ),
       ],
     ];
+  }
+
+  static String _invoiceColumnLabel(String id) {
+    const labels = {
+      'serial': '#', 'product': 'Description', 'hsn': 'HSN/SAC',
+      'quantity': 'Qty', 'unit': 'Unit', 'rate': 'Rate',
+      'discount': 'Discount', 'gst_rate': 'GST %', 'tax': 'Tax',
+      'amount': 'Amount',
+    };
+    return labels[id] ?? id;
   }
 
   static Future<pw.ImageProvider?> _loadPaymentQrImage(Sale sale) async {
