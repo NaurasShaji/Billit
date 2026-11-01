@@ -220,6 +220,8 @@ class ThermalPrinterService {
     final businessEmail = settings.get('business_email', defaultValue: '').toString();
     final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
     final footerText = template['footerText']?.toString() ?? 'Thank you for your business.';
+    final configuredTitle = template['headerTitle']?.toString().trim() ?? '';
+    final invoiceHeading = configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && sale.gstEnabled) ? (sale.gstEnabled ? 'TAX INVOICE' : 'INVOICE') : configuredTitle;
 
     if (is58mm) {
       if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2));
@@ -227,7 +229,7 @@ class ThermalPrinterService {
       if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text(businessPhone, styles: PosStyles(align: PosAlign.center));
       if (template['showEmail'] == true && businessEmail.isNotEmpty) bytes += generator.text(businessEmail, styles: PosStyles(align: PosAlign.center));
       if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
-      bytes += generator.text(template['headerTitle']?.toString() ?? 'INVOICE', styles: PosStyles(align: PosAlign.center, bold: true));
+      bytes += generator.text(invoiceHeading, styles: PosStyles(align: PosAlign.center, bold: true));
       bytes += generator.text('ID: ${sale.id}');
       bytes += generator.text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())}');
       if (sale.customerName.isNotEmpty) bytes += generator.text('Customer: ${sale.customerName}');
