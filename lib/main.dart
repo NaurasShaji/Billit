@@ -102,6 +102,10 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
   final themeName = settings.get('app_theme', defaultValue: 'green').toString();
   final radius = (settings.get('corner_radius', defaultValue: 16.0) as num).toDouble();
   final compact = settings.get('ui_density', defaultValue: 'comfortable') == 'compact';
+  final surfaceStyle = settings.get('surface_style', defaultValue: 'outlined').toString();
+  final appBarStyle = settings.get('app_bar_style', defaultValue: 'surface').toString();
+  final fontStyle = settings.get('font_style', defaultValue: 'system').toString();
+  final fontFamily = fontStyle == 'serif' ? 'serif' : fontStyle == 'monospace' ? 'monospace' : 'sans-serif';
   final scheme = ColorScheme.fromSeed(
     seedColor: _themeSeedColor(themeName),
     brightness: brightness,
@@ -117,25 +121,26 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       scheme.surface,
     ),
     textTheme: base.textTheme,
+    fontFamily: fontFamily,
     primaryColor: scheme.primary,
     appBarTheme: AppBarTheme(
-      backgroundColor: dark ? const Color(0xFF171D22) : scheme.surface,
-      foregroundColor: dark ? scheme.onSurface : scheme.onSurface,
+      backgroundColor: appBarStyle == 'brand' ? scheme.primary : (dark ? const Color(0xFF171D22) : scheme.surface),
+      foregroundColor: appBarStyle == 'brand' ? scheme.onPrimary : scheme.onSurface,
       elevation: 0,
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
-      iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+      iconTheme: IconThemeData(color: appBarStyle == 'brand' ? scheme.onPrimary : scheme.onSurfaceVariant),
     ),
     cardTheme: CardThemeData(
       color: dark ? const Color(0xFF1A2229) : scheme.surface,
       surfaceTintColor: Colors.transparent,
-      elevation: dark ? 0 : 1,
+      elevation: surfaceStyle == 'flat' || dark ? 0 : 2,
       margin: const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
-        side: BorderSide(
-          color: dark ? scheme.outlineVariant.withOpacity(0.35) : scheme.outlineVariant.withOpacity(0.5),
-        ),
+        side: surfaceStyle == 'outlined'
+            ? BorderSide(color: scheme.outlineVariant.withOpacity(dark ? 0.45 : 0.65))
+            : BorderSide.none,
       ),
     ),
     dividerTheme: DividerThemeData(
