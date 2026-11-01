@@ -112,32 +112,50 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     colorScheme: scheme,
     useMaterial3: true,
     visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
-    scaffoldBackgroundColor: dark ? const Color(0xFF111418) : Color.alphaBlend(
+    scaffoldBackgroundColor: dark ? const Color(0xFF101418) : Color.alphaBlend(
       scheme.primary.withOpacity(0.025),
       scheme.surface,
     ),
     textTheme: base.textTheme,
     primaryColor: scheme.primary,
     appBarTheme: AppBarTheme(
-      backgroundColor: scheme.primary,
-      foregroundColor: scheme.onPrimary,
+      backgroundColor: dark ? const Color(0xFF171D22) : scheme.surface,
+      foregroundColor: dark ? scheme.onSurface : scheme.onSurface,
       elevation: 0,
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
+      iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+    ),
+    cardTheme: CardThemeData(
+      color: dark ? const Color(0xFF1A2229) : scheme.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: dark ? 0 : 1,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radius),
+        side: BorderSide(
+          color: dark ? scheme.outlineVariant.withOpacity(0.35) : scheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+    ),
+    dividerTheme: DividerThemeData(
+      color: scheme.outlineVariant.withOpacity(dark ? 0.35 : 0.6),
+      thickness: 1,
+      space: 1,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: scheme.surface,
+      fillColor: dark ? const Color(0xFF202830) : scheme.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: BorderSide(color: scheme.outlineVariant),
+        borderSide: BorderSide(color: scheme.outlineVariant.withOpacity(dark ? 0.55 : 1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
-        borderSide: BorderSide(color: scheme.primary, width: 1.6),
+        borderSide: BorderSide(color: scheme.primary, width: 1.8),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -159,7 +177,9 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      indicatorColor: scheme.primary.withOpacity(0.14),
+      backgroundColor: dark ? const Color(0xFF171D22) : scheme.surface,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: scheme.primary.withOpacity(dark ? 0.28 : 0.14),
       labelTextStyle: MaterialStateProperty.resolveWith((states) {
         final selected = states.contains(MaterialState.selected);
         return TextStyle(
@@ -167,6 +187,18 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
           fontSize: 12,
         );
       }),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: dark ? const Color(0xFF29343D) : const Color(0xFF263238),
+      contentTextStyle: const TextStyle(color: Colors.white),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: dark ? const Color(0xFF1A2229) : scheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radius),
+      ),
     ),
   );
 }
