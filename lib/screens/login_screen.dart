@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     filled: true,
-                                    fillColor: Colors.grey[50],
+                                    fillColor: appColors.surfaceContainerHighest,
                                   ),
                                   validator: (v) => v == null || v.isEmpty 
                                       ? 'Please enter username' 
@@ -327,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             children: [
               Icon(
                 Icons.security,
-                color: Colors.orange[600],
+                color: Theme.of(context).colorScheme.tertiary,
                 size: 24, // Reduced size
               ),
               const SizedBox(width: 8), // Reduced spacing
@@ -378,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               Text(
                                 'What is the name of your favourite pet?',
                                 style: TextStyle(
-                                  color: Colors.orange[700],
+                                  color: Theme.of(context).colorScheme.onTertiaryContainer,
                                   fontSize: 14, // Reduced font size
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -578,7 +578,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             Text('Error: ${e.toString()}'),
                           ],
                         ),
-                        backgroundColor: Colors.red[600],
+                        backgroundColor: Theme.of(context).colorScheme.error,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
