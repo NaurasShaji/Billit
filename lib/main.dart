@@ -63,10 +63,20 @@ Future<void> main() async {
   await setDefaultSetting('upi_id', '');
   await setDefaultSetting('upi_payee_name', '');
   await setDefaultSetting('upi_note_prefix', 'Invoice');
-  await setDefaultSetting('business_name', 'Royal Garden');
-  await setDefaultSetting('business_address',
-      'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
-  await setDefaultSetting('business_phone', '9562291843, 9446932750');
+  // Remove legacy demo business details without touching user-configured values.
+  if (settings.get('business_name') == 'Royal Garden') {
+    await settings.put('business_name', '');
+  }
+  if (settings.get('business_address') ==
+      'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585') {
+    await settings.put('business_address', '');
+  }
+  if (settings.get('business_phone') == '9562291843, 9446932750') {
+    await settings.put('business_phone', '');
+  }
+  await setDefaultSetting('business_name', '');
+  await setDefaultSetting('business_address', '');
+  await setDefaultSetting('business_phone', '');
   await setDefaultSetting('business_email', '');
   await setDefaultSetting('business_gstin', '');
   await setDefaultSetting('gst_enabled', false);
