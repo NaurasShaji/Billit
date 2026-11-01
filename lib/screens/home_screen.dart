@@ -554,8 +554,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         centerTitle: true,
         title: ValueListenableBuilder<Box<dynamic>>(
           valueListenable: Hive.box<dynamic>('app_settings').listenable(),
