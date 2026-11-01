@@ -634,13 +634,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: ResponsivePage(
                     maxWidth: 1600,
-                    child: tabs[_index],
+                    child: IndexedStack(index: _index, children: tabs),
                   ),
                 ),
               ],
             );
           }
-          return tabs[_index];
+          return IndexedStack(index: _index, children: tabs);
         },
       ),
       bottomNavigationBar: MediaQuery.sizeOf(context).width < ResponsiveBreakpoints.desktop
