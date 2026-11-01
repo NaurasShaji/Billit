@@ -608,7 +608,10 @@ class _HomeScreenState extends State<HomeScreen> {
               valueListenable: Hive.box<dynamic>('app_settings').listenable(),
               builder: (context, settings, _) => _buildBottomNavigation(
                 labels: labels,
-                icons: icons,
+                icons: _navigationIcons(
+                  isAdmin: isAdmin,
+                  style: settings.get('navigation_icon_style', defaultValue: 'outlined').toString(),
+                ),
                 selectedIndex: _index,
                 style: settings.get('navigation_style', defaultValue: 'classic').toString(),
                 onSelect: (i) => setState(() => _index = i),
