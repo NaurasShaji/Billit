@@ -56,6 +56,14 @@ class WindowsGoogleDriveAuth {
     final callback = Completer<Map<String, String>>();
 
     final subscription = server.listen((request) async {
+      if (request.uri.path != '/oauth2callback' ||
+          request.method != 'GET') {
+        request.response
+          ..statusCode = HttpStatus.notFound
+          ..write('Not found');
+        await request.response.close();
+        return;
+      }
       final params = request.uri.queryParameters;
       if (!callback.isCompleted) {
         if (params['state'] != state) {
