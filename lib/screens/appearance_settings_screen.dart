@@ -49,6 +49,10 @@ class AppearanceSettingsScreen extends StatelessWidget {
         final lowStockThreshold = (box.get('low_stock_threshold', defaultValue: 10) as num).toDouble();
         final navigationStyle = box.get('navigation_style', defaultValue: 'classic').toString();
         final navigationIconStyle = box.get('navigation_icon_style', defaultValue: 'outlined').toString();
+        final navigationIconOverridesRaw = box.get('navigation_icon_overrides', defaultValue: <String, String>{});
+        final navigationIconOverrides = navigationIconOverridesRaw is Map
+            ? Map<String, String>.from(navigationIconOverridesRaw)
+            : <String, String>{};
         final color = _palettes[selectedTheme] ?? _palettes['green']!;
 
         return Scaffold(
@@ -172,6 +176,35 @@ class AppearanceSettingsScreen extends StatelessWidget {
                             subtitle: const Text('Bold solid icons.'),
                             secondary: const Icon(Icons.dashboard),
                             onChanged: (value) { if (value != null) _save('navigation_icon_style', value); },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _sectionTitle(context, 'Individual navigation icons', 'Choose a separate icon for each destination. Changes apply immediately.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          _navigationIconPicker(context, 'Overview', 'overview', Icons.dashboard_outlined, navigationIconOverrides),
+                          const Divider(height: 24),
+                          _navigationIconPicker(context, 'Billing', 'billing', Icons.receipt_long_outlined, navigationIconOverrides),
+                          const Divider(height: 24),
+                          _navigationIconPicker(context, 'Inventory', 'inventory', Icons.inventory_2_outlined, navigationIconOverrides),
+                          const Divider(height: 24),
+                          _navigationIconPicker(context, 'Reports', 'reports', Icons.bar_chart_outlined, navigationIconOverrides),
+                          const Divider(height: 24),
+                          _navigationIconPicker(context, 'Archive', 'archive', Icons.archive_outlined, navigationIconOverrides),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () => _save('navigation_icon_overrides', <String, String>{}),
+                              icon: const Icon(Icons.restart_alt),
+                              label: const Text('Reset custom icons'),
+                            ),
                           ),
                         ],
                       ),
@@ -371,6 +404,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('product_view', 'list');
                       await _save('navigation_style', 'classic');
                       await _save('navigation_icon_style', 'outlined');
+                      await _save('navigation_icon_overrides', <String, String>{});
                       await _save('text_scale', 1.0);
                       await _save('corner_radius', 16.0);
                       await _save('low_stock_threshold', 10);
@@ -385,6 +419,102 @@ class AppearanceSettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _navigationIconPicker(
+    BuildContext context,
+    String label,
+    String settingKey,
+    IconData fallback,
+    Map<String, String> overrides,
+  ) {
+    const choices = <String, String>{
+      'default': 'Default',
+      'home': 'Home',
+      'dashboard': 'Dashboard',
+      'grid': 'Grid',
+      'receipt': 'Receipt',
+      'cart': 'Shopping cart',
+      'calculator': 'Calculator',
+      'inventory': 'Inventory',
+      'box': 'Boxes',
+      'package': 'Package',
+      'warehouse': 'Warehouse',
+      'chart': 'Bar chart',
+      'analytics': 'Analytics',
+      'trending': 'Trending',
+      'archive': 'Archive',
+      'folder': 'Folder',
+      'history': 'History',
+    };
+    const icons = <String, IconData>{
+      'home': Icons.home_outlined,
+      'dashboard': Icons.dashboard_outlined,
+      'grid': Icons.grid_view_rounded,
+      'receipt': Icons.receipt_long_outlined,
+      'cart': Icons.shopping_cart_outlined,
+      'calculator': Icons.calculate_outlined,
+      'inventory': Icons.inventory_2_outlined,
+      'box': Icons.widgets_outlined,
+      'warehouse': Icons.warehouse_outlined,
+      'chart': Icons.bar_chart_outlined,
+      'analytics': Icons.analytics_outlined,
+      'trending': Icons.trending_up_outlined,
+      'archive': Icons.archive_outlined,
+      'folder': Icons.folder_open_outlined,
+      'history': Icons.history,
+    };
+    final selected = overrides[settingKey] ?? 'default';
+    return Row(
+      children: [
+        SizedBox(
+          width: 104,
+          child: Row(
+            children: [
+              Icon(selected == 'default' ? fallback : icons[selected] ?? fallback),
+              const SizedBox(width: 8),
+              Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: choices.containsKey(selected) ? selected : 'default',
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Icon',
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            items: choices.entries.map((entry) => DropdownMenuItem<String>(
+              value: entry.key,
+              child: Row(
+                children: [
+                  if (entry.key != 'default') ...[
+                    Icon(icons[entry.key], size: 19),
+                    const SizedBox(width: 10),
+                  ] else ...[
+                    Icon(fallback, size: 19),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(child: Text(entry.value, overflow: TextOverflow.ellipsis)),
+                ],
+              ),
+            )).toList(),
+            onChanged: (value) {
+              if (value == null) return;
+              final updated = Map<String, String>.from(overrides);
+              if (value == 'default') {
+                updated.remove(settingKey);
+              } else {
+                updated[settingKey] = value;
+              }
+              _save('navigation_icon_overrides', updated);
+            },
+          ),
+        ),
+      ],
     );
   }
 
