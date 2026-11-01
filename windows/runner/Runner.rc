@@ -95,7 +95,7 @@ BEGIN
             VALUE "InternalName", "Billit" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 Billit. All rights reserved." "\0"
             VALUE "OriginalFilename", "Billit.exe" "\0"
-            VALUE "ProductName", "floral_billing_refined" "\0"
+            VALUE "ProductName", "Billit" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
