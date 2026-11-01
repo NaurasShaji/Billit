@@ -15,7 +15,7 @@ class InvoiceTemplateService {
   static Map<String, dynamic> defaults(String size) {
     final compact = size == '58mm' || size == '80mm';
     return {
-      'name':'Default $size', 'paperSize':size, 'headerTitle':'TAX INVOICE',
+      'name':'Default $size', 'paperSize':size, 'headerTitle':'INVOICE',
       'footerText':'Thank you for your business.', 'termsText':'',
       'showLogo':!compact, 'showBusinessName':true, 'showAddress':true,
       'showPhone':true, 'showEmail':!compact, 'showBusinessGstin':true,
