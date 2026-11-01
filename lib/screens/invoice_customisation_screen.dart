@@ -316,153 +316,532 @@ class TemplatePreview extends StatelessWidget {
   final String size;
   final Map<String, dynamic> value;
   final List<String> warnings;
-  const TemplatePreview(
-      {super.key,
-      required this.size,
-      required this.value,
-      required this.warnings});
-  @override
-  Widget build(BuildContext context) {
-    final compact = size == '58mm' || size == '80mm';
-    final width = size == '58mm'
-        ? 210.0
-        : size == '80mm'
-            ? 280.0
-            : size == 'A5'
-                ? 360.0
-                : 440.0;
-    final cols = (value['columns'] as List).cast<String>();
-    final alignment = value['headerAlignment'] == 'left'
-        ? CrossAxisAlignment.start
+
+  const TemplatePreview({
+    super.key,
+    required this.size,
+    required this.value,
+    required this.warnings,
+  });
+
+  String _label(String id) {
+    final custom = (value['columnLabels'] as Map?)?[id]?.toString().trim();
+    if (custom != null && custom.isNotEmpty) return custom;
+    return InvoiceTemplateService.columns
+        .firstWhere((column) => column['id'] == id,
+            orElse: () => {'label': id})['label']!;
+  }
+
+  String _sampleCell(String id, int row) {
+    const products = ['Basmati Rice 5kg', 'Sunflower Oil 1L', 'Wheat Flour 2kg'];
+    const rates = ['₹450.00', '₹180.00', '₹65.00'];
+    const amounts = ['₹900.00', '₹180.00', '₹195.00'];
+    switch (id) {
+      case 'serial':
+        return '${row + 1}';
+      case 'product':
+        return products[row];
+      case 'hsn':
+        return ['1006', '1512', '1101'][row];
+      case 'quantity':
+        return ['2', '1', '3'][row];
+      case 'unit':
+        return ['kg', 'L', 'kg'][row];
+      case 'rate':
+        return rates[row];
+      case 'discount':
+        return '—';
+      case 'gst_rate':
+        return '5%';
+      case 'tax':
+        return ['₹45.00', '₹9.00', '₹9.75'][row];
+      case 'amount':
+        return amounts[row];
+      default:
+        return '';
+    }
+  }
+
+  Widget _businessHeader({required bool compact}) {
+    final align = value['headerAlignment'] == 'left'
+        ? TextAlign.left
         : value['headerAlignment'] == 'right'
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.center;
-    final footer = value['footerAlignment'] == 'left'
+            ? TextAlign.right
+            : TextAlign.center;
+    final businessDetails = <Widget>[
+      if (value['showLogo'] == true && !compact)
+        const Icon(Icons.storefront, size: 34, color: Colors.black87),
+      if (value['showBusinessName'] == true)
+        const Text('FLORAL & CO.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      if (value['showAddress'] == true)
+        const Text('MG Road, Kothamangalam, Kerala - 686691',
+            textAlign: TextAlign.center),
+      if (value['showPhone'] == true)
+        const Text('Phone: +91 98765 43210', textAlign: TextAlign.center),
+      if (value['showEmail'] == true && !compact)
+        const Text('Email: billing@floralandco.in',
+            textAlign: TextAlign.center),
+      if (value['showBusinessGstin'] == true)
+        const Text('GSTIN: 32ABCDE1234F1Z5',
+            textAlign: TextAlign.center),
+    ];
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (final child in businessDetails)
+            DefaultTextStyle.merge(
+              style: const TextStyle(fontSize: 10, color: Colors.black),
+              child: child,
+            ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (value['showLogo'] == true)
+          const Icon(Icons.storefront, size: 34, color: Colors.black87),
+        if (value['showBusinessName'] == true)
+          Text('FLORAL & CO.',
+              textAlign: align,
+              style:
+                  const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+        if (value['showAddress'] == true)
+          const Text('MG Road, Kothamangalam, Kerala - 686691'),
+        if (value['showPhone'] == true)
+          const Text('Phone: +91 98765 43210'),
+        if (value['showEmail'] == true)
+          const Text('Email: billing@floralandco.in'),
+        if (value['showBusinessGstin'] == true)
+          const Text('GSTIN: 32ABCDE1234F1Z5',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _thermalPreview(BuildContext context, double width) {
+    final columns = (value['columns'] as List).cast<String>();
+    final visibleColumns =
+        columns.isEmpty ? <String>['product', 'amount'] : columns;
+    final compact = size == '58mm';
+    final footerAlign = value['footerAlignment'] == 'left'
         ? TextAlign.left
         : value['footerAlignment'] == 'right'
             ? TextAlign.right
             : TextAlign.center;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Live preview - $size',
-          style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 12),
-      Center(
-          child: Container(
-              width: width,
-              constraints: const BoxConstraints(maxWidth: double.infinity),
-              padding:
-                  EdgeInsets.all((value['marginMm'] as num).toDouble() + 10),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x18000000), blurRadius: 10)
-                  ]),
-              child: DefaultTextStyle(
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: (value['fontSize'] as num).toDouble()),
-                  child: Column(
+    final borderColor = Colors.black87;
+    final thermalText = TextStyle(
+      fontFamily: 'monospace',
+      fontSize: compact ? 8 : 9,
+      height: 1.15,
+      color: Colors.black,
+    );
+    Widget rule() => Container(
+          height: 1,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          color: borderColor,
+        );
+    int flexFor(String id) => id == 'product'
+        ? (compact ? 4 : 5)
+        : id == 'amount'
+            ? 2
+            : 1;
+    Widget tableLine(int row, {bool heading = false}) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final id in visibleColumns)
+              Expanded(
+                flex: flexFor(id),
+                child: Text(
+                  heading ? _label(id) : _sampleCell(id, row),
+                  maxLines: heading ? 2 : 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: id == 'product' ? TextAlign.left : TextAlign.right,
+                  style: thermalText.copyWith(
+                    fontWeight:
+                        heading ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+          ],
+        );
+
+    return Center(
+      child: Container(
+        width: width,
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade400),
+          boxShadow: const [
+            BoxShadow(color: Color(0x18000000), blurRadius: 8)
+          ],
+        ),
+        child: DefaultTextStyle(
+          style: thermalText,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _businessHeader(compact: true),
+              rule(),
+              Text(value['headerTitle']?.toString() ?? 'INVOICE',
+                  style: thermalText.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 3),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Invoice: INV-2026-0042\nDate: 01/11/2026  10:42 AM\nCustomer: Arun Kumar',
+                  style: thermalText,
+                ),
+              ),
+              if (value['showCustomerPhone'] == true)
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Phone: +91 98470 12345',
+                        style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 9,
+                            color: Colors.black))),
+              if (value['showCustomerGstin'] == true)
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Customer GSTIN: 32AAAPA1234A1Z5',
+                        style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 9,
+                            color: Colors.black))),
+              if (value['showPaymentMethod'] == true)
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Payment: UPI',
+                        style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 9,
+                            color: Colors.black))),
+              rule(),
+              tableLine(0, heading: true),
+              rule(),
+              for (var row = 0; row < 3; row++) ...[
+                tableLine(row),
+                if (row != 2) const SizedBox(height: 3),
+              ],
+              rule(),
+              _thermalTotal('Subtotal', '₹1,275.00'),
+              _thermalTotal('Discount', '₹0.00'),
+              _thermalTotal('Taxable value', '₹1,275.00'),
+              _thermalTotal('CGST', '₹31.88'),
+              _thermalTotal('SGST', '₹31.87'),
+              rule(),
+              _thermalTotal('GRAND TOTAL', '₹1,338.75', bold: true),
+              if (value['showQr'] == true) ...[
+                const SizedBox(height: 7),
+                const Icon(Icons.qr_code_2, size: 44, color: Colors.black),
+                const Text('SCAN & PAY',
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black)),
+              ],
+              if ((value['footerText']?.toString().isNotEmpty ?? false))
+                Padding(
+                  padding: const EdgeInsets.only(top: 7),
+                  child: Text(value['footerText'].toString(),
+                      textAlign: footerAlign,
+                      style: thermalText.copyWith(
+                          fontWeight: FontWeight.bold)),
+                ),
+              if ((value['termsText']?.toString().isNotEmpty ?? false))
+                Text(value['termsText'].toString(),
+                    textAlign: footerAlign, style: thermalText),
+              const SizedBox(height: 5),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _thermalTotal(String label, String amount, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 9,
+                    color: Colors.black,
+                    fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+          ),
+          Text(amount,
+              style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 9,
+                  color: Colors.black,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+
+  Widget _pagePreview(BuildContext context, double width) {
+    final columns = (value['columns'] as List).cast<String>();
+    final visibleColumns = columns.isEmpty
+        ? <String>['serial', 'product', 'quantity', 'rate', 'amount']
+        : columns;
+    final alignment = value['headerAlignment'] == 'right'
+        ? CrossAxisAlignment.end
+        : value['headerAlignment'] == 'center'
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start;
+    final footerAlign = value['footerAlignment'] == 'left'
+        ? TextAlign.left
+        : value['footerAlignment'] == 'right'
+            ? TextAlign.right
+            : TextAlign.center;
+    final border = value['showTableBorders'] == true
+        ? TableBorder.all(color: Colors.grey.shade300, width: 0.7)
+        : TableBorder(
+            horizontalInside:
+                BorderSide(color: Colors.grey.shade200, width: 0.5));
+    final tableRows = <TableRow>[
+      TableRow(
+        decoration: const BoxDecoration(color: Color(0xFFE9EEF5)),
+        children: [
+          for (final id in visibleColumns)
+            Padding(
+              padding: const EdgeInsets.all(5),
+              child: Text(_label(id),
+                  style: const TextStyle(
+                      fontSize: 8, fontWeight: FontWeight.bold)),
+            ),
+        ],
+      ),
+      for (var row = 0; row < 3; row++)
+        TableRow(
+          children: [
+            for (final id in visibleColumns)
+              Padding(
+                padding: const EdgeInsets.all(5),
+                child: Text(_sampleCell(id, row),
+                    style: const TextStyle(fontSize: 8)),
+              ),
+          ],
+        ),
+    ];
+
+    return Center(
+      child: Container(
+        width: width,
+        padding: EdgeInsets.all((value['marginMm'] as num).toDouble() + 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade400),
+          boxShadow: const [
+            BoxShadow(color: Color(0x18000000), blurRadius: 8)
+          ],
+        ),
+        child: DefaultTextStyle(
+          style: const TextStyle(color: Colors.black, fontSize: 9),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: alignment,
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (value['showLogo'] == true && !compact)
-                          const Icon(Icons.store, size: 28),
+                        if (value['showLogo'] == true)
+                          const Icon(Icons.storefront, size: 32),
                         if (value['showBusinessName'] == true)
-                          const Text('YOUR BUSINESS NAME',
+                          const Text('FLORAL & CO.',
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15)),
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
                         if (value['showAddress'] == true)
-                          const Text('Business address, City, PIN'),
+                          const Text('MG Road, Kothamangalam, Kerala - 686691'),
                         if (value['showPhone'] == true)
-                          const Text('Phone: 98765 43210'),
+                          const Text('Phone: +91 98765 43210'),
+                        if (value['showEmail'] == true)
+                          const Text('Email: billing@floralandco.in'),
                         if (value['showBusinessGstin'] == true)
-                          const Text('GSTIN: 32ABCDE1234F1Z5'),
-                        const Divider(color: Colors.black),
-                        Text(value['headerTitle'].toString(),
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                                'Invoice: INV-0001\nDate: 01 Nov 2026\nCustomer: Sample Customer')),
-                        const Divider(color: Colors.black),
-                        Row(children: [
-                          for (final id in cols)
-                            Expanded(
-                                child: Text(
-                                    ((value['columnLabels'] as Map?)?[id]
-                                                ?.toString()
-                                                .isNotEmpty ==
-                                            true
-                                        ? (value['columnLabels'] as Map)[id]
-                                            .toString()
-                                        : InvoiceTemplateService.columns
-                                            .firstWhere((e) =>
-                                                e['id'] == id)['label']!),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)))
-                        ]),
-                        for (var i = 0; i < 3; i++)
-                          Row(children: [
-                            for (final id in cols)
-                              Expanded(
-                                  child: Text(
-                                      id == 'product'
-                                          ? [
-                                              'Rice 5kg',
-                                              'Cooking Oil',
-                                              'Wheat Flour'
-                                            ][i]
-                                          : id == 'quantity'
-                                              ? ['2', '1', '3'][i]
-                                              : id == 'rate'
-                                                  ? ['₹450', '₹180', '₹65'][i]
-                                                  : id == 'amount'
-                                                      ? [
-                                                          '₹900',
-                                                          '₹180',
-                                                          '₹195'
-                                                        ][i]
-                                                      : id == 'serial'
-                                                          ? '1'
-                                                          : id == 'hsn'
-                                                              ? '1006'
-                                                              : id == 'gst_rate'
-                                                                  ? '5%'
-                                                                  : id == 'tax'
-                                                                      ? '₹45'
-                                                                      : 'pcs',
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis))
-                          ]),
-                        if (value['showTableBorders'] == true)
-                          const Divider(color: Colors.black),
-                        const Text(
-                            'Subtotal: ₹1,275\nGST: ₹45\nGRAND TOTAL: ₹1,320',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text('GSTIN: 32ABCDE1234F1Z5',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      border: Border.all(color: Colors.blueGrey),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(value['headerTitle']?.toString() ?? 'INVOICE',
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 5),
+                        const Text('Invoice: INV-2026-0042'),
+                        const Text('Date: 01 Nov 2026, 10:42 AM'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 22, color: Colors.black54),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('BILL TO',
+                        style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black54)),
+                    const SizedBox(height: 3),
+                    const Text('Arun Kumar',
+                        style: TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.bold)),
+                    if (value['showCustomerPhone'] == true)
+                      const Text('Phone: +91 98470 12345'),
+                    if (value['showCustomerGstin'] == true)
+                      const Text('Customer GSTIN: 32AAAPA1234A1Z5'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Table(border: border, children: tableRows),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         if (value['showPaymentMethod'] == true)
-                          const Text('Payment: UPI'),
-                        if (value['showAmountInWords'] == true && !compact)
-                          const Text(
-                              'Amount in words: One Thousand Three Hundred Twenty Rupees Only'),
-                        if (value['showQr'] == true && !compact)
-                          const Icon(Icons.qr_code_2, size: 40),
+                          const Text('Payment method: UPI'),
+                        const SizedBox(height: 10),
                         if (value['footerText'].toString().isNotEmpty)
                           Text(value['footerText'].toString(),
-                              textAlign: footer,
+                              textAlign: footerAlign,
                               style:
                                   const TextStyle(fontWeight: FontWeight.bold)),
                         if (value['termsText'].toString().isNotEmpty)
-                          Text(value['termsText'].toString(), textAlign: footer)
-                      ])))),
-      for (final w in warnings)
-        Padding(
+                          Text(value['termsText'].toString(),
+                              textAlign: footerAlign),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 145,
+                    child: Column(
+                      children: [
+                        _pageTotal('Subtotal', '₹1,275.00'),
+                        _pageTotal('Discount', '₹0.00'),
+                        _pageTotal('Taxable value', '₹1,275.00'),
+                        _pageTotal('CGST', '₹31.88'),
+                        _pageTotal('SGST', '₹31.87'),
+                        const Divider(color: Colors.black54),
+                        _pageTotal('GRAND TOTAL', '₹1,338.75', bold: true),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (value['showQr'] == true)
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Icon(Icons.qr_code_2, size: 52),
+                  ),
+                ),
+              if (value['showAmountInWords'] == true)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300)),
+                  child: const Text(
+                    'Amount in words: One Thousand Three Hundred Thirty Eight Rupees and Seventy Five Paise Only',
+                    style: TextStyle(fontSize: 8, fontStyle: FontStyle.italic),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pageTotal(String label, String amount, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: bold ? FontWeight.bold : FontWeight.normal))),
+          const SizedBox(width: 5),
+          Text(amount,
+              style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = size == '58mm' || size == '80mm';
+    final width = size == '58mm'
+        ? 205.0
+        : size == '80mm'
+            ? 300.0
+            : size == 'A5'
+                ? 360.0
+                : 440.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Live preview - $size',
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        compact
+            ? _thermalPreview(context, width)
+            : _pagePreview(context, width),
+        for (final warning in warnings)
+          Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text('Warning: $w',
-                style: Theme.of(context).textTheme.bodySmall))
-    ]);
+            child: Text('Warning: $warning',
+                style: Theme.of(context).textTheme.bodySmall),
+          ),
+      ],
+    );
   }
 }
