@@ -87,14 +87,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   ],
                                 ),
                                 child: Icon(
-                                  Icons.local_florist,
+                                  Icons.receipt_long_rounded,
                                   size: 40,
                                   color: appColors.primary,
                                 ),
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Floral Billing System',
+                                'Ventro',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Welcome back! Please sign in to continue.',
+                                'Retail management, simplified.',
                                 style: TextStyle(
                                   color: Colors.green[600],
                                   fontSize: 14,
