@@ -65,9 +65,11 @@ class InvoiceTemplateService {
     final selected = (value['columns'] as List?)?.cast<String>() ?? <String>[];
     const widths58 = {'serial':2,'product':14,'hsn':6,'quantity':5,'unit':4,'rate':7,'discount':6,'gst_rate':5,'tax':7,'amount':10};
     const widths80 = {'serial':3,'product':20,'hsn':7,'quantity':5,'unit':4,'rate':9,'discount':7,'gst_rate':5,'tax':8,'amount':10};
-    final widths = size == '58mm' ? widths58 : widths80;
+    const widthsA5 = {'serial':4,'product':24,'hsn':10,'quantity':7,'unit':6,'rate':11,'discount':9,'gst_rate':7,'tax':11,'amount':12};
+    const widthsA4 = {'serial':5,'product':32,'hsn':12,'quantity':9,'unit':7,'rate':13,'discount':11,'gst_rate':8,'tax':13,'amount':14};
+    final widths = size == '58mm' ? widths58 : size == '80mm' ? widths80 : size == 'A5' ? widthsA5 : widthsA4;
     final used = selected.fold<int>(0,(sum,id)=>sum+(widths[id]??6));
-    final limit = size == '58mm' ? 32 : size == '80mm' ? 48 : 999;
+    final limit = size == '58mm' ? 32 : size == '80mm' ? 48 : size == 'A5' ? 82 : 130;
     final warnings = <String>[];
     if (selected.isEmpty) warnings.add('Add at least one table column.');
     if (selected.toSet().length != selected.length) warnings.add('Remove duplicate table columns.');
@@ -77,7 +79,10 @@ class InvoiceTemplateService {
     if (font > (compact ? 12 : 18)) warnings.add('Font size may cause wrapping or page overflow.');
     final margin = (value['marginMm'] as num).toDouble();
     if (compact && margin > 5) warnings.add('Large margins reduce usable thermal paper width.');
+    final header = value['headerTitle']?.toString() ?? '';
+    if (compact && header.length > 24) warnings.add('Long invoice heading may wrap or exceed the thermal receipt width.');
     if (compact && value['footerText'].toString().length > 80) warnings.add('Long footer may wrap across several receipt lines.');
+    if (compact && value['termsText'].toString().length > 100) warnings.add('Long terms and conditions may make the thermal receipt unusually long.');
     return warnings;
   }
 }
