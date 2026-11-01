@@ -20,6 +20,8 @@ class WindowsGoogleDriveAuth {
   static final WindowsGoogleDriveAuth instance = WindowsGoogleDriveAuth._();
 
   static const _clientId = String.fromEnvironment('GOOGLE_DESKTOP_CLIENT_ID');
+  static const _clientSecret =
+      String.fromEnvironment('GOOGLE_DESKTOP_CLIENT_SECRET');
   static const _scope =
       'https://www.googleapis.com/auth/drive.file openid email';
   static const _storage = FlutterSecureStorage();
@@ -114,6 +116,7 @@ class WindowsGoogleDriveAuth {
           'code_verifier': verifier,
           'grant_type': 'authorization_code',
           'redirect_uri': redirectUri,
+          if (_clientSecret.isNotEmpty) 'client_secret': _clientSecret,
         },
       );
       if (response.statusCode != HttpStatus.ok) {
@@ -153,6 +156,7 @@ class WindowsGoogleDriveAuth {
         'client_id': _clientId,
         'refresh_token': refreshToken,
         'grant_type': 'refresh_token',
+        if (_clientSecret.isNotEmpty) 'client_secret': _clientSecret,
       },
     );
     if (response.statusCode != HttpStatus.ok) {
