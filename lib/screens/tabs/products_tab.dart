@@ -35,7 +35,10 @@ class _ProductsTabState extends State<ProductsTab> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Column(
+      body: SingleChildScrollView(
+        key: const PageStorageKey<String>('inventory-scroll'),
+        padding: const EdgeInsets.only(bottom: 96),
+        child: Column(
         children: [
           // Header Section
           Container(
@@ -133,8 +136,7 @@ class _ProductsTabState extends State<ProductsTab> {
           ),
           
           // Products List
-          Expanded(
-            child: ValueListenableBuilder<Box<dynamic>>(
+          ValueListenableBuilder<Box<dynamic>>(
               valueListenable: Hive.box<dynamic>('app_settings').listenable(),
               builder: (context, settings, _) {
                 if (filtered.isEmpty) return _buildEmptyState();
@@ -142,8 +144,8 @@ class _ProductsTabState extends State<ProductsTab> {
                 return view == 'grid' ? _buildGridView(filtered) : _buildListView(filtered);
               },
             ),
-          ),
         ],
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openEditor(),
@@ -224,6 +226,8 @@ class _ProductsTabState extends State<ProductsTab> {
 
   Widget _buildGridView(List<Product> products) {
     return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 300,
@@ -312,6 +316,8 @@ class _ProductsTabState extends State<ProductsTab> {
 
   Widget _buildListView(List<Product> products) {
     return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: products.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
