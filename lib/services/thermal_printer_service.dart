@@ -314,7 +314,7 @@ class ThermalPrinterService {
     final preferredTotal = widths.fold<int>(0,(sum,width)=>sum+width);
     if (preferredTotal > 48) {
       for (var i = 0; i < widths.length; i++) {
-        widths[i] = (widths[i] * 48 / preferredTotal).floor().clamp(3,48);
+        widths[i] = (widths[i] * 48 / preferredTotal).floor().clamp(3,48).toInt();
       }
     } else if (widths.isNotEmpty) {
       final productIndex = configuredColumns.indexOf('product');
