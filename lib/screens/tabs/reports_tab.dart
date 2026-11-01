@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -96,6 +98,101 @@ class _ReportsTabState extends State<ReportsTab>
         setState(() => _printingSaleIds.remove(sale.id));
       }
     }
+  }
+
+  String _csvCell(Object? value) {
+    final text = (value ?? '').toString().replaceAll('"', '""');
+    return '"$text"';
+  }
+
+  Future<void> _shareCsv(String filename, List<List<Object?>> rows) async {
+    try {
+      final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\r\n');
+      await Share.shareXFiles(
+        [XFile.fromData(utf8.encode(csv), mimeType: 'text/csv', name: filename)],
+        subject: filename,
+        text: 'Floral Bill accounting export',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not export CSV: $e')),
+      );
+    }
+  }
+
+  Future<void> _exportGstSalesRegister() async {
+    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final rows = <List<Object?>>[
+      ['Invoice No', 'Date', 'Customer', 'Phone', 'Customer GSTIN', 'Subtotal', 'Discount', 'Taxable Value', 'CGST', 'SGST', 'IGST', 'Total GST', 'Invoice Total', 'Payment', 'Tax Type', 'HSN/SAC Summary', 'GST Rate Summary'],
+      for (final sale in sales)
+        [
+          sale.id,
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(sale.date.toLocal()),
+          sale.customerName,
+          sale.customerPhone,
+          sale.customerGstin,
+          sale.items.fold<double>(0, (sum, item) => sum + item.subtotal).toStringAsFixed(2),
+          sale.discount.toStringAsFixed(2),
+          (sale.gstEnabled ? sale.taxableAmount : (sale.items.fold<double>(0, (sum, item) => sum + item.subtotal) - sale.discount)).toStringAsFixed(2),
+          sale.cgstAmount.toStringAsFixed(2),
+          sale.sgstAmount.toStringAsFixed(2),
+          sale.igstAmount.toStringAsFixed(2),
+          (sale.cgstAmount + sale.sgstAmount + sale.igstAmount).toStringAsFixed(2),
+          sale.totalAmount.toStringAsFixed(2),
+          sale.payment.name.toUpperCase(),
+          sale.gstEnabled ? (sale.interstateSale ? 'IGST' : 'CGST+SGST') : 'No GST',
+          sale.items.map((item) => item.hsnCode).where((code) => code.isNotEmpty).toSet().join('; '),
+          sale.items.map((item) => item.gstRate ?? 0.0).where((rate) => rate > 0).toSet().join('; '),
+        ],
+    ];
+    await _shareCsv('floralbill_gst_sales_register.csv', rows);
+  }
+
+  Future<void> _exportGstItemRegister() async {
+    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final products = Hive.box<Product>(Boxes.products);
+    final rows = <List<Object?>>[
+      ['Invoice No', 'Date', 'Customer', 'Customer GSTIN', 'Product', 'HSN/SAC', 'Quantity', 'Unit Rate', 'Taxable Value', 'GST Rate %', 'CGST', 'SGST', 'IGST', 'Line Total'],
+      for (final sale in sales)
+        for (final item in sale.items)
+          [
+            sale.id,
+            DateFormat('yyyy-MM-dd').format(sale.date.toLocal()),
+            sale.customerName,
+            sale.customerGstin,
+            products.get(item.productId)?.name ?? 'Unknown Product',
+            item.hsnCode.isNotEmpty ? item.hsnCode : (products.get(item.productId)?.hsnCode ?? ''),
+            item.qty,
+            item.sellingPrice.toStringAsFixed(2),
+            (sale.gstEnabled ? item.taxableAmount : item.subtotal).toStringAsFixed(2),
+            sale.gstEnabled ? (item.gstRate ?? 0.0).toStringAsFixed(2) : '0.00',
+            item.cgstAmount.toStringAsFixed(2),
+            item.sgstAmount.toStringAsFixed(2),
+            item.igstAmount.toStringAsFixed(2),
+            ((sale.gstEnabled ? item.taxableAmount : item.subtotal) + item.cgstAmount + item.sgstAmount + item.igstAmount).toStringAsFixed(2),
+          ],
+    ];
+    await _shareCsv('floralbill_gst_item_register.csv', rows);
+  }
+
+  Future<void> _exportExpensesRegister() async {
+    final expenses = Hive.box<Expense>(Boxes.expenses).values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final rows = <List<Object?>>[
+      ['Expense ID', 'Date', 'Category', 'Description', 'Amount'],
+      for (final expense in expenses)
+        [
+          expense.id,
+          DateFormat('yyyy-MM-dd').format(expense.date.toLocal()),
+          expense.category,
+          expense.description,
+          expense.amount.toStringAsFixed(2),
+        ],
+    ];
+    await _shareCsv('floralbill_expenses_register.csv', rows);
   }
 
   @override
@@ -223,6 +320,76 @@ class _ReportsTabState extends State<ReportsTab>
                         ],
                 ),
               ),
+              if (_isAdmin) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: PopupMenuButton<String>(
+                      tooltip: 'Export reports',
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'gst_sales':
+                            _exportGstSalesRegister();
+                            break;
+                          case 'gst_items':
+                            _exportGstItemRegister();
+                            break;
+                          case 'expenses':
+                            _exportExpensesRegister();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'gst_sales',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.receipt_long),
+                            title: Text('GST Sales Register'),
+                            dense: true,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'gst_items',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.table_chart_outlined),
+                            title: Text('GST Item Register'),
+                            dense: true,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'expenses',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.account_balance_wallet_outlined),
+                            title: Text('Expenses Register'),
+                            dense: true,
+                          ),
+                        ),
+                      ],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.6)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.file_download_outlined, color: theme.colorScheme.primary, size: 20),
+                            const SizedBox(width: 8),
+                            const Text('Export reports', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.keyboard_arrow_down, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
             ],
           ),

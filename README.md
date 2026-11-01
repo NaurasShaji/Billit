@@ -1,8 +1,8 @@
-# Floral Billing
+# Billit
 
-A Flutter app for managing floral-shop sales, products, and day-to-day business records. It uses Hive for local data storage and includes billing, inventory, reporting, backup, and printer workflows.
+Billit is a point-of-sale and retail management app for billing, inventory, GST, reporting, backups, and printer workflows. It uses Hive for local data storage and includes billing, inventory, reporting, backup, and printer workflows.
 
-![Floral Billing app icon](assets/icon/floralbill_icon.jpg)
+![Billit app logo](assets/icon/billit_logo.svg)
 
 ## Features
 

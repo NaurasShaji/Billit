@@ -988,6 +988,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
     final salesBox = Hive.box<Sale>(Boxes.sales);
     final expensesBox = Hive.box<Expense>(Boxes.expenses);
     final employeesBox = Hive.box<Employee>(Boxes.employees);
+    final appSettingsBox = Hive.box<dynamic>('app_settings');
 
     return {
       'meta': {
@@ -1003,6 +1004,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 'userType': u.userType.name,
               })
           .toList(),
+      'appSettings': appSettingsBox.toMap().map((key, value) => MapEntry(key.toString(), value)),
       'products': productsBox.values
           .map((p) => {
                 'id': p.id,
@@ -1014,6 +1016,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 'category': p.category,
                 'subCategory': p.subCategory,
                 'active': p.active,
+                'barcode': p.barcode,
+                'hsnCode': p.hsnCode,
+                'gstRate': p.gstRate,
               })
           .toList(),
       'sales': salesBox.values
@@ -1028,6 +1033,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                           'costPrice': it.costPrice,
                           'subtotal': it.subtotal,
                           'unitLabel': it.unitLabel,
+                          'hsnCode': it.hsnCode,
+                          'gstRate': it.gstRate,
+                          'taxableAmount': it.taxableAmount,
+                          'cgstAmount': it.cgstAmount,
+                          'sgstAmount': it.sgstAmount,
+                          'igstAmount': it.igstAmount,
                         })
                     .toList(),
                 'totalAmount': s.totalAmount,
@@ -1037,6 +1048,16 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
                 'customerName': s.customerName,
                 'customerPhone': s.customerPhone,
                 'userId': s.userId,
+                'discount': s.discount,
+                'gstEnabled': s.gstEnabled,
+                'gstRate': s.gstRate,
+                'taxableAmount': s.taxableAmount,
+                'cgstAmount': s.cgstAmount,
+                'sgstAmount': s.sgstAmount,
+                'igstAmount': s.igstAmount,
+                'customerGstin': s.customerGstin,
+                'interstateSale': s.interstateSale,
+                'gstInclusive': s.gstInclusive,
               })
           .toList(),
       'expenses': expensesBox.values
@@ -1067,6 +1088,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
     final salesBox = Hive.box<Sale>(Boxes.sales);
     final expensesBox = Hive.box<Expense>(Boxes.expenses);
     final employeesBox = Hive.box<Employee>(Boxes.employees);
+    final appSettingsBox = Hive.box<dynamic>('app_settings');
 
     await usersBox.clear();
     await productsBox.clear();
@@ -1090,10 +1112,16 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
         ..sellingPrice = (p['sellingPrice'] as num).toDouble()
         ..costPrice = (p['costPrice'] as num).toDouble()
         ..stock = (p['stock'] as num).toDouble()
-        ..unit = (p['unit'] as String) == 'kg' ? UnitType.kg : UnitType.pcs
-        ..category = p['category'] as String
-        ..subCategory = p['subCategory'] as String
-        ..active = p['active'] as bool;
+        ..unit = UnitType.values.firstWhere(
+          (unit) => unit.name == (p['unit'] as String? ?? 'pcs'),
+          orElse: () => UnitType.pcs,
+        )
+        ..category = p['category'] as String? ?? 'General'
+        ..subCategory = p['subCategory'] as String? ?? ''
+        ..active = p['active'] as bool? ?? true
+        ..barcode = p['barcode'] as String?
+        ..hsnCode = p['hsnCode'] as String? ?? ''
+        ..gstRate = (p['gstRate'] as num?)?.toDouble();
       await productsBox.put(product.id, product);
     }
 
@@ -1108,7 +1136,13 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
               ..sellingPrice = (it['sellingPrice'] as num).toDouble()
               ..costPrice = (it['costPrice'] as num).toDouble()
               ..subtotal = (it['subtotal'] as num).toDouble()
-              ..unitLabel = it['unitLabel'] as String)
+              ..unitLabel = it['unitLabel'] as String? ?? 'pcs'
+              ..hsnCode = it['hsnCode'] as String? ?? ''
+              ..gstRate = (it['gstRate'] as num?)?.toDouble()
+              ..taxableAmount = (it['taxableAmount'] as num?)?.toDouble() ?? 0.0
+              ..cgstAmount = (it['cgstAmount'] as num?)?.toDouble() ?? 0.0
+              ..sgstAmount = (it['sgstAmount'] as num?)?.toDouble() ?? 0.0
+              ..igstAmount = (it['igstAmount'] as num?)?.toDouble() ?? 0.0)
             .toList()
         ..totalAmount = (s['totalAmount'] as num).toDouble()
         ..totalCost = (s['totalCost'] as num).toDouble()
@@ -1120,7 +1154,17 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
         }
         ..customerName = s['customerName'] as String? ?? ''
         ..customerPhone = s['customerPhone'] as String? ?? ''
-        ..userId = s['userId'] as String? ?? '';
+        ..userId = s['userId'] as String? ?? ''
+        ..discount = (s['discount'] as num?)?.toDouble() ?? 0.0
+        ..gstEnabled = s['gstEnabled'] as bool? ?? false
+        ..gstRate = (s['gstRate'] as num?)?.toDouble() ?? 0.0
+        ..taxableAmount = (s['taxableAmount'] as num?)?.toDouble() ?? 0.0
+        ..cgstAmount = (s['cgstAmount'] as num?)?.toDouble() ?? 0.0
+        ..sgstAmount = (s['sgstAmount'] as num?)?.toDouble() ?? 0.0
+        ..igstAmount = (s['igstAmount'] as num?)?.toDouble() ?? 0.0
+        ..customerGstin = s['customerGstin'] as String? ?? ''
+        ..interstateSale = s['interstateSale'] as bool? ?? false
+        ..gstInclusive = s['gstInclusive'] as bool? ?? false;
       await salesBox.put(sale.id, sale);
     }
 
@@ -1145,6 +1189,11 @@ class _BackupRestoreTabState extends State<BackupRestoreTab> with TickerProvider
         salaryPaid: emp['salaryPaid'] as bool? ?? false,
       );
       await employeesBox.put(employee.id, employee);
+    }
+
+    final savedSettings = data['appSettings'];
+    if (savedSettings is Map) {
+      await appSettingsBox.putAll(Map<String, dynamic>.from(savedSettings));
     }
   }
 }

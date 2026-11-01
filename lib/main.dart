@@ -37,6 +37,37 @@ Future<void> main() async {
   await Hive.openBox<Expense>(Boxes.expenses);
   await Hive.openBox<Employee>(Boxes.employees);
   await Hive.openBox('session');
+  final settings = await Hive.openBox<dynamic>('app_settings');
+  Future<void> setDefaultSetting(String key, dynamic value) async {
+    if (!settings.containsKey(key)) await settings.put(key, value);
+  }
+  final savedAppName = settings.get('app_name');
+  if (savedAppName == null || savedAppName == 'Floral Bill' || savedAppName == 'Floral Billing') {
+    await settings.put('app_name', 'Billit');
+  }
+  await setDefaultSetting('app_logo_base64', '');
+  await setDefaultSetting('app_theme', 'green');
+  await setDefaultSetting('theme_mode', 'system');
+  await setDefaultSetting('ui_density', 'comfortable');
+  await setDefaultSetting('product_view', 'list');
+  await setDefaultSetting('text_scale', 1.0);
+  await setDefaultSetting('corner_radius', 16.0);
+  await setDefaultSetting('low_stock_threshold', 10);
+  await setDefaultSetting('invoice_accent', 'blue');
+  await setDefaultSetting('invoice_footer_text', 'Thank you for your business.');
+  await setDefaultSetting('upi_id', '');
+  await setDefaultSetting('upi_payee_name', '');
+  await setDefaultSetting('upi_note_prefix', 'Invoice');
+  await setDefaultSetting('business_name', 'Royal Garden');
+  await setDefaultSetting('business_address', 'FourLane Byepass, Mangattukavala, Thodupuzha, Kerala 685585');
+  await setDefaultSetting('business_phone', '9562291843, 9446932750');
+  await setDefaultSetting('business_email', '');
+  await setDefaultSetting('business_gstin', '');
+  await setDefaultSetting('gst_enabled', false);
+  await setDefaultSetting('gst_rate', 0.0);
+  await setDefaultSetting('gst_price_inclusive', false);
+  await setDefaultSetting('invoice_prefix', 'INV');
+  await setDefaultSetting('next_invoice_number', 1);
     
   // Initialize services
   final auth = AuthService();
@@ -50,6 +81,95 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+Color _themeSeedColor(String theme) {
+  switch (theme) {
+    case 'blue': return const Color(0xFF2864C5);
+    case 'purple': return const Color(0xFF7651B5);
+    case 'amber': return const Color(0xFFB77916);
+    case 'teal': return const Color(0xFF168A8A);
+    case 'rose': return const Color(0xFFB83280);
+    case 'indigo': return const Color(0xFF4F46B8);
+    case 'slate': return const Color(0xFF475569);
+    case 'coral': return const Color(0xFFD45D45);
+    case 'ocean': return const Color(0xFF087EAA);
+    case 'green':
+    default: return const Color(0xFF25855A);
+  }
+}
+
+ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
+  final themeName = settings.get('app_theme', defaultValue: 'green').toString();
+  final radius = (settings.get('corner_radius', defaultValue: 16.0) as num).toDouble();
+  final compact = settings.get('ui_density', defaultValue: 'comfortable') == 'compact';
+  final scheme = ColorScheme.fromSeed(
+    seedColor: _themeSeedColor(themeName),
+    brightness: brightness,
+  );
+  final dark = brightness == Brightness.dark;
+  final base = ThemeData(brightness: brightness);
+  return ThemeData(
+    colorScheme: scheme,
+    useMaterial3: true,
+    visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
+    scaffoldBackgroundColor: dark ? const Color(0xFF111418) : Color.alphaBlend(
+      scheme.primary.withOpacity(0.025),
+      scheme.surface,
+    ),
+    textTheme: base.textTheme,
+    primaryColor: scheme.primary,
+    appBarTheme: AppBarTheme(
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
+      elevation: 0,
+      centerTitle: false,
+      surfaceTintColor: Colors.transparent,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: scheme.surface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radius),
+        borderSide: BorderSide(color: scheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radius),
+        borderSide: BorderSide(color: scheme.primary, width: 1.6),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      indicatorColor: scheme.primary.withOpacity(0.14),
+      labelTextStyle: MaterialStateProperty.resolveWith((states) {
+        final selected = states.contains(MaterialState.selected);
+        return TextStyle(
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          fontSize: 12,
+        );
+      }),
+    ),
+  );
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -59,14 +179,36 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()..restoreSessionIfAny())
       ],
-      child: MaterialApp(
-        title: 'Floral Billing',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-          useMaterial3: true,
-        ),
-        debugShowCheckedModeBanner: false,
-        home: AppWrapper(),
+      child: ValueListenableBuilder<Box<dynamic>>(
+        valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+        builder: (context, settings, _) {
+          final modeName = settings.get('theme_mode', defaultValue: 'system').toString();
+          final mode = modeName == 'dark'
+              ? ThemeMode.dark
+              : modeName == 'light'
+                  ? ThemeMode.light
+                  : ThemeMode.system;
+          return MaterialApp(
+            title: settings.get('app_name', defaultValue: 'Billit').toString(),
+            theme: _buildAppTheme(settings, Brightness.light),
+            darkTheme: _buildAppTheme(settings, Brightness.dark),
+            themeMode: mode,
+            debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              final scale = (settings.get('text_scale', defaultValue: 1.0) as num)
+                  .toDouble()
+                  .clamp(0.9, 1.2)
+                  .toDouble();
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+            home: AppWrapper(),
+          );
+        },
       ),
     );
   }

@@ -3,6 +3,8 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import '../services/boxes.dart';
+import 'barcode_scanner_screen.dart';
+import '../widgets/responsive_page.dart';
 
 class ManageProductScreen extends StatefulWidget {
   final Product? product;
@@ -20,6 +22,9 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   late final TextEditingController _stockController;
   late final TextEditingController _categoryController;
   late final TextEditingController _subCategoryController;
+  late final TextEditingController _barcodeController;
+  late final TextEditingController _hsnController;
+  late final TextEditingController _gstRateController;
   late UnitType _selectedUnit;
   bool _isLoading = false;
   double _profitMargin = 0;
@@ -34,6 +39,9 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     _stockController = TextEditingController(text: widget.product?.stock.toString() ?? '0');
     _categoryController = TextEditingController(text: widget.product?.category ?? 'General');
     _subCategoryController = TextEditingController(text: widget.product?.subCategory ?? '');
+    _barcodeController = TextEditingController(text: widget.product?.barcode ?? '');
+    _hsnController = TextEditingController(text: widget.product?.hsnCode ?? '');
+    _gstRateController = TextEditingController(text: widget.product?.gstRate?.toString() ?? '');
     _selectedUnit = widget.product?.unit ?? UnitType.pcs;
 
     // Calculate initial profit margin
@@ -61,7 +69,19 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     _stockController.dispose();
     _categoryController.dispose();
     _subCategoryController.dispose();
+    _barcodeController.dispose();
+    _hsnController.dispose();
+    _gstRateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _scanProductBarcode() async {
+    final value = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (value != null && mounted) {
+      setState(() => _barcodeController.text = value);
+    }
   }
 
   Future<void> _saveProduct() async {
@@ -76,10 +96,28 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
       return;
     }
 
+    final gstRateText = _gstRateController.text.trim();
+    final gstRate = gstRateText.isEmpty ? null : double.tryParse(gstRateText);
+    if (gstRateText.isNotEmpty && (gstRate == null || gstRate < 0 || gstRate > 100)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('GST rate must be between 0 and 100, or left blank to use the default.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       final box = Hive.box<Product>(Boxes.products);
+      final barcode = _barcodeController.text.trim();
+      final duplicate = barcode.isNotEmpty && box.values.any((existing) =>
+          existing.id != widget.product?.id && existing.barcode?.trim() == barcode);
+      if (duplicate) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('That barcode is already assigned to another product.')),
+        );
+        return;
+      }
       final product = widget.product ?? Product()
         ..id = widget.product?.id ?? const Uuid().v4()
         ..active = true;
@@ -91,6 +129,9 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
         ..stock = double.tryParse(_stockController.text) ?? 0
         ..category = _categoryController.text
         ..subCategory = _subCategoryController.text
+        ..barcode = barcode.isEmpty ? null : barcode
+        ..hsnCode = _hsnController.text.trim()
+        ..gstRate = gstRate
         ..unit = _selectedUnit;
 
       if (widget.product == null) {
@@ -297,7 +338,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ResponsivePage(maxWidth: 900, child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,6 +388,59 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _buildSectionCard(
+              title: 'Barcode',
+              icon: Icons.qr_code_scanner,
+              content: TextFormField(
+                controller: _barcodeController,
+                decoration: InputDecoration(
+                  labelText: 'Barcode / SKU',
+                  hintText: 'Scan with camera or external scanner, or enter manually',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.qr_code_2),
+                  suffixIcon: IconButton(
+                    onPressed: _isLoading ? null : _scanProductBarcode,
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'Scan barcode with camera',
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildSectionCard(
+              title: 'Tax Classification',
+              icon: Icons.receipt_long_outlined,
+              content: Column(
+                children: [
+                  TextFormField(
+                    controller: _hsnController,
+                    decoration: InputDecoration(
+                      labelText: 'HSN / SAC code (optional)',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: const Icon(Icons.numbers),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _gstRateController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Product GST rate (%)',
+                      helperText: 'Leave blank to use default GST. Enter 0 for a zero-rated product.',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: const Icon(Icons.percent),
+                    ),
+                    validator: (value) {
+                      final rate = double.tryParse(value?.trim() ?? '');
+                      if (rate == null || rate < 0 || rate > 100) return 'Enter a rate from 0 to 100';
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -535,7 +629,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
             const SizedBox(height: 20),
           ],
         ),
-      ),
+      )),
     );
   }
 }

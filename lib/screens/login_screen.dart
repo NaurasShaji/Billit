@@ -33,6 +33,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     
     final viewInsets = MediaQuery.of(context).viewInsets;
+    final appColors = Theme.of(context).colorScheme;
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
@@ -41,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.green[50]!,
+              appColors.primaryContainer.withOpacity(0.25),
               Colors.blue[50]!,
             ],
           ),
@@ -66,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.green[50],
+                            color: appColors.primaryContainer.withOpacity(0.35),
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                           ),
                           child: Column(
@@ -79,30 +80,30 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.green.withOpacity(0.2),
+                                      color: appColors.primary.withOpacity(0.2),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
                                 child: Icon(
-                                  Icons.local_florist,
+                                  Icons.receipt_long_rounded,
                                   size: 40,
-                                  color: Colors.green[600],
+                                  color: appColors.primary,
                                 ),
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Floral Billing System',
+                                'Billit',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green[800],
+                                  color: appColors.primary,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Welcome back! Please sign in to continue.',
+                                'Retail management, simplified.',
                                 style: TextStyle(
                                   color: Colors.green[600],
                                   fontSize: 14,
