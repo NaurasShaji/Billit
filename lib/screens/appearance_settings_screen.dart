@@ -48,6 +48,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
         final radius = (box.get('corner_radius', defaultValue: 16.0) as num).toDouble();
         final lowStockThreshold = (box.get('low_stock_threshold', defaultValue: 10) as num).toDouble();
         final navigationStyle = box.get('navigation_style', defaultValue: 'classic').toString();
+        final navigationIconStyle = box.get('navigation_icon_style', defaultValue: 'outlined').toString();
         final color = _palettes[selectedTheme] ?? _palettes['green']!;
 
         return Scaffold(
@@ -141,6 +142,41 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  const SizedBox(height: 18),
+                  _sectionTitle(context, 'Navigation icon skin', 'Choose a neutral icon family for Overview, Billing, Inventory and Reports.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          RadioListTile<String>(
+                            value: 'outlined',
+                            groupValue: navigationIconStyle,
+                            title: const Text('Outlined'),
+                            subtitle: const Text('Light, clean line icons.'),
+                            secondary: const Icon(Icons.dashboard_outlined),
+                            onChanged: (value) { if (value != null) _save('navigation_icon_style', value); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'rounded',
+                            groupValue: navigationIconStyle,
+                            title: const Text('Rounded'),
+                            subtitle: const Text('Soft rounded icon shapes.'),
+                            secondary: const Icon(Icons.dashboard_rounded),
+                            onChanged: (value) { if (value != null) _save('navigation_icon_style', value); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'filled',
+                            groupValue: navigationIconStyle,
+                            title: const Text('Filled'),
+                            subtitle: const Text('Bold solid icons.'),
+                            secondary: const Icon(Icons.dashboard),
+                            onChanged: (value) { if (value != null) _save('navigation_icon_style', value); },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   _sectionTitle(context, 'Navigation bar style', 'Choose how the main navigation looks on phones and tablets.'),
                   Card(
                     child: Padding(
@@ -334,6 +370,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('ui_density', 'comfortable');
                       await _save('product_view', 'list');
                       await _save('navigation_style', 'classic');
+                      await _save('navigation_icon_style', 'outlined');
                       await _save('text_scale', 1.0);
                       await _save('corner_radius', 16.0);
                       await _save('low_stock_threshold', 10);
