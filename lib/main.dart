@@ -343,7 +343,7 @@ class AppWrapper extends StatelessWidget {
             children: [
               Icon(
                 Icons.exit_to_app,
-                color: scheme.tertiary,
+                color: Theme.of(context).colorScheme.tertiary,
                 size: 28,
               ),
               const SizedBox(width: 12),
@@ -364,7 +364,7 @@ class AppWrapper extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               style: TextButton.styleFrom(
-                foregroundColor: scheme.onSurfaceVariant,
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
               child: const Text(
@@ -378,8 +378,8 @@ class AppWrapper extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: scheme.error,
-                foregroundColor: scheme.onError,
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
