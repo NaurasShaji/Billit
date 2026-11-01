@@ -82,9 +82,12 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.palette_outlined, color: Theme.of(context).colorScheme.onPrimaryContainer, size: 30),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'Make Billit yours',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(
