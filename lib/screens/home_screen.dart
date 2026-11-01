@@ -395,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'calculator': return Icons.calculate_outlined;
       case 'inventory': return Icons.inventory_2_outlined;
       case 'box': return Icons.widgets_outlined;
-      case 'package': return Icons.package_outlined;
+      case 'package': return Icons.inventory_2_outlined;
       case 'warehouse': return Icons.warehouse_outlined;
       case 'chart': return Icons.bar_chart_outlined;
       case 'analytics': return Icons.analytics_outlined;
