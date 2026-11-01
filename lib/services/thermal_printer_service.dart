@@ -287,6 +287,8 @@ class ThermalPrinterService {
         } catch (e) { print('Error generating payment QR: $e'); }
       }
       if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: footerPosAlignment));
+      final receiptTerms = template['termsText']?.toString() ?? '';
+      if (receiptTerms.isNotEmpty) bytes += generator.text(receiptTerms, styles: PosStyles(align: footerPosAlignment));
       bytes += generator.feed(3);
       bytes += <int>[0x1D, 0x56, 0x00];
       return bytes;
