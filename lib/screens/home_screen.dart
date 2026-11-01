@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
@@ -93,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 12),
               _buildHelpOption(
-                Icons.local_florist,
+                Icons.inventory_2_outlined,
                 'Product Management',
                 'Understand how to add, edit, and track your floral inventory',
               ),
@@ -346,13 +347,102 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildBottomNavigation({
+    required List<String> labels,
+    required List<IconData> icons,
+    required int selectedIndex,
+    required String style,
+    required ValueChanged<int> onSelect,
+  }) {
+    if (style == 'classic') {
+      return NavigationBar(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: onSelect,
+        destinations: [
+          for (var i = 0; i < labels.length; i++)
+            NavigationDestination(icon: Icon(icons[i]), label: labels[i]),
+        ],
+      );
+    }
+
+    final scheme = Theme.of(context).colorScheme;
+    final floating = style == 'floating';
+    return Container(
+      margin: floating ? const EdgeInsets.fromLTRB(12, 0, 12, 10) : EdgeInsets.zero,
+      padding: EdgeInsets.fromLTRB(8, floating ? 8 : 4, 8, MediaQuery.paddingOf(context).bottom > 0 ? 4 : 8),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(floating ? 24 : 0),
+        boxShadow: floating
+            ? [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 18, offset: const Offset(0, 4))]
+            : null,
+        border: style == 'underline'
+            ? Border(top: BorderSide(color: scheme.outlineVariant.withOpacity(0.6)))
+            : null,
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++)
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () => onSelect(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: style == 'floating' && i == selectedIndex
+                        ? scheme.primaryContainer
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        icons[i],
+                        size: 23,
+                        color: i == selectedIndex ? scheme.primary : scheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        labels[i],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: i == selectedIndex ? FontWeight.w700 : FontWeight.w500,
+                          color: i == selectedIndex ? scheme.primary : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (style == 'underline')
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          margin: const EdgeInsets.only(top: 4),
+                          height: 3,
+                          width: i == selectedIndex ? 22 : 0,
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isAdmin = _authService.isAdmin;
 
     final List<String> labels = isAdmin
-        ? ['Overview', 'Billing', 'Products', 'Reports', 'Archive']
-        : ['Overview', 'Billing', 'Products', 'Reports'];
+        ? ['Overview', 'Billing', 'Inventory', 'Reports', 'Archive']
+        : ['Overview', 'Billing', 'Inventory', 'Reports'];
 
     final List<IconData> icons = isAdmin
         ? [Icons.dashboard_outlined, Icons.receipt_long, Icons.local_florist, Icons.bar_chart, Icons.archive]
@@ -399,7 +489,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             return Row(
               children: [
-                if (logo != null) ...[logo, const SizedBox(width: 8)],
+                if (logo != null) ...[logo, const SizedBox(width: 8)] else ...[ClipRRect(borderRadius: BorderRadius.circular(8), child: SvgPicture.asset('assets/icon/billit_logo.svg', width: 34, height: 34)), const SizedBox(width: 8)],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,13 +561,15 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
       bottomNavigationBar: MediaQuery.sizeOf(context).width < ResponsiveBreakpoints.desktop
-          ? NavigationBar(
-              selectedIndex: _index,
-              onDestinationSelected: (i) => setState(() => _index = i),
-              destinations: [
-                for (var i = 0; i < labels.length; i++)
-                  NavigationDestination(icon: Icon(icons[i]), label: labels[i]),
-              ],
+          ? ValueListenableBuilder<Box<dynamic>>(
+              valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+              builder: (context, settings, _) => _buildBottomNavigation(
+                labels: labels,
+                icons: icons,
+                selectedIndex: _index,
+                style: settings.get('navigation_style', defaultValue: 'classic').toString(),
+                onSelect: (i) => setState(() => _index = i),
+              ),
             )
           : null,
     );
