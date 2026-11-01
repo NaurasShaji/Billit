@@ -46,26 +46,26 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icon/floralbill_icon.jpg"
+  image_path: "assets/icon/billit_icon.png"
   min_sdk_android: 21
   
   # Web configuration
   web:
     generate: true
-    image_path: "assets/icon/floralbill_icon.jpg"
-    background_color: "#4ade80"  # Green theme for floral shop
-    theme_color: "#16a34a"       # Darker green
+    image_path: "assets/icon/billit_icon.png"
+    background_color: "#e6f7f4"  # Billit brand colors
+    theme_color: "#0f9f8f"       # Darker green
   
   # Windows configuration
   windows:
     generate: true
-    image_path: "assets/icon/floralbill_icon.jpg"
+    image_path: "assets/icon/billit_icon.png"
     icon_size: 48
   
   # macOS configuration
   macos:
     generate: true
-    image_path: "assets/icon/floralbill_icon.jpg"
+    image_path: "assets/icon/billit_icon.png"
 
 
 flutter:
