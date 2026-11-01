@@ -85,8 +85,8 @@ class PdfService {
   }) {
     final settings = Hive.box<dynamic>('app_settings');
     final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
-    final accent = _invoiceAccentColor(settings.get('invoice_accent', defaultValue: 'blue').toString());
-    final footerText = settings.get('invoice_footer_text', defaultValue: 'Thank you for your business.').toString().trim();
+    final accent = _invoiceAccentColor(template['accent']?.toString() ?? 'blue');
+    final footerText = template['footerText']?.toString().trim() ?? 'Thank you for your business.';
     final businessAddress = settings.get('business_address', defaultValue: '').toString();
     final businessPhone = settings.get('business_phone', defaultValue: '').toString();
     final businessEmail = settings.get('business_email', defaultValue: '').toString();
@@ -310,6 +310,7 @@ class PdfService {
       case 'orange': return PdfColors.orange;
       case 'pink': return PdfColors.pink;
       case 'indigo': return PdfColors.indigo;
+      case 'black': return PdfColors.black;
       case 'blue':
       default: return PdfColors.blue;
     }
