@@ -237,11 +237,28 @@ class ThermalPrinterService {
       if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) bytes += generator.text('Phone: ${sale.customerPhone}');
       if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
       bytes += generator.text('--------------------------------');
+      final receiptColumns = (template['columns'] as List).cast<String>();
+      const receiptLabels = {'serial':'#','product':'Item','hsn':'HSN','quantity':'Qty','unit':'Unit','rate':'Rate','discount':'Discount','gst_rate':'GST','tax':'Tax','amount':'Amount'};
       for (var i = 0; i < sale.items.length; i++) {
         final item = sale.items[i];
         final product = Hive.box<Product>(Boxes.products).get(item.productId);
-        bytes += generator.text('${i + 1}. ${product?.name ?? 'Unknown Product'}');
-        bytes += generator.text('${item.qty} x ${_formatRupees(item.sellingPrice)} = ${_formatRupees(item.subtotal)}');
+        final rowValues = <String,String>{
+          'serial':'${i + 1}', 'product':product?.name ?? 'Unknown Product',
+          'hsn':item.hsnCode.isNotEmpty ? item.hsnCode : (product?.hsnCode ?? '-'),
+          'quantity':item.qty.toString(), 'unit':item.unitLabel,
+          'rate':_formatRupees(item.sellingPrice), 'discount':'-',
+          'gst_rate':sale.gstEnabled ? '${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
+          'tax':sale.gstEnabled ? _formatRupees(item.cgstAmount + item.sgstAmount + item.igstAmount) : '-',
+          'amount':_formatRupees(item.subtotal),
+        };
+        for (final id in receiptColumns) {
+          final label = ((template['columnLabels'] as Map?)?[id]?.toString().trim().isNotEmpty == true
+              ? (template['columnLabels'] as Map)[id].toString()
+              : receiptLabels[id] ?? id);
+          final value = rowValues[id] ?? '';
+          bytes += generator.text(id == 'product' ? value : '$label: $value');
+        }
+        if (template['showTableBorders'] == true) bytes += generator.text('--------------------------------');
       }
       bytes += generator.text('--------------------------------');
       final subtotal = sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
