@@ -9,7 +9,7 @@ class _InvoiceCustomisationScreenState extends State<InvoiceCustomisationScreen>
   late String size; late Map<String,dynamic> value; bool saving=false; bool preview=true;
   @override void initState(){super.initState();size=InvoiceTemplateService.selected;value=InvoiceTemplateService.load(size);}
   void setValue(String k,dynamic v)=>setState(()=>value[k]=v);
-  void selectSize(String v)=>setState(()=>{size=v,value=InvoiceTemplateService.load(v)});
+  void selectSize(String v){setState((){size=v;value=InvoiceTemplateService.load(v);});}
   List<String> get selected=>(value['columns'] as List).cast<String>();
   void toggleColumn(String id,bool enabled){final next=List<String>.from(selected);if(enabled&&!next.contains(id))next.add(id);if(!enabled)next.remove(id);setValue('columns',next);}
   Future<void> save()async{setState(()=>saving=true);try{await InvoiceTemplateService.save(size,value);await InvoiceTemplateService.select(size);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$size template saved')));}finally{if(mounted)setState(()=>saving=false);}}
@@ -53,7 +53,7 @@ class TemplatePreview extends StatelessWidget{
           if(value['showBusinessGstin']==true)const Text('GSTIN: 32ABCDE1234F1Z5'),
           const Divider(color:Colors.black),Text(value['headerTitle'].toString(),style:const TextStyle(fontWeight:FontWeight.bold)),
           const Align(alignment:Alignment.centerLeft,child:Text('Invoice: INV-0001\nDate: 01 Nov 2026\nCustomer: Sample Customer')),const Divider(color:Colors.black),
-          Row(children:[for(final id in cols)Expanded(child:Text(InvoiceTemplateService.columns.firstWhere((e)=>e['id']==id)['label']!,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold))))]),
+          Row(children:[for(final id in cols)Expanded(child:Text(InvoiceTemplateService.columns.firstWhere((e)=>e['id']==id)['label']!,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold)))]),
           for(var i=0;i<3;i++)Row(children:[for(final id in cols)Expanded(child:Text(id=='product'?['Rice 5kg','Cooking Oil','Wheat Flour'][i]:id=='quantity'?['2','1','3'][i]:id=='rate'?['₹450','₹180','₹65'][i]:id=='amount'?['₹900','₹180','₹195'][i]:id=='serial'?'1':id=='hsn'?'1006':id=='gst_rate'?'5%':id=='tax'?'₹45':'pcs',maxLines:2,overflow:TextOverflow.ellipsis))]),
           if(value['showTableBorders']==true)const Divider(color:Colors.black),
           const Text('Subtotal: ₹1,275\nGST: ₹45\nGRAND TOTAL: ₹1,320',style:TextStyle(fontWeight:FontWeight.bold)),
