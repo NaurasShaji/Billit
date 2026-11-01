@@ -333,7 +333,7 @@ class ThermalPrinterService {
     if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
     bytes += generator.text([
       for (var i = 0; i < configuredColumns.length; i++)
-        fitCell(columnLabels[configuredColumns[i]] ?? configuredColumns[i], widths[i], left: configuredColumns[i] == 'product'),
+        fitCell(((template['columnLabels'] as Map?)?[configuredColumns[i]]?.toString().trim().isNotEmpty == true ? (template['columnLabels'] as Map)[configuredColumns[i]].toString() : columnLabels[configuredColumns[i]] ?? configuredColumns[i]), widths[i], left: configuredColumns[i] == 'product'),
     ].join());
     if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
 
