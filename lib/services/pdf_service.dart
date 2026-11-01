@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../models/models.dart';
 import './boxes.dart';
 import './payment_qr_service.dart';
+import './invoice_template_service.dart';
 
 class PdfService {
   // Thermal printer configurations
@@ -23,25 +24,31 @@ class PdfService {
     bool fullPage = true,
   }) async {
     final doc = pw.Document();
+    final template = InvoiceTemplateService.load(InvoiceTemplateService.selected);
+    final paperSize = template['paperSize'].toString();
+    final isThermal = paperSize == '58mm' || paperSize == '80mm';
+    final effectiveThermalSize = paperSize == '58mm' ? ThermalSize.mm58 : ThermalSize.mm80;
+    final marginMm = (template['marginMm'] as num).toDouble();
     final qrImage = await _loadPaymentQrImage(sale);
 
-    if (fullPage) {
+    if (fullPage && !isThermal) {
       doc.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
+          pageFormat: paperSize == 'A5' ? PdfPageFormat.a5 : PdfPageFormat.a4,
+          margin: pw.EdgeInsets.all(marginMm * 72 / 25.4),
           build: (context) => _buildFullPageInvoice(
             sale,
             includeHeader: includeHeader,
             includeFooter: includeFooter,
             includeGST: includeGST,
             qrImage: qrImage,
+            template: template,
           ),
         ),
       );
     } else {
       final double pageWidth =
-          thermalSize == ThermalSize.mm58 ? thermalWidth58mm : thermalWidth80mm;
+          effectiveThermalSize == ThermalSize.mm58 ? thermalWidth58mm : thermalWidth80mm;
             doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat(
@@ -55,7 +62,7 @@ class PdfService {
           build: (context) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: _buildThermalReceipt(
-              sale, thermalSize, qrImage, includeHeader, includeFooter,
+              sale, effectiveThermalSize, qrImage, includeHeader, includeFooter,
             ),
           ),
         ),
@@ -74,6 +81,7 @@ class PdfService {
     required bool includeFooter,
     required bool includeGST,
     pw.ImageProvider? qrImage,
+    required Map<String, dynamic> template,
   }) {
     final settings = Hive.box<dynamic>('app_settings');
     final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
@@ -138,11 +146,11 @@ class PdfService {
                     pw.Container(width: 110, height: 60, alignment: pw.Alignment.centerLeft, child: pw.Image(businessLogo, fit: pw.BoxFit.contain)),
                     pw.SizedBox(height: 6),
                   ],
-                  pw.Text(businessName, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                  if (businessAddress.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 4), child: pw.Text(businessAddress)),
-                  if (businessPhone.isNotEmpty) pw.Text('Phone: $businessPhone'),
-                  if (businessEmail.isNotEmpty) pw.Text('Email: $businessEmail'),
-                  if (businessGstin.isNotEmpty) pw.Text('GSTIN: $businessGstin', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  if (template['showBusinessName'] == true) pw.Text(businessName, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                  if (template['showAddress'] == true && businessAddress.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 4), child: pw.Text(businessAddress)),
+                  if (template['showPhone'] == true && businessPhone.isNotEmpty) pw.Text('Phone: $businessPhone'),
+                  if (template['showEmail'] == true && businessEmail.isNotEmpty) pw.Text('Email: $businessEmail'),
+                  if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) pw.Text('GSTIN: $businessGstin', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                 ],
               ),
             ),
@@ -156,7 +164,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(displayGst && businessGstin.isNotEmpty ? 'TAX INVOICE' : (displayGst ? 'GST INVOICE (GSTIN REQUIRED)' : 'INVOICE'), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(template['headerTitle']?.toString().trim().isNotEmpty == true ? template['headerTitle'].toString() : (displayGst && businessGstin.isNotEmpty ? 'TAX INVOICE' : (displayGst ? 'GST INVOICE (GSTIN REQUIRED)' : 'INVOICE')), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 8),
                   pw.Text('Invoice: ${sale.id}'),
                   pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
@@ -183,8 +191,8 @@ class PdfService {
             pw.Text('BILL TO', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.grey700)),
             pw.SizedBox(height: 5),
             pw.Text(sale.customerName.isEmpty ? 'Walk-in customer' : sale.customerName, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-            if (sale.customerPhone.isNotEmpty) pw.Text('Phone: ${sale.customerPhone}'),
-            if (sale.customerGstin.isNotEmpty) pw.Text('Customer GSTIN: ${sale.customerGstin}'),
+            if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) pw.Text('Phone: ${sale.customerPhone}'),
+            if (template['showCustomerGstin'] == true && sale.customerGstin.isNotEmpty) pw.Text('Customer GSTIN: ${sale.customerGstin}'),
           ],
         ),
       ),
@@ -241,7 +249,7 @@ class PdfService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('Payment method: ${sale.payment.name.toUpperCase()}'),
+                if (template['showPaymentMethod'] == true) pw.Text('Payment method: ${sale.payment.name.toUpperCase()}'),
                 if (displayGst) ...[
                   pw.SizedBox(height: 8),
                   pw.Text('GST rates are shown against each invoice line.'),
@@ -249,7 +257,8 @@ class PdfService {
                 ],
                 if (includeFooter) ...[
                   pw.SizedBox(height: 18),
-                  if (footerText.isNotEmpty) pw.Text(footerText, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  if (footerText.isNotEmpty) pw.Text(footerText, textAlign: template['footerAlignment'] == 'left' ? pw.TextAlign.left : template['footerAlignment'] == 'right' ? pw.TextAlign.right : pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  if (template['termsText']?.toString().isNotEmpty == true) pw.Text(template['termsText'].toString()),
                   pw.Text('This invoice is generated electronically.'),
                 ],
               ],
@@ -274,7 +283,7 @@ class PdfService {
           ),
         ],
       ),
-      if (qrImage != null) ...[
+      if (qrImage != null && template['showQr'] == true) ...[
         pw.SizedBox(height: 18),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.end,
@@ -289,19 +298,15 @@ class PdfService {
           ],
         ),
       ],
-      pw.SizedBox(height: 24),
-      pw.Container(
-        width: double.infinity,
-        padding: const pw.EdgeInsets.all(10),
-        decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: PdfColors.grey300),
-          borderRadius: pw.BorderRadius.circular(4),
+      if (template['showAmountInWords'] == true) ...[
+        pw.SizedBox(height: 24),
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300), borderRadius: pw.BorderRadius.circular(4)),
+          child: pw.Text('Amount in words: ${_amountInWords(sale.totalAmount)}', style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic)),
         ),
-        child: pw.Text(
-          'Amount in words: ${_amountInWords(sale.totalAmount)}',
-          style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
-        ),
-      ),
+      ],
     ];
   }
 
