@@ -10,6 +10,7 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:image/image.dart' as img;
 import 'payment_qr_service.dart';
+import 'invoice_template_service.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -205,12 +206,60 @@ class ThermalPrinterService {
   Future<List<int>> _generateTicketWithLogo(Sale sale) async {
     List<int> bytes = [];
 
-    // Using default profile for 80mm paper
-    // ATPOS HL300 is compatible with standard ESC/POS commands
+    final template = InvoiceTemplateService.load(InvoiceTemplateService.selected);
+    final is58mm = template['paperSize'] == '58mm';
     final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm80, profile);
+    final generator = Generator(is58mm ? PaperSize.mm58 : PaperSize.mm80, profile);
 
     bytes += generator.reset();
+
+    final settings = Hive.box<dynamic>('app_settings');
+    final businessName = settings.get('business_name', defaultValue: 'Business Name').toString();
+    final businessAddress = settings.get('business_address', defaultValue: '').toString();
+    final businessPhone = settings.get('business_phone', defaultValue: '').toString();
+    final businessGstin = settings.get('business_gstin', defaultValue: '').toString();
+    final footerText = template['footerText']?.toString() ?? 'Thank you for your business.';
+
+    if (is58mm) {
+      if (template['showBusinessName'] == true) bytes += generator.text(businessName, styles: PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2));
+      if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: PosAlign.center));
+      if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text(businessPhone, styles: PosStyles(align: PosAlign.center));
+      if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
+      bytes += generator.text(template['headerTitle']?.toString() ?? 'INVOICE', styles: PosStyles(align: PosAlign.center, bold: true));
+      bytes += generator.text('ID: ${sale.id}');
+      bytes += generator.text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date.toLocal())}');
+      if (sale.customerName.isNotEmpty) bytes += generator.text('Customer: ${sale.customerName}');
+      if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) bytes += generator.text('Phone: ${sale.customerPhone}');
+      if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
+      bytes += generator.text('--------------------------------');
+      for (var i = 0; i < sale.items.length; i++) {
+        final item = sale.items[i];
+        final product = Hive.box<Product>(Boxes.products).get(item.productId);
+        bytes += generator.text('${i + 1}. ${product?.name ?? 'Unknown Product'}');
+        bytes += generator.text('${item.qty} x ${_formatRupees(item.sellingPrice)} = ${_formatRupees(item.subtotal)}');
+      }
+      bytes += generator.text('--------------------------------');
+      final subtotal = sale.items.fold<double>(0, (sum, item) => sum + item.subtotal);
+      bytes += generator.text('Subtotal: ${_formatRupees(subtotal)}');
+      if (sale.discount > 0) bytes += generator.text('Discount: -${_formatRupees(sale.discount)}');
+      if (sale.gstEnabled) {
+        bytes += generator.text('Taxable: ${_formatRupees(sale.taxableAmount)}');
+        if (sale.interstateSale) { bytes += generator.text('IGST: ${_formatRupees(sale.igstAmount)}'); }
+        else { bytes += generator.text('CGST: ${_formatRupees(sale.cgstAmount)}'); bytes += generator.text('SGST: ${_formatRupees(sale.sgstAmount)}'); }
+      }
+      bytes += generator.text('================================', styles: PosStyles(bold: true));
+      bytes += generator.text('TOTAL: ${_formatRupees(sale.totalAmount)}', styles: PosStyles(bold: true, height: PosTextSize.size2));
+      if (template['showQr'] == true) {
+        try {
+          final qrBytes = await PaymentQrService.generateForSale(sale) ?? await PaymentQrService.loadStaticQrFallback();
+          if (qrBytes != null) { final qr = img.decodeImage(qrBytes); if (qr != null) { bytes += generator.text('SCAN & PAY', styles: PosStyles(align: PosAlign.center, bold: true)); bytes += generator.image(qr); } }
+        } catch (e) { print('Error generating payment QR: $e'); }
+      }
+      if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: PosAlign.center));
+      bytes += generator.feed(3);
+      bytes += <int>[0x1D, 0x56, 0x00];
+      return bytes;
+    }
 
     // Currency symbol - fallback to Rs. if printer doesn't support ₹
     const String currencySymbol =
@@ -218,7 +267,7 @@ class ThermalPrinterService {
 
     // Replace logo with bold, bigger "Royal Garden" heading
     bytes += generator.text(
-      'Royal Garden',
+      businessName,
       styles: PosStyles(
           align: PosAlign.center,
           bold: true,
@@ -228,13 +277,10 @@ class ThermalPrinterService {
     );
 
     // Business contact info - centered
-    bytes += generator.text('FourLane Byepass,Mangattukavala',
-        styles: PosStyles(align: PosAlign.center));
-    bytes += generator.text('Thodupuzha, 685585',
-        styles: PosStyles(align: PosAlign.center));
-    bytes += generator.text('ph: 8078101212',
-        styles: PosStyles(align: PosAlign.center));
-    bytes += generator.text('INVOICE',
+    if (template['showAddress'] == true && businessAddress.isNotEmpty) bytes += generator.text(businessAddress, styles: PosStyles(align: PosAlign.center));
+    if (template['showPhone'] == true && businessPhone.isNotEmpty) bytes += generator.text('ph: $businessPhone', styles: PosStyles(align: PosAlign.center));
+    if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) bytes += generator.text('GSTIN: $businessGstin', styles: PosStyles(align: PosAlign.center));
+    bytes += generator.text(template['headerTitle']?.toString() ?? 'INVOICE',
         styles: PosStyles(align: PosAlign.center, bold: true));
     bytes += generator.text('');
 
@@ -246,10 +292,10 @@ class ThermalPrinterService {
     if (sale.customerName.isNotEmpty) {
       bytes += generator.text('Customer: ${sale.customerName}');
     }
-    if (sale.customerPhone.isNotEmpty) {
+    if (template['showCustomerPhone'] == true && sale.customerPhone.isNotEmpty) {
       bytes += generator.text('Phone: ${sale.customerPhone}');
     }
-    bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
+    if (template['showPaymentMethod'] == true) bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
     bytes += generator.text('');
 
     // Items header - adjusted for 80mm paper (48 characters width)
@@ -386,8 +432,7 @@ class ThermalPrinterService {
     }
 
     // Footer
-    bytes +=
-        generator.text('THANK YOU!', styles: PosStyles(align: PosAlign.center));
+    if (footerText.trim().isNotEmpty) bytes += generator.text(footerText, styles: PosStyles(align: PosAlign.center));
     bytes += generator.text('');
     // bytes += generator.text('      Royal Garden',
     //     styles: PosStyles(align: PosAlign.center));
