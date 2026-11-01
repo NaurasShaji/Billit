@@ -47,6 +47,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
         final textScale = (box.get('text_scale', defaultValue: 1.0) as num).toDouble();
         final radius = (box.get('corner_radius', defaultValue: 16.0) as num).toDouble();
         final lowStockThreshold = (box.get('low_stock_threshold', defaultValue: 10) as num).toDouble();
+        final navigationStyle = box.get('navigation_style', defaultValue: 'classic').toString();
         final color = _palettes[selectedTheme] ?? _palettes['green']!;
 
         return Scaffold(
@@ -75,7 +76,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                         const Icon(Icons.palette_outlined, color: Colors.white, size: 30),
                         const SizedBox(height: 12),
                         const Text(
-                          'Make Floral Bill yours',
+                          'Make Billit yours',
                           style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 6),
@@ -136,6 +137,49 @@ class AppearanceSettingsScreen extends StatelessWidget {
                         selected: {themeMode},
                         onSelectionChanged: (values) => _save('theme_mode', values.first),
                         showSelectedIcon: false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _sectionTitle(context, 'Navigation bar style', 'Choose how the main navigation looks on phones and tablets.'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          RadioListTile<String>(
+                            value: 'classic',
+                            groupValue: navigationStyle,
+                            title: const Text('Classic'),
+                            subtitle: const Text('Standard Material navigation bar.'),
+                            secondary: const Icon(Icons.view_day_outlined),
+                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'floating',
+                            groupValue: navigationStyle,
+                            title: const Text('Floating'),
+                            subtitle: const Text('Rounded bar with a selected-item highlight.'),
+                            secondary: const Icon(Icons.space_dashboard_outlined),
+                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'underline',
+                            groupValue: navigationStyle,
+                            title: const Text('Underline'),
+                            subtitle: const Text('Clean layout with a slim active indicator.'),
+                            secondary: const Icon(Icons.horizontal_rule),
+                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                          ),
+                          RadioListTile<String>(
+                            value: 'minimal',
+                            groupValue: navigationStyle,
+                            title: const Text('Minimal'),
+                            subtitle: const Text('Simple icons and labels without a selected background.'),
+                            secondary: const Icon(Icons.more_horiz),
+                            onChanged: (value) { if (value != null) _save('navigation_style', value); },
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -289,6 +333,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       await _save('theme_mode', 'system');
                       await _save('ui_density', 'comfortable');
                       await _save('product_view', 'list');
+                      await _save('navigation_style', 'classic');
                       await _save('text_scale', 1.0);
                       await _save('corner_radius', 16.0);
                       await _save('low_stock_threshold', 10);
