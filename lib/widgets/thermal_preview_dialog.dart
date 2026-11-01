@@ -33,7 +33,7 @@ class ThermalPreviewDialog extends StatelessWidget {
             Row(children: [
               const Icon(Icons.receipt_long_outlined),
               const SizedBox(width: 10),
-              Expanded(child: Text('Thermal Receipt Preview · \${template['paperSize']}',
+              Expanded(child: Text('Thermal Receipt Preview · ${template['paperSize']}',
                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
               IconButton(onPressed: () => Navigator.of(context).pop(false), icon: const Icon(Icons.close)),
             ]),
@@ -111,14 +111,14 @@ class ThermalPreviewDialog extends StatelessWidget {
         final item = entry.value;
         final product = Hive.box<Product>(Boxes.products).get(item.productId);
         final values = <String, String>{
-          'serial': '\${entry.key + 1}',
+          'serial': '${entry.key + 1}',
           'product': product?.name ?? 'Unknown Product',
           'hsn': item.hsnCode.isNotEmpty ? item.hsnCode : (product?.hsnCode ?? '-'),
           'quantity': item.qty.toString(),
           'unit': item.unitLabel,
           'rate': _money(item.sellingPrice),
           'discount': '-',
-          'gst_rate': sale.gstEnabled ? '\${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
+          'gst_rate': sale.gstEnabled ? '${(item.gstRate ?? 0).toStringAsFixed(0)}%' : '-',
           'tax': sale.gstEnabled ? _money(item.cgstAmount + item.sgstAmount + item.igstAmount) : '-',
           'amount': _money(item.subtotal),
         };
@@ -130,7 +130,7 @@ class ThermalPreviewDialog extends StatelessWidget {
       if (borders) const Divider(color: Colors.black, height: 1),
       const SizedBox(height: 5),
       _total('Subtotal:', _money(sale.items.fold<double>(0, (sum, item) => sum + item.subtotal))),
-      if (sale.discount > 0) _total('Discount:', '-\${_money(sale.discount)}'),
+      if (sale.discount > 0) _total('Discount:', '-${_money(sale.discount)}'),
       if (sale.gstEnabled) ...[
         _total('Taxable:', _money(sale.taxableAmount)),
         if (sale.interstateSale) _total('IGST:', _money(sale.igstAmount))
@@ -202,7 +202,7 @@ class ThermalPreviewDialog extends StatelessWidget {
     }
   }
 
-  String _money(double value) => 'Rs.\${value.toStringAsFixed(2)}';
+  String _money(double value) => 'Rs.${value.toStringAsFixed(2)}';
 }
 
 Future<bool?> showThermalPreviewDialog(BuildContext context, Sale sale) {
