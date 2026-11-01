@@ -43,7 +43,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _settings = Hive.box<dynamic>('app_settings');
     _appName = TextEditingController(
         text:
-            _settings.get('app_name', defaultValue: 'Floral Bill').toString());
+            _settings.get('app_name', defaultValue: 'Billit').toString());
     _name = TextEditingController(
         text: _settings.get('business_name', defaultValue: '').toString());
     _address = TextEditingController(
