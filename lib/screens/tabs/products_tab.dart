@@ -148,7 +148,7 @@ class _ProductsTabState extends State<ProductsTab> {
                   ),
                 ],
               ),
-            ),,
+            ),
           ),
           ValueListenableBuilder<Box<dynamic>>(
             valueListenable: Hive.box<dynamic>('app_settings').listenable(),
