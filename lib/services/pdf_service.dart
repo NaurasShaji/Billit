@@ -103,6 +103,8 @@ class PdfService {
         : (subtotal - sale.discount).clamp(0.0, double.infinity).toDouble();
     final taxTotal = sale.cgstAmount + sale.sgstAmount + sale.igstAmount;
     final displayGst = includeGST && sale.gstEnabled;
+    final configuredTitle = template['headerTitle']?.toString().trim() ?? '';
+    final invoiceTitle = configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && displayGst) ? (displayGst ? 'TAX INVOICE' : 'INVOICE') : configuredTitle;
     final productsBox = Hive.box<Product>(Boxes.products);
     final configuredColumns = (template['columns'] as List).cast<String>();
     final itemRows = <List<String>>[
@@ -158,7 +160,7 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(template['headerTitle']?.toString().trim().isNotEmpty == true ? template['headerTitle'].toString() : (displayGst && businessGstin.isNotEmpty ? 'TAX INVOICE' : (displayGst ? 'GST INVOICE (GSTIN REQUIRED)' : 'INVOICE')), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(invoiceTitle, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 8),
                   pw.Text('Invoice: ${sale.id}'),
                   pw.Text('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(sale.date.toLocal())}'),
