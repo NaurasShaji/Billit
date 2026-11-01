@@ -8,21 +8,21 @@ Windows uses a separate Google OAuth desktop flow. Android continues to use the 
 2. Enable the Google Drive API.
 3. Configure the OAuth consent screen and add the intended test users if the app is still in testing.
 4. Create an OAuth client ID with application type **Desktop app**.
-5. Copy the desktop client ID. A desktop client ID is a public identifier; do not add a client secret to the Flutter app.
+5. Copy the desktop client ID and client secret. Desktop-app client credentials are public-client credentials; the embedded secret is not a confidential server secret and cannot be protected from extraction from a distributed desktop app.
 
 ## Build Windows
 
-Pass the desktop client ID at build time:
+Pass the desktop client ID and client secret at build time:
 
 ```powershell
 flutter pub get
-flutter run -d windows --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID
+flutter run -d windows \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_SECRET=YOUR_DESKTOP_CLIENT_SECRET
 ```
 
 For a release build:
 
 ```powershell
-flutter build windows --release --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID
+flutter build windows --release \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIENT_ID \\\n  --dart-define=GOOGLE_DESKTOP_CLIENT_SECRET=YOUR_DESKTOP_CLIENT_SECRET
 ```
 
 The Windows flow opens the system browser, uses an ephemeral localhost callback and PKCE, then stores the refresh token using `flutter_secure_storage`. The app requests the Drive `drive.file` scope plus basic account identity.
