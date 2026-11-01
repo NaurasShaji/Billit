@@ -43,7 +43,7 @@ Future<void> main() async {
   }
   final savedAppName = settings.get('app_name');
   if (savedAppName == null || savedAppName == 'Floral Bill' || savedAppName == 'Floral Billing') {
-    await settings.put('app_name', 'Ventro');
+    await settings.put('app_name', 'Billit');
   }
   await setDefaultSetting('app_logo_base64', '');
   await setDefaultSetting('app_theme', 'green');
@@ -189,7 +189,7 @@ class MyApp extends StatelessWidget {
                   ? ThemeMode.light
                   : ThemeMode.system;
           return MaterialApp(
-            title: settings.get('app_name', defaultValue: 'Ventro').toString(),
+            title: settings.get('app_name', defaultValue: 'Billit').toString(),
             theme: _buildAppTheme(settings, Brightness.light),
             darkTheme: _buildAppTheme(settings, Brightness.dark),
             themeMode: mode,
