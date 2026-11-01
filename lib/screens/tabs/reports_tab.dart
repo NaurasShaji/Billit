@@ -201,7 +201,10 @@ class _ReportsTabState extends State<ReportsTab>
     final sales = Hive.box<Sale>(Boxes.sales).values.toList();
     final expenses = Hive.box<Expense>(Boxes.expenses).values.toList();
 
-    return Column(
+    return SingleChildScrollView(
+      key: const PageStorageKey<String>('reports-scroll'),
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
       children: [
         // Professional Header with Date Navigation
         Container(
@@ -394,21 +397,14 @@ class _ReportsTabState extends State<ReportsTab>
             ],
           ),
         ),
-        Expanded(
-          child: TabBarView(
-            controller: _tab,
-            children: _isAdmin
-                ? [
-                    _buildDaily(sales, expenses),
-                    _buildMonthly(sales, expenses),
-                    _buildYearly(sales, expenses),
-                  ]
-                : [
-                    _buildDaily(sales, expenses),
-                  ],
-          ),
-        ),
+        if (_tab.index == 0 || !_isAdmin)
+          _buildDaily(sales, expenses)
+        else if (_tab.index == 1)
+          _buildMonthly(sales, expenses)
+        else
+          _buildYearly(sales, expenses),
       ],
+    ),
     );
   }
 
@@ -579,7 +575,7 @@ class _ReportsTabState extends State<ReportsTab>
     final totalExpenses = dayExpenses.fold(0.0, (a, e) => a + e.amount);
     final netProfit = grossProfit - totalExpenses;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
