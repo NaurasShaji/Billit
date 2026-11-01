@@ -726,7 +726,7 @@ class _ReportsTabState extends State<ReportsTab>
       }
     }
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,7 +922,7 @@ class _ReportsTabState extends State<ReportsTab>
       }
     }
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
