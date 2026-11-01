@@ -425,7 +425,35 @@ class TemplatePreview extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _businessHeader(compact: true),
+              if (value['showBusinessName'] == true)
+                const Text('FLORAL & CO.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black)),
+              if (value['showAddress'] == true)
+                const Text('MG Road, Kothamangalam, Kerala - 686691',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 8,
+                        color: Colors.black)),
+              if (value['showPhone'] == true)
+                const Text('Phone: +91 98765 43210',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 8,
+                        color: Colors.black)),
+              if (value['showBusinessGstin'] == true)
+                const Text('GSTIN: 32ABCDE1234F1Z5',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 8,
+                        color: Colors.black)),
               rule(),
               Text(value['headerTitle']?.toString() ?? 'INVOICE',
                   style: thermalText.copyWith(fontWeight: FontWeight.bold)),
