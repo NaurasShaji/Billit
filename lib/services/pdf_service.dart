@@ -198,7 +198,6 @@ class PdfService {
         headerDecoration: pw.BoxDecoration(color: accent),
         cellStyle: const pw.TextStyle(fontSize: 9),
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-        border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
         columnWidths: {
           for (var i = 0; i < configuredColumns.length; i++)
             i: pw.FlexColumnWidth(configuredColumns[i] == 'product' ? 4 : 1.3),
