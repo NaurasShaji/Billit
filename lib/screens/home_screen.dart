@@ -385,6 +385,39 @@ class _HomeScreenState extends State<HomeScreen> {
         : [overview, billing, inventory, reports];
   }
 
+  IconData _iconFromChoice(String choice, IconData fallback) {
+    switch (choice) {
+      case 'home': return Icons.home_outlined;
+      case 'dashboard': return Icons.dashboard_outlined;
+      case 'grid': return Icons.grid_view_rounded;
+      case 'receipt': return Icons.receipt_long_outlined;
+      case 'cart': return Icons.shopping_cart_outlined;
+      case 'calculator': return Icons.calculate_outlined;
+      case 'inventory': return Icons.inventory_2_outlined;
+      case 'box': return Icons.widgets_outlined;
+      case 'package': return Icons.package_outlined;
+      case 'warehouse': return Icons.warehouse_outlined;
+      case 'chart': return Icons.bar_chart_outlined;
+      case 'analytics': return Icons.analytics_outlined;
+      case 'trending': return Icons.trending_up_outlined;
+      case 'archive': return Icons.archive_outlined;
+      case 'folder': return Icons.folder_open_outlined;
+      case 'history': return Icons.history;
+      default: return fallback;
+    }
+  }
+
+  List<IconData> _applyCustomNavigationIcons(
+    List<IconData> defaults,
+    List<String> keys,
+    Map<dynamic, dynamic> overrides,
+  ) {
+    return List<IconData>.generate(defaults.length, (index) {
+      final key = keys[index];
+      return _iconFromChoice(overrides[key]?.toString() ?? '', defaults[index]);
+    });
+  }
+
   Widget _buildBottomNavigation({
     required List<String> labels,
     required List<IconData> icons,
@@ -486,9 +519,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final navigationIconStyle =
         settingsBox.get('navigation_icon_style', defaultValue: 'outlined').toString();
 
-    final List<IconData> icons = _navigationIcons(
+    final List<IconData> defaultIcons = _navigationIcons(
       isAdmin: isAdmin,
       style: navigationIconStyle,
+    );
+    final navigationKeys = isAdmin
+        ? ['overview', 'billing', 'inventory', 'reports', 'archive']
+        : ['overview', 'billing', 'inventory', 'reports'];
+    final rawOverrides = settingsBox.get('navigation_icon_overrides', defaultValue: <String, String>{});
+    final navigationOverrides = rawOverrides is Map ? rawOverrides : <String, String>{};
+    final List<IconData> icons = _applyCustomNavigationIcons(
+      defaultIcons,
+      navigationKeys,
+      navigationOverrides,
     );
 
     final List<Widget> tabs = [
@@ -608,9 +651,17 @@ class _HomeScreenState extends State<HomeScreen> {
               valueListenable: Hive.box<dynamic>('app_settings').listenable(),
               builder: (context, settings, _) => _buildBottomNavigation(
                 labels: labels,
-                icons: _navigationIcons(
-                  isAdmin: isAdmin,
-                  style: settings.get('navigation_icon_style', defaultValue: 'outlined').toString(),
+                icons: _applyCustomNavigationIcons(
+                  _navigationIcons(
+                    isAdmin: isAdmin,
+                    style: settings.get('navigation_icon_style', defaultValue: 'outlined').toString(),
+                  ),
+                  isAdmin
+                      ? ['overview', 'billing', 'inventory', 'reports', 'archive']
+                      : ['overview', 'billing', 'inventory', 'reports'],
+                  settings.get('navigation_icon_overrides', defaultValue: <String, String>{}) is Map
+                      ? settings.get('navigation_icon_overrides', defaultValue: <String, String>{}) as Map
+                      : <String, String>{},
                 ),
                 selectedIndex: _index,
                 style: settings.get('navigation_style', defaultValue: 'classic').toString(),
