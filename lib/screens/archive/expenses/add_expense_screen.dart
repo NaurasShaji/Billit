@@ -514,72 +514,87 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Future<void> _addNewCategory() async {
-    final controller = TextEditingController();
-    final newCat = await showDialog<String>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.add, color: Colors.green.shade600, size: 20),
-              ),
-              const SizedBox(width: 12),
-              const Text('Add New Category'),
-            ],
-          ),
-          content: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-              ),
-            ),
-            child: TextField(
-              controller: controller,
+    final newCat = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const AddExpenseCategoryScreen()),
+    );
+    if (!mounted || newCat == null || newCat.isEmpty) return;
+    if (!_allCategories.contains(newCat)) {
+      setState(() {
+        _allCategories.add(newCat);
+        _allCategories.sort();
+      });
+    }
+    setState(() => _selectedCategory = newCat);
+  }
+}
+
+class AddExpenseCategoryScreen extends StatefulWidget {
+  const AddExpenseCategoryScreen({super.key});
+
+  @override
+  State<AddExpenseCategoryScreen> createState() => _AddExpenseCategoryScreenState();
+}
+
+class _AddExpenseCategoryScreenState extends State<AddExpenseCategoryScreen> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a category name')),
+      );
+      return;
+    }
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add Expense Category'),
+        actions: [
+          TextButton(onPressed: _save, child: const Text('Save')),
+        ],
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Text('Create a category', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text('Use a clear name so expenses can be grouped correctly.',
+                style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _controller,
               autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _save(),
               decoration: const InputDecoration(
+                labelText: 'Category name',
+                hintText: 'e.g. Internet, Repairs, Packaging',
                 prefixIcon: Icon(Icons.category_outlined),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                hintText: 'Enter category name',
+                border: OutlineInputBorder(),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Add'),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _save,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Category'),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
-    
-    if (newCat != null && newCat.isNotEmpty) {
-      if (!_allCategories.contains(newCat)) {
-        setState(() {
-          _allCategories.add(newCat);
-          _allCategories.sort();
-        });
-      }
-      setState(() => _selectedCategory = newCat);
-    }
   }
 }
