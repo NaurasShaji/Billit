@@ -1,14 +1,20 @@
 {
-    "name": "FloralBill",
-    "short_name": "FloralBill",
+    "name": "Billit",
+    "short_name": "Billit",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#4ade80",
     "theme_color": "#16a34a",
-    "description": "A new Flutter project.",
+    "description": "Billit retail management and point-of-sale.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
+        {
+            "src": "icons/billit.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",
