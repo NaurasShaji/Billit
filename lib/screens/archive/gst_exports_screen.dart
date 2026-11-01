@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import '../../models/models.dart';
 import '../../services/boxes.dart';
@@ -20,6 +22,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
   DateTime _statementStart = DateTime.now();
   DateTime _statementEnd = DateTime.now();
   bool _exportingStatement = false;
+  bool _exportingPdf = false;
 
   DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
 
@@ -43,6 +46,51 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
         if (_statementEnd.isBefore(_statementStart)) _statementStart = _statementEnd;
       }
     });
+  }
+
+
+  Future<void> _shareSalesStatementPdf(String filename, List<List<Object?>> rows) async {
+    if (_exportingPdf) return;
+    setState(() => _exportingPdf = true);
+    try {
+      final document = pw.Document();
+      final printableRows = rows
+          .where((row) => row.isNotEmpty)
+          .map((row) => row.map((cell) => cell?.toString() ?? '').toList())
+          .toList();
+      document.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.all(24),
+          build: (context) => [
+            pw.Text('Floral Bill - Sales Statement',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 12),
+            pw.TableHelper.fromTextArray(
+              data: printableRows,
+              headerCount: 0,
+              cellStyle: const pw.TextStyle(fontSize: 6.5),
+              headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.4),
+            ),
+          ],
+        ),
+      );
+      final bytes = await document.save();
+      await Share.shareXFiles(
+        [XFile.fromData(bytes, mimeType: 'application/pdf', name: filename)],
+        subject: 'Sales statement',
+        text: 'Floral Bill sales statement',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create PDF: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _exportingPdf = false);
+    }
   }
 
   Future<void> _exportSalesStatement() async {
@@ -307,12 +355,23 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             ),
           ],
           const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _exportingStatement ? null : _exportSalesStatement,
-            icon: _exportingStatement
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.download_outlined),
-            label: Text(_exportingStatement ? 'Preparing statement...' : 'Download Sales Statement'),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              FilledButton.icon(
+                onPressed: _exportingStatement || _exportingPdf ? null : _exportSalesStatement,
+                icon: const Icon(Icons.table_view_outlined),
+                label: const Text('Download CSV'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _exportingStatement || _exportingPdf
+                    ? null
+                    : () => _exportSalesStatementPdf(),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('Download PDF'),
+              ),
+            ],
           ),
           const SizedBox(height: 28),
           Text(
