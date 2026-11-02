@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/models.dart';
 import '../services/boxes.dart';
 import '../services/invoice_template_service.dart';
+import '../services/payment_qr_service.dart';
 
 class ThermalPreviewDialog extends StatelessWidget {
   final Sale sale;
@@ -148,10 +150,42 @@ class ThermalPreviewDialog extends StatelessWidget {
       ],
       const Divider(color: Colors.black, thickness: 1.2, height: 12),
       _total('TOTAL:', _money(sale.totalAmount), bold: true, size: 14),
+      if (template['showQr'] == true)
+        FutureBuilder<Uint8List?>(
+          future: _loadPaymentQr(),
+          builder: (context, snapshot) {
+            final bytes = snapshot.data;
+            if (bytes == null || bytes.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: [
+                  const Text(
+                    'SCAN & PAY',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 9),
+                  ),
+                  const SizedBox(height: 4),
+                  Image.memory(bytes, width: 112, height: 112, fit: BoxFit.contain),
+                ],
+              ),
+            );
+          },
+        ),
       const SizedBox(height: 10),
       if (footer.trim().isNotEmpty) _aligned(footer, footerAlign, bold: true),
       if (terms.trim().isNotEmpty) ...[const SizedBox(height: 5), _aligned(terms, footerAlign)],
     ]);
+  }
+
+  Future<Uint8List?> _loadPaymentQr() async {
+    try {
+      return await PaymentQrService.generateForSale(sale) ??
+          await PaymentQrService.loadStaticQrFallback();
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _buildLogo(String value) {
