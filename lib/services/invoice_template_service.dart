@@ -17,6 +17,43 @@ class InvoiceTemplateService {
     {'id': 'amount', 'label': 'Amount'},
   ];
 
+
+  static const namedStorageKey = 'invoice_named_templates_v1';
+
+  static Map<String, Map<String, dynamic>> namedTemplates(String size) {
+    final raw = Hive.box<dynamic>('app_settings').get(namedStorageKey);
+    if (raw is! Map) return <String, Map<String, dynamic>>{};
+    final bySize = raw[size];
+    if (bySize is! Map) return <String, Map<String, dynamic>>{};
+    return {
+      for (final entry in bySize.entries)
+        entry.key.toString(): Map<String, dynamic>.from(entry.value as Map),
+    };
+  }
+
+  static Future<void> saveNamedTemplate(
+      String size, String name, Map<String, dynamic> template) async {
+    final box = Hive.box<dynamic>('app_settings');
+    final raw = box.get(namedStorageKey);
+    final all = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    final bySize = all[size] is Map
+        ? Map<String, dynamic>.from(all[size] as Map)
+        : <String, dynamic>{};
+    bySize[name] = {...defaults(size), ...template, 'name': name, 'paperSize': size};
+    all[size] = bySize;
+    await box.put(namedStorageKey, all);
+  }
+
+  static Future<void> deleteNamedTemplate(String size, String name) async {
+    final box = Hive.box<dynamic>('app_settings');
+    final raw = box.get(namedStorageKey);
+    if (raw is! Map || raw[size] is! Map) return;
+    final all = Map<String, dynamic>.from(raw);
+    final bySize = Map<String, dynamic>.from(all[size] as Map)..remove(name);
+    all[size] = bySize;
+    await box.put(namedStorageKey, all);
+  }
+
   static Map<String, dynamic> defaults(String size) {
     final compact = size == '58mm' || size == '80mm';
     return {
