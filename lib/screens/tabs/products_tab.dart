@@ -12,170 +12,234 @@ class ProductsTab extends StatefulWidget {
 }
 
 class _ProductsTabState extends State<ProductsTab> {
+  final TextEditingController _searchController = TextEditingController();
   String query = '';
   UnitType? unitFilter;
   String category = 'All';
   String subCategory = 'All';
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool _matchesQuery(Product p, String q) {
+    if (q.isEmpty) return true;
+    return p.name.toLowerCase().contains(q) ||
+        p.category.toLowerCase().contains(q) ||
+        p.subCategory.toLowerCase().contains(q) ||
+        p.hsnCode.toLowerCase().contains(q) ||
+        (p.barcode ?? '').toLowerCase().contains(q);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final box = Hive.box<Product>(Boxes.products);
-    final all = box.values.where((p) => p.active).toList();
-    final filtered = all.where((p) {
-      final q = p.name.toLowerCase().contains(query.toLowerCase());
-      final uf = unitFilter == null || p.unit == unitFilter;
-      final cf = category == 'All' || p.category == category;
-      final sf = subCategory == 'All' || p.subCategory == subCategory;
-      return q && uf && cf && sf;
-    }).toList();
-
-    final categories = [
-      'All',
-      ...{for (final p in all) p.category}
-    ];
-    final subcats = [
-      'All',
-      ...{for (final p in all) p.subCategory}
-    ];
-
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CustomScrollView(
-        key: const PageStorageKey<String>('inventory-scroll'),
-        primary: true,
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .shadow
-                        .withValues(alpha: 0.08),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: ValueListenableBuilder<Box<Product>>(
+        valueListenable: Hive.box<Product>(Boxes.products).listenable(),
+        builder: (context, box, _) {
+          final all = box.values.where((p) => p.active).toList();
+          final categories = <String>[
+            'All',
+            ...({for (final p in all) p.category}.toList()..sort()),
+          ];
+          final subcats = <String>[
+            'All',
+            ...({
+              for (final p in all)
+                if ((category == 'All' || p.category == category) &&
+                    p.subCategory.trim().isNotEmpty)
+                  p.subCategory
+            }.toList()
+              ..sort()),
+          ];
+
+          // Avoid invalid DropdownButton values after product edits/deletions.
+          final effectiveCategory =
+              categories.contains(category) ? category : 'All';
+          final effectiveSub =
+              subcats.contains(subCategory) ? subCategory : 'All';
+          final q = query.trim().toLowerCase();
+          final filtered = all.where((p) {
+            final unitMatches = unitFilter == null || p.unit == unitFilter;
+            final categoryMatches = effectiveCategory == 'All' ||
+                p.category == effectiveCategory;
+            final subCategoryMatches =
+                effectiveSub == 'All' || p.subCategory == effectiveSub;
+            return _matchesQuery(p, q) &&
+                unitMatches &&
+                categoryMatches &&
+                subCategoryMatches;
+          }).toList();
+
+          return Column(
+            children: [
+              _buildHeader(
+                theme,
+                categories: categories,
+                subcats: subcats,
+                effectiveCategory: effectiveCategory,
+                effectiveSub: effectiveSub,
+                count: filtered.length,
               ),
-              child: Column(
-                children: [
-                  // Search Bar
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: Theme.of(context).colorScheme.outlineVariant),
-                    ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.search,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant),
-                        hintText: 'Search products...',
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                      ),
-                      onChanged: (v) => setState(() => query = v),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Stack filters on narrow screens to avoid dropdown overflow.
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final narrow = constraints.maxWidth < 600;
-                      final categoryFilter = _buildFilterDropdown(
-                        value: category,
-                        items: categories,
-                        label: 'Category',
-                        onChanged: (v) => setState(() => category = v ?? 'All'),
-                      );
-                      final subCategoryFilter = _buildFilterDropdown(
-                        value: subCategory,
-                        items: subcats,
-                        label: 'Sub-Category',
-                        onChanged: (v) =>
-                            setState(() => subCategory = v ?? 'All'),
-                      );
-                      final unitDropdown = _buildFilterDropdown<UnitType?>(
-                        value: unitFilter,
-                        items: [null, ...UnitType.values],
-                        label: 'Unit',
-                        onChanged: (v) => setState(() => unitFilter = v),
-                        itemBuilder: (item) => Text(item == null
-                            ? 'All Units'
-                            : item.name.toUpperCase()),
-                      );
-                      if (narrow) {
-                        return Column(
-                          children: [
-                            categoryFilter,
-                            const SizedBox(height: 8),
-                            subCategoryFilter,
-                            const SizedBox(height: 8),
-                            unitDropdown,
-                          ],
-                        );
-                      }
-                      return Row(
-                        children: [
-                          Expanded(child: categoryFilter),
-                          const SizedBox(width: 12),
-                          Expanded(child: subCategoryFilter),
-                          const SizedBox(width: 12),
-                          Expanded(child: unitDropdown),
-                        ],
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Results Count
-                  Text(
-                    '${filtered.length} products found',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              Expanded(
+                child: ValueListenableBuilder<Box<dynamic>>(
+                  valueListenable:
+                      Hive.box<dynamic>('app_settings').listenable(),
+                  builder: (context, settings, _) {
+                    final view = settings
+                        .get('product_view', defaultValue: 'list')
+                        .toString();
+                    return CustomScrollView(
+                      key: const PageStorageKey<String>('inventory-scroll'),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        if (filtered.isEmpty)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _buildEmptyState(),
+                          )
+                        else if (view == 'grid')
+                          _buildGridView(filtered)
+                        else
+                          _buildListView(filtered),
+                        const SliverToBoxAdapter(child: SizedBox(height: 96)),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ),
-          ValueListenableBuilder<Box<dynamic>>(
-            valueListenable: Hive.box<dynamic>('app_settings').listenable(),
-            builder: (context, settings, _) {
-              if (filtered.isEmpty) {
-                return SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildEmptyState(),
-                );
-              }
-              final view = settings
-                  .get('product_view', defaultValue: 'list')
-                  .toString();
-              return view == 'grid'
-                  ? _buildGridView(filtered)
-                  : _buildListView(filtered);
-            },
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 112)),
-        ],
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openEditor(),
         icon: const Icon(Icons.add),
         label: const Text('Add Product'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+    ThemeData theme, {
+    required List<String> categories,
+    required List<String> subcats,
+    required String effectiveCategory,
+    required String effectiveSub,
+    required int count,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.08),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              isDense: true,
+              prefixIcon: Icon(Icons.search,
+                  color: theme.colorScheme.onSurfaceVariant),
+              suffixIcon: query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => query = '');
+                      },
+                    ),
+              hintText: 'Search name, barcode, category or HSN...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            onChanged: (value) => setState(() => query = value),
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final narrow = constraints.maxWidth < 600;
+              final categoryFilter = _buildFilterDropdown<String>(
+                value: effectiveCategory,
+                items: categories,
+                label: 'Category',
+                onChanged: (value) => setState(() {
+                  category = value ?? 'All';
+                  subCategory = 'All';
+                }),
+              );
+              final subCategoryFilter = _buildFilterDropdown<String>(
+                value: effectiveSub,
+                items: subcats,
+                label: 'Sub-category',
+                onChanged: (value) =>
+                    setState(() => subCategory = value ?? 'All'),
+              );
+              final unitDropdown = _buildFilterDropdown<UnitType?>(
+                value: unitFilter,
+                items: [null, ...UnitType.values],
+                label: 'Unit',
+                onChanged: (value) => setState(() => unitFilter = value),
+                itemBuilder: (item) => Text(
+                  item == null ? 'All units' : item.name.toUpperCase(),
+                ),
+              );
+              if (narrow) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      SizedBox(width: 170, child: categoryFilter),
+                      const SizedBox(width: 8),
+                      SizedBox(width: 170, child: subCategoryFilter),
+                      const SizedBox(width: 8),
+                      SizedBox(width: 130, child: unitDropdown),
+                    ],
+                  ),
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: categoryFilter),
+                  const SizedBox(width: 12),
+                  Expanded(child: subCategoryFilter),
+                  const SizedBox(width: 12),
+                  Expanded(child: unitDropdown),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$count products found',
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -212,37 +276,6 @@ class _ProductsTabState extends State<ProductsTab> {
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down),
         ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No products found',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Try adjusting your search or filters',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ),
     );
   }
