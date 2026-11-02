@@ -266,7 +266,7 @@ class ThermalPrinterService {
 
     final template =
         InvoiceTemplateService.load(InvoiceTemplateService.selected);
-    final is58mm = template['paperSize'] == '58mm';
+    final is58mm = template['paperSize'] == '50mm' || template['paperSize'] == '58mm';
     final profile = await CapabilityProfile.load();
     final generator =
         Generator(is58mm ? PaperSize.mm58 : PaperSize.mm80, profile);
