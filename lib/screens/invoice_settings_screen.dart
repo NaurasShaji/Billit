@@ -456,7 +456,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                 _imageSetting(
                   title: 'Invoice / bill logo',
                   description:
-                      'Printed at the top of your normal and GST PDF invoices.',
+                      'Used on PDF invoices and thermal receipts. For crisp thermal output, use a high-contrast logo with minimal fine detail. Recommended maximum printable width: 384 px for 58mm and 576 px for 80mm; Billit automatically converts the uploaded image for each paper width.',
                   key: 'invoice',
                   bytes: _invoiceLogoBytes,
                   placeholderIcon: Icons.receipt_long,
