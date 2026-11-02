@@ -487,7 +487,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Download sales statements for selected dates and export GST and accounting registers.',
+            'Share sales statements for selected dates and share GST and accounting registers.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -502,7 +502,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Download invoice-wise sales statements for a single day or a custom date range.',
+            'Share invoice-wise sales statements for a single day or a custom date range.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -549,14 +549,14 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
                     ? null
                     : _exportSalesStatement,
                 icon: const Icon(Icons.table_view_outlined),
-                label: const Text('Download CSV'),
+                label: const Text('Share CSV'),
               ),
               OutlinedButton.icon(
                 onPressed: _exportingStatement || _exportingPdf
                     ? null
                     : () => _exportSalesStatementPdf(),
                 icon: const Icon(Icons.picture_as_pdf_outlined),
-                label: const Text('Download PDF'),
+                label: const Text('Share PDF'),
               ),
             ],
           ),
