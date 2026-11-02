@@ -892,7 +892,7 @@ class TemplatePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = size == '58mm' || size == '80mm';
+    final compact = size == '50mm' || size == '58mm' || size == '80mm';
     final width = (size == '50mm' || size == '58mm')
         ? 205.0
         : size == '80mm'
