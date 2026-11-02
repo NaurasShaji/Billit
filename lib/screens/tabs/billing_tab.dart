@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
+import '../../utils/platform_support.dart';
 import '../../services/auth_service.dart';
 import '../../services/cart_service.dart';
 import '../../services/pdf_service.dart'; // Import the new PDF service
@@ -361,6 +362,13 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   }
 
   Future<void> _openCameraBarcodeScanner() async {
+    if (!isCameraScannerSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Camera scanning is not available on this platform. Use a USB barcode scanner or type the barcode.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
     final value = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
     );

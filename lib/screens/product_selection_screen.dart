@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
@@ -61,6 +62,41 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
     });
   }
 
+  /// Applies current filters consistently to displayed results and barcode scans.
+  List<Product> _applyFilters(Iterable<Product> source) {
+    final q = _searchQuery.trim().toLowerCase();
+    return source.where((p) {
+      if (!p.active) return false;
+      final matchesSearch = q.isEmpty ||
+          p.name.toLowerCase().contains(q) ||
+          p.category.toLowerCase().contains(q) ||
+          p.subCategory.toLowerCase().contains(q) ||
+          (p.barcode ?? '').toLowerCase().contains(q);
+      final matchesCategory =
+          _selectedCategory == null || p.category == _selectedCategory;
+      final matchesUnit =
+          _selectedUnitType == null || p.unit == _selectedUnitType;
+      final matchesStock = !_showOnlyInStock || p.stock > 0;
+      return matchesSearch && matchesCategory && matchesUnit && matchesStock;
+    }).toList();
+  }
+
+  /// Supports USB barcode scanners that submit a value followed by Enter.
+  void _submitSearch() {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return;
+    final matches = _applyFilters(Hive.box<Product>(Boxes.products).values);
+    final exact = matches
+        .where((p) => (p.barcode ?? '').trim().toLowerCase() == q)
+        .toList();
+    final product = exact.isNotEmpty
+        ? exact.first
+        : (matches.length == 1 ? matches.first : null);
+    if (product != null && product.stock > 0) {
+      Navigator.of(context).pop(product);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -88,38 +124,32 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
       ),
       body: SafeArea(
         child: GestureDetector(
-          onTap: () => FocusScope.of(context)
-              .unfocus(), // Dismiss keyboard on tap outside
-          child: CustomScrollView(
-            slivers: [
-              // Fixed filters and search area
-              SliverToBoxAdapter(
-                child: Material(
-                  color: theme.primaryColor,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildSearchSection(theme, isTablet),
-                      _buildFilterSection(theme, isTablet),
-                      Container(
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusScope.of(context).unfocus(),
+          // Keep search and filters fixed while the product results scroll.
+          child: Column(
+            children: [
+              Material(
+                color: theme.primaryColor,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildSearchSection(theme, isTablet),
+                    _buildFilterSection(theme, isTablet),
+                    Container(
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-
-              // Scrollable products list that adjusts to keyboard
-              SliverFillRemaining(
-                child: _buildProductsList(theme, isTablet),
-              ),
+              Expanded(child: _buildProductsList(theme, isTablet)),
             ],
           ),
         ),
@@ -128,8 +158,13 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
   }
 
   Widget _buildSearchSection(ThemeData theme, bool isTablet) {
+    final isDesktop = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS);
+    final horizontalPadding = isTablet ? 24.0 : 16.0;
     return Padding(
-      padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 12),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -144,8 +179,11 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
         ),
         child: TextField(
           controller: _searchController,
+          autofocus: isDesktop,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _submitSearch(),
           decoration: InputDecoration(
-            hintText: 'Search products by name...',
+            hintText: 'Search by name, barcode or category...',
             hintStyle: TextStyle(color: Colors.grey[500]),
             prefixIcon: Icon(Icons.search, color: theme.primaryColor, size: 24),
             suffixIcon: _searchQuery.isNotEmpty
@@ -174,8 +212,12 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
 
   Widget _buildFilterSection(ThemeData theme, bool isTablet) {
     final productsBox = Hive.box<Product>(Boxes.products);
-    final categories =
-        productsBox.values.map((p) => p.category).toSet().toList()..sort();
+    final categories = productsBox.values
+        .where((p) => p.active)
+        .map((p) => p.category)
+        .toSet()
+        .toList()
+      ..sort();
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -397,20 +439,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
     return ValueListenableBuilder(
       valueListenable: Hive.box<Product>(Boxes.products).listenable(),
       builder: (context, Box<Product> box, _) {
-        final products = box.values.where((p) => p.active).toList();
-        final filteredProducts = products.where((p) {
-          final matchesSearchQuery =
-              p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-          final matchesCategory =
-              _selectedCategory == null || p.category == _selectedCategory;
-          final matchesUnitType =
-              _selectedUnitType == null || p.unit == _selectedUnitType;
-          final matchesStock = !_showOnlyInStock || p.stock > 0;
-          return matchesSearchQuery &&
-              matchesCategory &&
-              matchesUnitType &&
-              matchesStock;
-        }).toList();
+        final filteredProducts = _applyFilters(box.values);
 
         if (filteredProducts.isEmpty) {
           return _buildEmptyState();
@@ -456,9 +485,9 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
   Widget _buildProductsGrid(List<Product> products, ThemeData theme) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.85,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 340,
+        mainAxisExtent: 170,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -472,13 +501,12 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
 
   Widget _buildProductsListView(List<Product> products, ThemeData theme) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        return AnimatedContainer(
-          duration: Duration(milliseconds: 100 + (index * 50)),
-          margin: const EdgeInsets.only(bottom: 12),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
           child: _buildProductCard(product, theme, isGrid: false),
         );
       },

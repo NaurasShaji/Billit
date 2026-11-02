@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import '../services/boxes.dart';
+import '../utils/platform_support.dart';
 import 'barcode_scanner_screen.dart';
 import '../widgets/responsive_page.dart';
 
@@ -83,6 +84,13 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   }
 
   Future<void> _scanProductBarcode() async {
+    if (!isCameraScannerSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Camera scanning is not available on this platform. Type or scan the barcode into the field.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
     final value = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
     );

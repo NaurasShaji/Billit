@@ -12,6 +12,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:image/image.dart' as img;
 import 'payment_qr_service.dart';
 import 'invoice_template_service.dart';
+import '../utils/platform_support.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -60,6 +61,7 @@ class ThermalPrinterService {
   }
 
   Future<void> _requestPermissions() async {
+    if (!needsRuntimeBluetoothPermissions) return;
     Map<Permission, PermissionStatus> statuses = await [
       Permission.bluetooth,
       Permission.bluetoothScan,
