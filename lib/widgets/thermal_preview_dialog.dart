@@ -21,7 +21,7 @@ class ThermalPreviewDialog extends StatelessWidget {
     final screen = MediaQuery.of(context).size;
     final compact = screen.width < 600;
     final template = InvoiceTemplateService.load(InvoiceTemplateService.selected);
-    final is58mm = template['paperSize'] == '58mm';
+    final is58mm = template['paperSize'] == '50mm' || template['paperSize'] == '58mm';
     return Dialog(
       insetPadding: EdgeInsets.all(compact ? 8 : 20),
       child: SizedBox(
