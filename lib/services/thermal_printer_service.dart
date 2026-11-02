@@ -477,7 +477,7 @@ class ThermalPrinterService {
     if (template['showBusinessName'] == true) {
       bytes += generator.text(
         businessName,
-        styles: const PosStyles(
+        styles: PosStyles(
             align: headerPosAlignment,
             bold: true,
             height: PosTextSize.size2,
