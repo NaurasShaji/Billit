@@ -62,7 +62,7 @@ class InvoiceTemplateService {
       'headerTitle': 'INVOICE',
       'footerText': 'Thank you for your business.',
       'termsText': '',
-      'showLogo': !compact,
+      'showLogo': size == '80mm' || !compact,
       'showBusinessName': true,
       'showAddress': true,
       'showPhone': true,
