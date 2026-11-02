@@ -65,7 +65,7 @@ jobs:
             -keypass android \
             -keyalg RSA \
             -keysize 2048 \
-            -validity 2 \
+            -validity 10000 \
             -dname "CN=Billit CI Build, OU=Temporary, O=Billit, L=Unknown, ST=Unknown, C=IN"
 
       - name: Build Android release APK
