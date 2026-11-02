@@ -27,9 +27,9 @@ class PdfService {
     final template =
         InvoiceTemplateService.load(InvoiceTemplateService.selected);
     final paperSize = template['paperSize'].toString();
-    final isThermal = paperSize == '58mm' || paperSize == '80mm';
+    final isThermal = paperSize == '50mm' || paperSize == '58mm' || paperSize == '80mm';
     final effectiveThermalSize =
-        paperSize == '58mm' ? ThermalSize.mm58 : ThermalSize.mm80;
+        (paperSize == '50mm' || paperSize == '58mm') ? ThermalSize.mm58 : ThermalSize.mm80;
     final marginMm = (template['marginMm'] as num).toDouble();
     final marginPoints = marginMm * 72 / 25.4;
     final qrImage = await _loadPaymentQrImage(sale);
