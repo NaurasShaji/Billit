@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../widgets/responsive_page.dart';
+import '../services/thermal_logo_service.dart';
 
 class InvoiceSettingsScreen extends StatefulWidget {
   const InvoiceSettingsScreen({super.key});
@@ -31,6 +32,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
   Uint8List? _appLogoBytes;
   Uint8List? _invoiceLogoBytes;
+  Uint8List? _printLogo58Bytes;
+  Uint8List? _printLogo80Bytes;
   Uint8List? _paymentQrBytes;
   bool _clearAppLogo = false;
   bool _clearInvoiceLogo = false;
@@ -81,6 +84,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             .toString());
     _appLogoBytes = _decodeImage('app_logo_base64');
     _invoiceLogoBytes = _decodeImage('business_logo_base64');
+    _printLogo58Bytes = _decodeImage('business_logo_print_58_base64');
+    _printLogo80Bytes = _decodeImage('business_logo_print_80_base64');
+    _ensurePrintReadyLogos();
     _paymentQrBytes = _decodeImage('payment_qr_base64');
   }
 
@@ -111,6 +117,24 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     super.dispose();
   }
 
+  Future<void> _ensurePrintReadyLogos() async {
+    final original = _invoiceLogoBytes;
+    if (original == null) return;
+    try {
+      final converted58 = _printLogo58Bytes ?? ThermalLogoService.for58mm(original);
+      final converted80 = _printLogo80Bytes ?? ThermalLogoService.for80mm(original);
+      if (!mounted) return;
+      setState(() {
+        _printLogo58Bytes = converted58;
+        _printLogo80Bytes = converted80;
+      });
+      await _settings.put('business_logo_print_58_base64', base64Encode(converted58));
+      await _settings.put('business_logo_print_80_base64', base64Encode(converted80));
+    } catch (e) {
+      debugPrint('Could not prepare existing invoice logo for thermal printing: $e');
+    }
+  }
+
   Future<void> _pickImage(String key) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -123,6 +147,34 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       return;
     }
     final bytes = result.files.single.bytes!;
+    if (key == 'invoice') {
+      final extension = result.files.single.extension?.toLowerCase();
+      if (!const {'png', 'jpg', 'jpeg', 'webp'}.contains(extension)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Choose a PNG, JPG, JPEG or WebP image.')),
+          );
+        }
+        return;
+      }
+      try {
+        final print58 = ThermalLogoService.for58mm(bytes);
+        final print80 = ThermalLogoService.for80mm(bytes);
+        setState(() {
+          _invoiceLogoBytes = bytes;
+          _printLogo58Bytes = print58;
+          _printLogo80Bytes = print80;
+          _clearInvoiceLogo = false;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not process invoice logo: $e')),
+          );
+        }
+      }
+      return;
+    }
     setState(() {
       if (key == 'app') {
         _appLogoBytes = bytes;
@@ -187,6 +239,29 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await _saveImage('app_logo_base64', _appLogoBytes, _clearAppLogo);
     await _saveImage(
         'business_logo_base64', _invoiceLogoBytes, _clearInvoiceLogo);
+    if (_invoiceLogoBytes != null) {
+      try {
+        _printLogo58Bytes ??= ThermalLogoService.for58mm(_invoiceLogoBytes!);
+        _printLogo80Bytes ??= ThermalLogoService.for80mm(_invoiceLogoBytes!);
+        await _settings.put(
+            'business_logo_print_58_base64', base64Encode(_printLogo58Bytes!));
+        await _settings.put(
+            'business_logo_print_80_base64', base64Encode(_printLogo80Bytes!));
+      } catch (e) {
+        if (mounted) {
+          setState(() => _saving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not prepare print logo: $e')),
+          );
+        }
+        return;
+      }
+    } else if (_clearInvoiceLogo) {
+      await _settings.delete('business_logo_print_58_base64');
+      await _settings.delete('business_logo_print_80_base64');
+      _printLogo58Bytes = null;
+      _printLogo80Bytes = null;
+    }
     await _saveImage('payment_qr_base64', _paymentQrBytes, _clearPaymentQr);
 
     if (!mounted) return;
