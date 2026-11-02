@@ -456,9 +456,9 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
   Widget _buildProductsGrid(List<Product> products, ThemeData theme) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.85,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 340,
+        mainAxisExtent: 170,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -472,13 +472,12 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
 
   Widget _buildProductsListView(List<Product> products, ThemeData theme) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        return AnimatedContainer(
-          duration: Duration(milliseconds: 100 + (index * 50)),
-          margin: const EdgeInsets.only(bottom: 12),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
           child: _buildProductCard(product, theme, isGrid: false),
         );
       },

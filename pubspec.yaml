@@ -4,7 +4,7 @@ publish_to: "none"
 version: 0.2.1+3
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -59,11 +59,10 @@ flutter_launcher_icons:
     background_color: "#e6f7f4"  # Billit brand colors
     theme_color: "#0f9f8f"       # Darker green
   
-  # Windows configuration
+  # Windows icon is kept as a manually maintained ICO because some PNG-compressed
+  # ICO output is rejected by the Windows resource compiler.
   windows:
-    generate: true
-    image_path: "assets/icon/billit_icon.png"
-    icon_size: 48
+    generate: false
   
   # macOS configuration
   macos:
