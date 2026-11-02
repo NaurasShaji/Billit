@@ -156,12 +156,13 @@ class DriveBackupService {
     // Rename the existing Android backup folder instead of creating a new
     // folder, so previously uploaded backups remain available.
     final legacyFolder = await findFolder(_legacyBackupFolderName);
-    if (legacyFolder?.id != null) {
+    final legacyFolderId = legacyFolder?.id;
+    if (legacyFolderId != null) {
       await api.files.update(
         drive.File()..name = _backupFolderName,
-        legacyFolder.id!,
+        legacyFolderId,
       );
-      return legacyFolder.id!;
+      return legacyFolderId;
     }
 
     final created = await api.files.create(
