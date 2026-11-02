@@ -92,6 +92,14 @@ class _InvoiceCustomisationScreenState
     final name = await _askTemplateName('Rename template', current);
     if (name == null || name.isEmpty) return;
     final previous = namedSelection;
+    final existingNames = InvoiceTemplateService.namedTemplates(size).keys;
+    if (previous != name && existingNames.contains(name)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('A template named "$name" already exists.')),
+      );
+      return;
+    }
     if (previous != null && previous != name) {
       await InvoiceTemplateService.deleteNamedTemplate(size, previous);
       await InvoiceTemplateService.saveNamedTemplate(size, name, value);
