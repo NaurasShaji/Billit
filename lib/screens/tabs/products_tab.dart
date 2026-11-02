@@ -180,7 +180,10 @@ class _ProductsTabState extends State<ProductsTab> {
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
-              final narrow = constraints.maxWidth < 600;
+              // Keep all three filters in one row. Each control takes an
+              // equal share of the available width, so the containers shrink
+              // with the device instead of stacking or overflowing.
+              final gap = constraints.maxWidth < 380 ? 6.0 : 10.0;
               final categoryFilter = _buildFilterDropdown<String>(
                 value: effectiveCategory,
                 items: categories,
@@ -204,44 +207,17 @@ class _ProductsTabState extends State<ProductsTab> {
                 onChanged: (value) => setState(() => unitFilter = value),
                 itemBuilder: (item) => Text(
                   item == null ? 'All units' : item.name.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                 ),
               );
-              if (constraints.maxWidth < 480) {
-                // Keep filters fixed within the viewport on phones. Stacking
-                // prevents horizontal clipping and avoids a sideways carousel.
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    categoryFilter,
-                    const SizedBox(height: 8),
-                    subCategoryFilter,
-                    const SizedBox(height: 8),
-                    unitDropdown,
-                  ],
-                );
-              }
-              if (constraints.maxWidth < 760) {
-                // Use a responsive two-column layout on compact tablets.
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: categoryFilter),
-                        const SizedBox(width: 10),
-                        Expanded(child: subCategoryFilter),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(width: double.infinity, child: unitDropdown),
-                  ],
-                );
-              }
               return Row(
                 children: [
                   Expanded(child: categoryFilter),
-                  const SizedBox(width: 12),
+                  SizedBox(width: gap),
                   Expanded(child: subCategoryFilter),
-                  const SizedBox(width: 12),
+                  SizedBox(width: gap),
                   Expanded(child: unitDropdown),
                 ],
               );
@@ -268,7 +244,7 @@ class _ProductsTabState extends State<ProductsTab> {
     Widget Function(T)? itemBuilder,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
@@ -284,7 +260,7 @@ class _ProductsTabState extends State<ProductsTab> {
                         ? itemBuilder(item)
                         : Text(
                             item?.toString() ?? 'All',
-                            style: const TextStyle(fontSize: 14),
+                            style: const TextStyle(fontSize: 12),
                           ),
                   ))
               .toList(),
