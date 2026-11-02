@@ -12,7 +12,7 @@
     <application
         android:label="Billit"
         android:name="${applicationName}"
-        android:icon="@drawable/billit_icon">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
