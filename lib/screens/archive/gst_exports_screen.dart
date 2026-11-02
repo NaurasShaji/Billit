@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -157,14 +158,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
       final filename = _singleDayStatement
           ? 'sales_statement_${DateFormat('yyyyMMdd').format(startDate)}.pdf'
           : 'sales_statement_${DateFormat('yyyyMMdd').format(startDate)}_to_${DateFormat('yyyyMMdd').format(endDate)}.pdf';
-      await Share.shareXFiles(
-        [
-          XFile.fromData(await document.save(),
-              mimeType: 'application/pdf', name: filename)
-        ],
-        subject: 'Sales statement',
-        text: 'Billit sales statement',
-      );
+      await _downloadFile(filename, await document.save());
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -260,7 +254,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
       final filename = _singleDayStatement
           ? 'sales_statement_${DateFormat('yyyyMMdd').format(start)}.csv'
           : 'sales_statement_${DateFormat('yyyyMMdd').format(start)}_to_${DateFormat('yyyyMMdd').format(end)}.csv';
-      await _shareCsv(filename, rows);
+      await _downloadCsv(filename, rows);
     } finally {
       if (mounted) setState(() => _exportingStatement = false);
     }
@@ -368,7 +362,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
               .join('; '),
         ],
     ];
-    await _shareCsv('floralbill_gst_sales_register.csv', rows);
+    await _downloadCsv('billit_gst_sales_register.csv', rows);
   }
 
   Future<void> _exportGstItemRegister() async {
@@ -418,7 +412,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
                 .toStringAsFixed(2),
           ],
     ];
-    await _shareCsv('floralbill_gst_item_register.csv', rows);
+    await _downloadCsv('billit_gst_item_register.csv', rows);
   }
 
   Future<void> _exportExpensesRegister() async {
@@ -435,7 +429,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           expense.amount.toStringAsFixed(2),
         ],
     ];
-    await _shareCsv('floralbill_expenses_register.csv', rows);
+    await _downloadCsv('billit_expenses_register.csv', rows);
   }
 
   Widget _exportOption({
@@ -487,7 +481,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Share sales statements for selected dates and share GST and accounting registers.',
+            'Download sales statements and GST and accounting registers in the required format.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -502,7 +496,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Share invoice-wise sales statements for a single day or a custom date range.',
+            'Download invoice-wise sales statements as CSV or PDF for a single day or a custom date range.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -549,14 +543,14 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
                     ? null
                     : _exportSalesStatement,
                 icon: const Icon(Icons.table_view_outlined),
-                label: const Text('Share CSV'),
+                label: const Text('Download CSV'),
               ),
               OutlinedButton.icon(
                 onPressed: _exportingStatement || _exportingPdf
                     ? null
                     : () => _exportSalesStatementPdf(),
                 icon: const Icon(Icons.picture_as_pdf_outlined),
-                label: const Text('Share PDF'),
+                label: const Text('Download PDF'),
               ),
             ],
           ),
