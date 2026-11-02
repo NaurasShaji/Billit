@@ -356,9 +356,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                     DropdownMenuItem(
                         value: 'blue', child: Text('Classic Blue')),
                     DropdownMenuItem(
-                        value: 'green', child: Text('Garden Green')),
+                        value: 'green', child: Text('Classic Green')),
                     DropdownMenuItem(
-                        value: 'purple', child: Text('Royal Purple')),
+                        value: 'purple', child: Text('Classic Purple')),
                     DropdownMenuItem(value: 'teal', child: Text('Teal')),
                     DropdownMenuItem(
                         value: 'orange', child: Text('Warm Orange')),
