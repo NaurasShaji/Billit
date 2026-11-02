@@ -14,6 +14,7 @@ class _InvoiceCustomisationScreenState
   late Map<String, dynamic> value;
   bool saving = false;
   bool preview = true;
+  String? namedSelection;
   @override
   void initState() {
     super.initState();
@@ -26,6 +27,7 @@ class _InvoiceCustomisationScreenState
     setState(() {
       size = v;
       value = InvoiceTemplateService.load(v);
+      namedSelection = null;
     });
   }
 
@@ -37,10 +39,84 @@ class _InvoiceCustomisationScreenState
     setValue('columns', next);
   }
 
+
+  Future<String?> _askTemplateName(String title, String initial) async {
+    final controller = TextEditingController(text: initial);
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(labelText: 'Template name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) Navigator.pop(dialogContext, name);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> duplicateTemplate() async {
+    final current = value['name']?.toString() ?? 'Template';
+    final name = await _askTemplateName('Duplicate template', '$current Copy');
+    if (name == null || name.isEmpty) return;
+    await InvoiceTemplateService.saveNamedTemplate(size, name, value);
+    if (!mounted) return;
+    setState(() {
+      value = {...value, 'name': name};
+      namedSelection = name;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Template "$name" duplicated')),
+    );
+  }
+
+  Future<void> renameTemplate() async {
+    final current = value['name']?.toString() ?? 'Template';
+    final name = await _askTemplateName('Rename template', current);
+    if (name == null || name.isEmpty) return;
+    final previous = namedSelection;
+    if (previous != null && previous != name) {
+      await InvoiceTemplateService.deleteNamedTemplate(size, previous);
+      await InvoiceTemplateService.saveNamedTemplate(size, name, value);
+    }
+    setState(() {
+      value = {...value, 'name': name};
+      namedSelection = previous == null ? null : name;
+    });
+    await save();
+  }
+
+  Future<void> loadNamedTemplate(String name) async {
+    final templates = InvoiceTemplateService.namedTemplates(size);
+    final selected = templates[name];
+    if (selected == null) return;
+    setState(() {
+      value = {...InvoiceTemplateService.defaults(size), ...selected};
+      namedSelection = name;
+    });
+  }
+
   Future<void> save() async {
     setState(() => saving = true);
     try {
       await InvoiceTemplateService.save(size, value);
+      if (namedSelection != null) {
+        await InvoiceTemplateService.saveNamedTemplate(size, namedSelection!, value);
+      }
       await InvoiceTemplateService.select(size);
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -133,6 +209,35 @@ class _InvoiceCustomisationScreenState
                   }),
               const SizedBox(height: 10),
               field('name', 'Template name'),
+              DropdownButtonFormField<String>(
+                value: namedSelection,
+                decoration: const InputDecoration(
+                  labelText: 'Load saved template',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  for (final name in InvoiceTemplateService.namedTemplates(size).keys)
+                    DropdownMenuItem(value: name, child: Text(name)),
+                ],
+                onChanged: (name) {
+                  if (name != null) loadNamedTemplate(name);
+                },
+              ),
+              Wrap(
+                spacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: duplicateTemplate,
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Duplicate'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: renameTemplate,
+                    icon: const Icon(Icons.drive_file_rename_outline),
+                    label: const Text('Rename'),
+                  ),
+                ],
+              ),
               const Text(
                   'Each paper size has its own saved template. This controls invoice layout; pair or select the physical printer separately in Printer Settings.')
             ]),
