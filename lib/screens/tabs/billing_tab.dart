@@ -1216,7 +1216,30 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           includeGst = selectedType;
         }
 
-        await PdfService.generateInvoice(sale, includeGST: includeGst);
+        final sharePdf = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Invoice PDF'),
+            content: const Text('How would you like to send the invoice?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Save PDF'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('Share PDF'),
+              ),
+            ],
+          ),
+        );
+        if (sharePdf == null) return;
+        await PdfService.generateInvoice(
+          sale,
+          includeGST: includeGst,
+          share: sharePdf,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1224,9 +1247,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 12),
-                  Text(includeGst
-                      ? 'GST tax invoice PDF generated!'
-                      : 'Normal invoice PDF generated!'),
+                  Text(sharePdf
+                      ? 'Invoice PDF ready to share!'
+                      : 'Invoice PDF saved!'),
                 ],
               ),
               backgroundColor: _successColor,
