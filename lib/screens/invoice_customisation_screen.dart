@@ -76,6 +76,13 @@ class _InvoiceCustomisationScreenState
     final current = value['name']?.toString() ?? 'Template';
     final name = await _askTemplateName('Duplicate template', '$current Copy');
     if (name == null || name.isEmpty) return;
+    if (InvoiceTemplateService.namedTemplates(size).containsKey(name)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('A template named "$name" already exists.')),
+      );
+      return;
+    }
     await InvoiceTemplateService.saveNamedTemplate(size, name, value);
     if (!mounted) return;
     setState(() {
@@ -109,6 +116,35 @@ class _InvoiceCustomisationScreenState
       namedSelection = previous == null ? null : name;
     });
     await save();
+  }
+
+  Future<void> deleteSelectedTemplate() async {
+    final name = namedSelection;
+    if (name == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete saved template?'),
+        content: Text('Delete "$name" from the saved $size templates?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await InvoiceTemplateService.deleteNamedTemplate(size, name);
+    if (!mounted) return;
+    setState(() => namedSelection = null);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Template "$name" deleted')),
+    );
   }
 
   Future<void> loadNamedTemplate(String name) async {
@@ -248,6 +284,12 @@ class _InvoiceCustomisationScreenState
                     icon: const Icon(Icons.drive_file_rename_outline),
                     label: const Text('Rename'),
                   ),
+                  if (namedSelection != null)
+                    OutlinedButton.icon(
+                      onPressed: deleteSelectedTemplate,
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete saved'),
+                    ),
                 ],
               ),
               const Text(
