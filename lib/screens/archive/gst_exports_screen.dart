@@ -282,20 +282,30 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     return '"$text"';
   }
 
-  Future<void> _shareCsv(String filename, List<List<Object?>> rows) async {
+  Future<void> _downloadFile(String filename, List<int> bytes) async {
+    final savedPath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save export',
+      fileName: filename,
+      bytes: Uint8List.fromList(bytes),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(savedPath == null
+            ? 'Export cancelled.'
+            : 'File saved successfully.'),
+      ),
+    );
+  }
+
+  Future<void> _downloadCsv(String filename, List<List<Object?>> rows) async {
     try {
-      final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\r\n');
-      await Share.shareXFiles(
-        [
-          XFile.fromData(utf8.encode(csv), mimeType: 'text/csv', name: filename)
-        ],
-        subject: filename,
-        text: 'Billit accounting export',
-      );
+      final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\\r\\n');
+      await _downloadFile(filename, utf8.encode(csv));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not export CSV: $e')),
+        SnackBar(content: Text('Could not save CSV: $e')),
       );
     }
   }
