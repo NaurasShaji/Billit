@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/models.dart';
 import './boxes.dart';
 import './payment_qr_service.dart';
@@ -22,6 +23,7 @@ class PdfService {
     bool includeFooter = true,
     bool includeGST = true,
     bool fullPage = true,
+    bool share = false,
   }) async {
     final doc = pw.Document();
     final template =
@@ -103,12 +105,27 @@ class PdfService {
 
     final filename =
         '${includeGST && sale.gstEnabled ? 'gst_invoice' : 'invoice'}_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+    final pdfBytes = Uint8List.fromList(await doc.save());
+    if (share) {
+      await Share.shareXFiles(
+        [
+          XFile.fromData(
+            pdfBytes,
+            mimeType: 'application/pdf',
+            name: filename,
+          ),
+        ],
+        subject: filename,
+      );
+      return;
+    }
+
     final savedPath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save invoice PDF',
       fileName: filename,
       type: FileType.custom,
       allowedExtensions: const ['pdf'],
-      bytes: Uint8List.fromList(await doc.save()),
+      bytes: pdfBytes,
     );
     if (savedPath == null) {
       // The user cancelled the save dialog; no share sheet is opened.
