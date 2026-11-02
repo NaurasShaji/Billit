@@ -85,7 +85,12 @@ class ThermalPreviewDialog extends StatelessWidget {
     final customLabels = template['columnLabels'] is Map
         ? Map<String, dynamic>.from(template['columnLabels'] as Map) : <String, dynamic>{};
     final borders = template['showTableBorders'] == true;
-    final logo = settings.get('business_logo_base64')?.toString() ?? '';
+    final logoKey = is58mm
+        ? 'business_logo_print_58_base64'
+        : 'business_logo_print_80_base64';
+    final logo = settings.get(logoKey)?.toString() ??
+        settings.get('business_logo_base64')?.toString() ??
+        '';
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (template['showLogo'] == true && logo.isNotEmpty) _buildLogo(logo),
