@@ -488,6 +488,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    required VoidCallback onShare,
   }) {
     final theme = Theme.of(context);
     return Card(
