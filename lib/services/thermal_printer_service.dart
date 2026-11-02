@@ -478,7 +478,7 @@ class ThermalPrinterService {
       bytes += generator.text(
         businessName,
         styles: const PosStyles(
-            align: PosAlign.center,
+            align: headerPosAlignment,
             bold: true,
             height: PosTextSize.size2,
             width: PosTextSize.size2),
@@ -497,11 +497,11 @@ class ThermalPrinterService {
     }
     if (template['showEmail'] == true && businessEmail.isNotEmpty) {
       bytes += generator.text(businessEmail,
-          styles: const PosStyles(align: PosAlign.center));
+          styles: PosStyles(align: headerPosAlignment));
     }
     if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) {
       bytes += generator.text('GSTIN: $businessGstin',
-          styles: const PosStyles(align: PosAlign.center));
+          styles: PosStyles(align: headerPosAlignment));
     }
     bytes += generator.text(invoiceHeading,
         styles: PosStyles(align: headerPosAlignment, bold: true));
