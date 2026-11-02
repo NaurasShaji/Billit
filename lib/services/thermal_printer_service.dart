@@ -286,7 +286,11 @@ class ThermalPrinterService {
         settings.get('business_gstin', defaultValue: '').toString();
     final footerText =
         template['footerText']?.toString() ?? 'Thank you for your business.';
-    final logoBase64 = settings.get('business_logo_base64') as String?;
+    final printLogoKey = is58mm
+        ? 'business_logo_print_58_base64'
+        : 'business_logo_print_80_base64';
+    final logoBase64 = settings.get(printLogoKey) as String? ??
+        settings.get('business_logo_base64') as String?;
     img.Image? invoiceLogo;
     if (template['showLogo'] == true &&
         logoBase64 != null &&
