@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../services/invoice_template_service.dart';
 
 class InvoiceCustomisationScreen extends StatefulWidget {
@@ -473,6 +476,11 @@ class TemplatePreview extends StatelessWidget {
     final visibleColumns =
         columns.isEmpty ? <String>['product', 'amount'] : columns;
     final compact = size == '50mm' || size == '58mm';
+    final headerAlign = value['headerAlignment'] == 'left'
+        ? TextAlign.left
+        : value['headerAlignment'] == 'right'
+            ? TextAlign.right
+            : TextAlign.center;
     final footerAlign = value['footerAlignment'] == 'left'
         ? TextAlign.left
         : value['footerAlignment'] == 'right'
@@ -531,37 +539,44 @@ class TemplatePreview extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (value['showLogo'] == true) _thermalLogoPreview(),
               if (value['showBusinessName'] == true)
-                const Text('Your Business Name',
-                    textAlign: TextAlign.center,
+                Text('Your Business Name',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.black)),
               if (value['showAddress'] == true)
-                const Text('Your business address',
-                    textAlign: TextAlign.center,
+                Text('Your business address',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
               if (value['showPhone'] == true)
-                const Text('Phone: Your phone number',
-                    textAlign: TextAlign.center,
+                Text('Phone: Your phone number',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
+              if (value['showEmail'] == true)
+                Text('Email: Your business email',
+                    textAlign: headerAlign,
+                    style: const TextStyle(
+                        fontFamily: 'monospace', fontSize: 8, color: Colors.black)),
               if (value['showBusinessGstin'] == true)
-                const Text('GSTIN: Your GSTIN',
-                    textAlign: TextAlign.center,
+                Text('GSTIN: Your GSTIN',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
               rule(),
               Text(value['headerTitle']?.toString() ?? 'INVOICE',
+                  textAlign: headerAlign,
                   style: thermalText.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
               Align(
@@ -637,6 +652,39 @@ class TemplatePreview extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _thermalLogoPreview() {
+    try {
+      final settings = Hive.box<dynamic>('app_settings');
+      final key = size == '80mm'
+          ? 'business_logo_print_80_base64'
+          : 'business_logo_print_58_base64';
+      final encoded = settings.get(key)?.toString() ??
+          settings.get('business_logo_base64')?.toString() ??
+          '';
+      if (encoded.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.only(bottom: 5),
+          child: Icon(Icons.storefront, size: 34, color: Colors.black),
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Center(
+          child: Image.memory(
+            base64Decode(encoded),
+            width: size == '80mm' ? 150 : 100,
+            height: 54,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.storefront, size: 34, color: Colors.black),
+          ),
+        ),
+      );
+    } catch (_) {
+      return const Icon(Icons.storefront, size: 34, color: Colors.black);
+    }
   }
 
   Widget _thermalTotal(String label, String amount, {bool bold = false}) {
