@@ -206,18 +206,34 @@ class _ProductsTabState extends State<ProductsTab> {
                   item == null ? 'All units' : item.name.toUpperCase(),
                 ),
               );
-              if (narrow) {
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      SizedBox(width: 170, child: categoryFilter),
-                      const SizedBox(width: 8),
-                      SizedBox(width: 170, child: subCategoryFilter),
-                      const SizedBox(width: 8),
-                      SizedBox(width: 130, child: unitDropdown),
-                    ],
-                  ),
+              if (constraints.maxWidth < 480) {
+                // Keep filters fixed within the viewport on phones. Stacking
+                // prevents horizontal clipping and avoids a sideways carousel.
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    categoryFilter,
+                    const SizedBox(height: 8),
+                    subCategoryFilter,
+                    const SizedBox(height: 8),
+                    unitDropdown,
+                  ],
+                );
+              }
+              if (constraints.maxWidth < 760) {
+                // Use a responsive two-column layout on compact tablets.
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: categoryFilter),
+                        const SizedBox(width: 10),
+                        Expanded(child: subCategoryFilter),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(width: double.infinity, child: unitDropdown),
+                  ],
                 );
               }
               return Row(
