@@ -850,12 +850,78 @@ class _ProductsTabState extends State<ProductsTab> {
     );
   }
 
+  Widget _buildEmptyState() {
+    final hasActiveFilters = query.trim().isNotEmpty ||
+        unitFilter != null ||
+        category != 'All' ||
+        subCategory != 'All';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasActiveFilters
+                  ? Icons.search_off_rounded
+                  : Icons.inventory_2_outlined,
+              size: 56,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              hasActiveFilters ? 'No matching products' : 'No products yet',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hasActiveFilters
+                  ? 'Try changing your search or filters.'
+                  : 'Add your first product to start managing your inventory.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            if (hasActiveFilters) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    query = '';
+                    unitFilter = null;
+                    category = 'All';
+                    subCategory = 'All';
+                  });
+                },
+                icon: const Icon(Icons.filter_alt_off),
+                label: const Text('Clear filters'),
+              ),
+            ] else ...[
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => _openEditor(),
+                icon: const Icon(Icons.add),
+                label: const Text('Add product'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openEditor({Product? product}) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ManageProductScreen(product: product),
       ),
     );
-    setState(() {}); // Refresh the list after returning from the edit screen
+    if (mounted) setState(() {});
   }
 }
