@@ -139,7 +139,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           pageFormat: PdfPageFormat.a4.landscape,
           margin: const pw.EdgeInsets.all(24),
           build: (context) => [
-            pw.Text('Floral Bill - Sales Statement',
+            pw.Text('Billit - Sales Statement',
                 style:
                     pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 12),
@@ -163,7 +163,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
               mimeType: 'application/pdf', name: filename)
         ],
         subject: 'Sales statement',
-        text: 'Floral Bill sales statement',
+        text: 'Billit sales statement',
       );
     } catch (e) {
       if (!mounted) return;
@@ -296,7 +296,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           XFile.fromData(utf8.encode(csv), mimeType: 'text/csv', name: filename)
         ],
         subject: filename,
-        text: 'Floral Bill accounting export',
+        text: 'Billit accounting export',
       );
     } catch (e) {
       if (!mounted) return;

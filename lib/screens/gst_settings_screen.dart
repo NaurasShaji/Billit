@@ -279,7 +279,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'Important: Floral Bill is a billing and record-keeping tool, not a GST compliance certification or filing service. Composition taxpayers must not collect GST separately. Verify invoice rules, HSN/SAC, rates, place of supply, e-invoicing/e-way bill applicability and return reporting with a qualified tax professional.',
+                  'Important: Billit is a billing and record-keeping tool, not a GST compliance certification or filing service. Composition taxpayers must not collect GST separately. Verify invoice rules, HSN/SAC, rates, place of supply, e-invoicing/e-way bill applicability and return reporting with a qualified tax professional.',
                 ),
               ),
             ),

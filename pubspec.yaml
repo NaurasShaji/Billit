@@ -50,6 +50,8 @@ flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/icon/billit_icon.png"
+  adaptive_icon_foreground: "assets/icon/billit_icon.png"
+  adaptive_icon_background: "#e6f7f4"
   min_sdk_android: 21
   
   # Web configuration

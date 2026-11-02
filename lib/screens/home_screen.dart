@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Welcome to Floral Bill Help Center',
+                'Welcome to Billit Help Center',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildHelpOption(
                 Icons.inventory_2_outlined,
                 'Product Management',
-                'Understand how to add, edit, and track your floral inventory',
+                'Understand how to add, edit, and track your inventory',
               ),
               const SizedBox(height: 12),
               _buildHelpOption(

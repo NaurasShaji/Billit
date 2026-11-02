@@ -356,9 +356,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                     DropdownMenuItem(
                         value: 'blue', child: Text('Classic Blue')),
                     DropdownMenuItem(
-                        value: 'green', child: Text('Garden Green')),
+                        value: 'green', child: Text('Classic Green')),
                     DropdownMenuItem(
-                        value: 'purple', child: Text('Royal Purple')),
+                        value: 'purple', child: Text('Classic Purple')),
                     DropdownMenuItem(value: 'teal', child: Text('Teal')),
                     DropdownMenuItem(
                         value: 'orange', child: Text('Warm Orange')),
@@ -424,7 +424,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                    'The QR is generated locally from the saved UPI ID and bill total. No payment is processed by Floral Bill, and payment completion must be verified in your UPI app/bank.',
+                    'The QR is generated locally from the saved UPI ID and bill total. No payment is processed by Billit, and payment completion must be verified in your UPI app/bank.',
                     style: TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 12),
                 _imageSetting(

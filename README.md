@@ -119,3 +119,20 @@ assets/         App icons and other bundled assets
 ## Data and backups
 
 The app stores business data locally with Hive. Export backups regularly and store them somewhere safe. Google Drive backup requires signing in to a Google account and an available Google Sign-In configuration for the target platform.
+
+## Android launcher icon
+
+The Android launcher icon is generated from `assets/icon/billit_icon.png` using the
+`flutter_launcher_icons` configuration in `pubspec.yaml`. After changing the
+icon artwork or launcher-icon configuration, regenerate the Android resources:
+
+```powershell
+flutter pub get
+dart run flutter_launcher_icons
+flutter clean
+flutter build apk --release
+```
+
+If an already-installed Android launcher continues showing the previous icon,
+uninstall the old Billit app before installing the newly built APK. Some launchers
+cache application icons.
