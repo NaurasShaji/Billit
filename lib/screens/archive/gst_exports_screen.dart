@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -54,7 +55,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     });
   }
 
-  Future<void> _exportSalesStatementPdf() async {
+  Future<void> _exportSalesStatementPdf({bool share = false}) async {
     if (_exportingPdf) return;
     final startDate = _dateOnly(_statementStart);
     final endDate =
@@ -158,7 +159,12 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
       final filename = _singleDayStatement
           ? 'sales_statement_${DateFormat('yyyyMMdd').format(startDate)}.pdf'
           : 'sales_statement_${DateFormat('yyyyMMdd').format(startDate)}_to_${DateFormat('yyyyMMdd').format(endDate)}.pdf';
-      await _downloadFile(filename, await document.save());
+      final bytes = await document.save();
+      if (share) {
+        await _shareFile(filename, bytes, 'application/pdf');
+      } else {
+        await _downloadFile(filename, bytes);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -169,7 +175,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     }
   }
 
-  Future<void> _exportSalesStatement() async {
+  Future<void> _exportSalesStatement({bool share = false}) async {
     if (_exportingStatement) return;
     final start = _dateOnly(_statementStart);
     final end =
@@ -254,7 +260,11 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
       final filename = _singleDayStatement
           ? 'sales_statement_${DateFormat('yyyyMMdd').format(start)}.csv'
           : 'sales_statement_${DateFormat('yyyyMMdd').format(start)}_to_${DateFormat('yyyyMMdd').format(end)}.csv';
-      await _downloadCsv(filename, rows);
+      if (share) {
+        await _shareCsv(filename, rows);
+      } else {
+        await _downloadCsv(filename, rows);
+      }
     } finally {
       if (mounted) setState(() => _exportingStatement = false);
     }
@@ -264,6 +274,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     required String label,
     required DateTime date,
     required VoidCallback onTap,
+    required VoidCallback onShare,
   }) {
     return Card(
       elevation: 0,
@@ -310,7 +321,25 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     }
   }
 
-  Future<void> _exportGstSalesRegister() async {
+  Future<void> _shareFile(String filename, List<int> bytes, String mimeType) async {
+    await Share.shareXFiles(
+      [
+        XFile.fromData(
+          Uint8List.fromList(bytes),
+          mimeType: mimeType,
+          name: filename,
+        ),
+      ],
+      subject: filename,
+    );
+  }
+
+  Future<void> _shareCsv(String filename, List<List<Object?>> rows) async {
+    final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\\r\\n');
+    await _shareFile(filename, utf8.encode(csv), 'text/csv');
+  }
+
+  Future<void> _exportGstSalesRegister({bool share = false}) async {
     final sales = Hive.box<Sale>(Boxes.sales).values.toList()
       ..sort((a, b) => a.date.compareTo(b.date));
     final rows = <List<Object?>>[
@@ -372,10 +401,14 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
               .join('; '),
         ],
     ];
-    await _downloadCsv('billit_gst_sales_register.csv', rows);
+    if (share) {
+      await _shareCsv('billit_gst_sales_register.csv', rows);
+    } else {
+      await _downloadCsv('billit_gst_sales_register.csv', rows);
+    }
   }
 
-  Future<void> _exportGstItemRegister() async {
+  Future<void> _exportGstItemRegister({bool share = false}) async {
     final sales = Hive.box<Sale>(Boxes.sales).values.toList()
       ..sort((a, b) => a.date.compareTo(b.date));
     final products = Hive.box<Product>(Boxes.products);
@@ -422,10 +455,14 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
                 .toStringAsFixed(2),
           ],
     ];
-    await _downloadCsv('billit_gst_item_register.csv', rows);
+    if (share) {
+      await _shareCsv('billit_gst_item_register.csv', rows);
+    } else {
+      await _downloadCsv('billit_gst_item_register.csv', rows);
+    }
   }
 
-  Future<void> _exportExpensesRegister() async {
+  Future<void> _exportExpensesRegister({bool share = false}) async {
     final expenses = Hive.box<Expense>(Boxes.expenses).values.toList()
       ..sort((a, b) => a.date.compareTo(b.date));
     final rows = <List<Object?>>[
@@ -439,7 +476,11 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           expense.amount.toStringAsFixed(2),
         ],
     ];
-    await _downloadCsv('billit_expenses_register.csv', rows);
+    if (share) {
+      await _shareCsv('billit_expenses_register.csv', rows);
+    } else {
+      await _downloadCsv('billit_expenses_register.csv', rows);
+    }
   }
 
   Widget _exportOption({
@@ -469,7 +510,17 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           padding: const EdgeInsets.only(top: 4),
           child: Text(subtitle),
         ),
-        trailing: const Icon(Icons.file_download_outlined),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Share',
+              icon: const Icon(Icons.share_outlined),
+              onPressed: onShare,
+            ),
+            const Icon(Icons.file_download_outlined),
+          ],
+        ),
         onTap: onTap,
       ),
     );
@@ -562,6 +613,20 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
                 icon: const Icon(Icons.picture_as_pdf_outlined),
                 label: const Text('Download PDF'),
               ),
+              OutlinedButton.icon(
+                onPressed: _exportingStatement || _exportingPdf
+                    ? null
+                    : () => _exportSalesStatement(share: true),
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('Share CSV'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _exportingStatement || _exportingPdf
+                    ? null
+                    : () => _exportSalesStatementPdf(share: true),
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('Share PDF'),
+              ),
             ],
           ),
           const SizedBox(height: 28),
@@ -579,6 +644,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             subtitle:
                 'Invoice-wise taxable values, GST breakup, payment and customer GSTIN.',
             onTap: _exportGstSalesRegister,
+            onShare: () => _exportGstSalesRegister(share: true),
           ),
           _exportOption(
             icon: Icons.table_chart_outlined,
@@ -586,6 +652,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             subtitle:
                 'Product-wise HSN/SAC, quantities, taxable values and tax amounts.',
             onTap: _exportGstItemRegister,
+            onShare: () => _exportGstItemRegister(share: true),
           ),
           _exportOption(
             icon: Icons.account_balance_wallet_outlined,
@@ -593,6 +660,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             subtitle:
                 'Export expense dates, categories, descriptions and amounts.',
             onTap: _exportExpensesRegister,
+            onShare: () => _exportExpensesRegister(share: true),
           ),
         ],
       ),
