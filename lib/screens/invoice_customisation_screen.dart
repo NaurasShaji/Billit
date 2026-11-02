@@ -426,7 +426,7 @@ class TemplatePreview extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (value['showBusinessName'] == true)
-                const Text('FLORAL & CO.',
+                const Text('Your Business Name',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontFamily: 'monospace',
@@ -434,21 +434,21 @@ class TemplatePreview extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: Colors.black)),
               if (value['showAddress'] == true)
-                const Text('MG Road, Kothamangalam, Kerala - 686691',
+                const Text('Your business address',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
               if (value['showPhone'] == true)
-                const Text('Phone: +91 98765 43210',
+                const Text('Phone: Your phone number',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
               if (value['showBusinessGstin'] == true)
-                const Text('GSTIN: 32ABCDE1234F1Z5',
+                const Text('GSTIN: Your GSTIN',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontFamily: 'monospace',
@@ -630,17 +630,17 @@ class TemplatePreview extends StatelessWidget {
                         if (value['showLogo'] == true)
                           const Icon(Icons.storefront, size: 32),
                         if (value['showBusinessName'] == true)
-                          const Text('FLORAL & CO.',
+                          const Text('Your Business Name',
                               style: TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.bold)),
                         if (value['showAddress'] == true)
-                          const Text('MG Road, Kothamangalam, Kerala - 686691'),
+                          const Text('Your business address'),
                         if (value['showPhone'] == true)
-                          const Text('Phone: +91 98765 43210'),
+                          const Text('Phone: Your phone number'),
                         if (value['showEmail'] == true)
-                          const Text('Email: billing@floralandco.in'),
+                          const Text('Email: Your business email'),
                         if (value['showBusinessGstin'] == true)
-                          const Text('GSTIN: 32ABCDE1234F1Z5',
+                          const Text('GSTIN: Your GSTIN',
                               style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
