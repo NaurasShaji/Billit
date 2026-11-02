@@ -1190,33 +1190,56 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           );
         }
       } else {
-        // Choose a distinct normal invoice or GST tax invoice PDF.
-        final includeGst = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Choose PDF type'),
-            content: const Text(
-                'Generate a normal invoice without GST details, or a separate GST tax invoice.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Normal PDF'),
-              ),
-              if (sale.gstEnabled)
+        // Non-GST sales should go straight to a normal invoice PDF.
+        // Only GST-enabled sales need a choice between normal and tax invoice.
+        var includeGst = false;
+        if (sale.gstEnabled) {
+          final selectedType = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Choose PDF type'),
+              content: const Text(
+                  'Choose whether to generate a normal invoice or a GST tax invoice.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Normal PDF'),
+                ),
                 FilledButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
                   child: const Text('GST Tax Invoice'),
                 ),
-              if (!sale.gstEnabled)
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(null),
-                  child: const Text('Cancel'),
-                ),
+              ],
+            ),
+          );
+          if (selectedType == null) return;
+          includeGst = selectedType;
+        }
+
+        final sharePdf = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Invoice PDF'),
+            content: const Text('How would you like to send the invoice?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Save PDF'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('Share PDF'),
+              ),
             ],
           ),
         );
-        if (includeGst == null) return;
-        await PdfService.generateInvoice(sale, includeGST: includeGst);
+        if (sharePdf == null) return;
+        await PdfService.generateInvoice(
+          sale,
+          includeGST: includeGst,
+          share: sharePdf,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1224,9 +1247,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 12),
-                  Text(includeGst
-                      ? 'GST tax invoice PDF generated!'
-                      : 'Normal invoice PDF generated!'),
+                  Text(sharePdf
+                      ? 'Invoice PDF ready to share!'
+                      : 'Invoice PDF saved!'),
                 ],
               ),
               backgroundColor: _successColor,

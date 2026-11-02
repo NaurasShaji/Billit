@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/models.dart';
 import './boxes.dart';
 import './payment_qr_service.dart';
@@ -21,33 +23,58 @@ class PdfService {
     bool includeFooter = true,
     bool includeGST = true,
     bool fullPage = true,
+    bool share = false,
   }) async {
     final doc = pw.Document();
     final template =
         InvoiceTemplateService.load(InvoiceTemplateService.selected);
     final paperSize = template['paperSize'].toString();
-    final isThermal = paperSize == '58mm' || paperSize == '80mm';
+    final isThermal = paperSize == '50mm' || paperSize == '58mm' || paperSize == '80mm';
     final effectiveThermalSize =
-        paperSize == '58mm' ? ThermalSize.mm58 : ThermalSize.mm80;
+        (paperSize == '50mm' || paperSize == '58mm') ? ThermalSize.mm58 : ThermalSize.mm80;
     final marginMm = (template['marginMm'] as num).toDouble();
     final marginPoints = marginMm * 72 / 25.4;
     final qrImage = await _loadPaymentQrImage(sale);
 
     if (fullPage && !isThermal) {
-      doc.addPage(
-        pw.MultiPage(
-          pageFormat: paperSize == 'A5' ? PdfPageFormat.a5 : PdfPageFormat.a4,
-          margin: pw.EdgeInsets.all(marginMm * 72 / 25.4),
-          build: (context) => _buildFullPageInvoice(
-            sale,
-            includeHeader: includeHeader,
-            includeFooter: includeFooter,
-            includeGST: includeGST,
-            qrImage: qrImage,
-            template: template,
-          ),
-        ),
+      final pageFormat = paperSize == 'A5' ? PdfPageFormat.a5 : PdfPageFormat.a4;
+      final content = _buildFullPageInvoice(
+        sale,
+        includeHeader: includeHeader,
+        includeFooter: includeFooter,
+        includeGST: includeGST,
+        qrImage: qrImage,
+        template: template,
       );
+      if (paperSize == 'A5') {
+        // A5 invoices are deliberately constrained to one page. FittedBox
+        // scales dense invoices down rather than silently creating page 2.
+        doc.addPage(
+          pw.Page(
+            pageFormat: pageFormat,
+            margin: pw.EdgeInsets.all(marginPoints),
+            build: (_) => pw.FittedBox(
+              fit: pw.BoxFit.scaleDown,
+              alignment: pw.Alignment.topCenter,
+              child: pw.SizedBox(
+                width: pageFormat.availableWidth,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                  children: content,
+                ),
+              ),
+            ),
+          ),
+        );
+      } else {
+        doc.addPage(
+          pw.MultiPage(
+            pageFormat: pageFormat,
+            margin: pw.EdgeInsets.all(marginPoints),
+            build: (context) => content,
+          ),
+        );
+      }
     } else {
       final double pageWidth = effectiveThermalSize == ThermalSize.mm58
           ? thermalWidth58mm
@@ -76,11 +103,34 @@ class PdfService {
       );
     }
 
-    await Printing.sharePdf(
-      bytes: await doc.save(),
-      filename:
-          '${includeGST && sale.gstEnabled ? 'gst_invoice' : 'invoice'}_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
+    final filename =
+        '${includeGST && sale.gstEnabled ? 'gst_invoice' : 'invoice'}_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+    final pdfBytes = Uint8List.fromList(await doc.save());
+    if (share) {
+      await Share.shareXFiles(
+        [
+          XFile.fromData(
+            pdfBytes,
+            mimeType: 'application/pdf',
+            name: filename,
+          ),
+        ],
+        subject: filename,
+      );
+      return;
+    }
+
+    final savedPath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save invoice PDF',
+      fileName: filename,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      bytes: pdfBytes,
     );
+    if (savedPath == null) {
+      // The user cancelled the save dialog; no share sheet is opened.
+      return;
+    }
   }
 
   static List<pw.Widget> _buildFullPageInvoice(

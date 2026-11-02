@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../services/invoice_template_service.dart';
 
 class InvoiceCustomisationScreen extends StatefulWidget {
@@ -14,6 +17,7 @@ class _InvoiceCustomisationScreenState
   late Map<String, dynamic> value;
   bool saving = false;
   bool preview = true;
+  String? namedSelection;
   @override
   void initState() {
     super.initState();
@@ -26,6 +30,7 @@ class _InvoiceCustomisationScreenState
     setState(() {
       size = v;
       value = InvoiceTemplateService.load(v);
+      namedSelection = null;
     });
   }
 
@@ -37,10 +42,128 @@ class _InvoiceCustomisationScreenState
     setValue('columns', next);
   }
 
+
+  Future<String?> _askTemplateName(String title, String initial) async {
+    final controller = TextEditingController(text: initial);
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(labelText: 'Template name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) Navigator.pop(dialogContext, name);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> duplicateTemplate() async {
+    final current = value['name']?.toString() ?? 'Template';
+    final name = await _askTemplateName('Duplicate template', '$current Copy');
+    if (name == null || name.isEmpty) return;
+    if (InvoiceTemplateService.namedTemplates(size).containsKey(name)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('A template named "$name" already exists.')),
+      );
+      return;
+    }
+    await InvoiceTemplateService.saveNamedTemplate(size, name, value);
+    if (!mounted) return;
+    setState(() {
+      value = {...value, 'name': name};
+      namedSelection = name;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Template "$name" duplicated')),
+    );
+  }
+
+  Future<void> renameTemplate() async {
+    final current = value['name']?.toString() ?? 'Template';
+    final name = await _askTemplateName('Rename template', current);
+    if (name == null || name.isEmpty) return;
+    final previous = namedSelection;
+    final existingNames = InvoiceTemplateService.namedTemplates(size).keys;
+    if (previous != name && existingNames.contains(name)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('A template named "$name" already exists.')),
+      );
+      return;
+    }
+    if (previous != null && previous != name) {
+      await InvoiceTemplateService.deleteNamedTemplate(size, previous);
+      await InvoiceTemplateService.saveNamedTemplate(size, name, value);
+    }
+    setState(() {
+      value = {...value, 'name': name};
+      namedSelection = previous == null ? null : name;
+    });
+    await save();
+  }
+
+  Future<void> deleteSelectedTemplate() async {
+    final name = namedSelection;
+    if (name == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete saved template?'),
+        content: Text('Delete "$name" from the saved $size templates?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await InvoiceTemplateService.deleteNamedTemplate(size, name);
+    if (!mounted) return;
+    setState(() => namedSelection = null);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Template "$name" deleted')),
+    );
+  }
+
+  Future<void> loadNamedTemplate(String name) async {
+    final templates = InvoiceTemplateService.namedTemplates(size);
+    final selected = templates[name];
+    if (selected == null) return;
+    setState(() {
+      value = {...InvoiceTemplateService.defaults(size), ...selected};
+      namedSelection = name;
+    });
+  }
+
   Future<void> save() async {
     setState(() => saving = true);
     try {
       await InvoiceTemplateService.save(size, value);
+      if (namedSelection != null) {
+        await InvoiceTemplateService.saveNamedTemplate(size, namedSelection!, value);
+      }
       await InvoiceTemplateService.select(size);
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -100,7 +223,7 @@ class _InvoiceCustomisationScreenState
       onChanged: (v) => setValue(k, v));
   @override
   Widget build(BuildContext context) {
-    final compact = size == '58mm' || size == '80mm';
+    final compact = size == '50mm' || size == '58mm' || size == '80mm';
     final warnings = InvoiceTemplateService.validate(value);
     return Scaffold(
         appBar: AppBar(title: const Text('Invoice Customisation'), actions: [
@@ -123,6 +246,7 @@ class _InvoiceCustomisationScreenState
                       labelText: 'Default paper size',
                       border: OutlineInputBorder()),
                   items: const [
+                    DropdownMenuItem(value: '50mm', child: Text('50mm POS (384-dot)')),
                     DropdownMenuItem(value: '58mm', child: Text('58mm POS')),
                     DropdownMenuItem(value: '80mm', child: Text('80mm POS')),
                     DropdownMenuItem(value: 'A5', child: Text('A5')),
@@ -133,6 +257,41 @@ class _InvoiceCustomisationScreenState
                   }),
               const SizedBox(height: 10),
               field('name', 'Template name'),
+              DropdownButtonFormField<String>(
+                value: namedSelection,
+                decoration: const InputDecoration(
+                  labelText: 'Load saved template',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  for (final name in InvoiceTemplateService.namedTemplates(size).keys)
+                    DropdownMenuItem(value: name, child: Text(name)),
+                ],
+                onChanged: (name) {
+                  if (name != null) loadNamedTemplate(name);
+                },
+              ),
+              Wrap(
+                spacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: duplicateTemplate,
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Duplicate'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: renameTemplate,
+                    icon: const Icon(Icons.drive_file_rename_outline),
+                    label: const Text('Rename'),
+                  ),
+                  if (namedSelection != null)
+                    OutlinedButton.icon(
+                      onPressed: deleteSelectedTemplate,
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete saved'),
+                    ),
+                ],
+              ),
               const Text(
                   'Each paper size has its own saved template. This controls invoice layout; pair or select the physical printer separately in Printer Settings.')
             ]),
@@ -366,7 +525,12 @@ class TemplatePreview extends StatelessWidget {
     final columns = (value['columns'] as List).cast<String>();
     final visibleColumns =
         columns.isEmpty ? <String>['product', 'amount'] : columns;
-    final compact = size == '58mm';
+    final compact = size == '50mm' || size == '58mm';
+    final headerAlign = value['headerAlignment'] == 'left'
+        ? TextAlign.left
+        : value['headerAlignment'] == 'right'
+            ? TextAlign.right
+            : TextAlign.center;
     final footerAlign = value['footerAlignment'] == 'left'
         ? TextAlign.left
         : value['footerAlignment'] == 'right'
@@ -425,37 +589,44 @@ class TemplatePreview extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (value['showLogo'] == true) _thermalLogoPreview(),
               if (value['showBusinessName'] == true)
-                const Text('Your Business Name',
-                    textAlign: TextAlign.center,
+                Text('Your Business Name',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.black)),
               if (value['showAddress'] == true)
-                const Text('Your business address',
-                    textAlign: TextAlign.center,
+                Text('Your business address',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
               if (value['showPhone'] == true)
-                const Text('Phone: Your phone number',
-                    textAlign: TextAlign.center,
+                Text('Phone: Your phone number',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
+              if (value['showEmail'] == true)
+                Text('Email: Your business email',
+                    textAlign: headerAlign,
+                    style: const TextStyle(
+                        fontFamily: 'monospace', fontSize: 8, color: Colors.black)),
               if (value['showBusinessGstin'] == true)
-                const Text('GSTIN: Your GSTIN',
-                    textAlign: TextAlign.center,
+                Text('GSTIN: Your GSTIN',
+                    textAlign: headerAlign,
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 8,
                         color: Colors.black)),
               rule(),
               Text(value['headerTitle']?.toString() ?? 'INVOICE',
+                  textAlign: headerAlign,
                   style: thermalText.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
               Align(
@@ -531,6 +702,39 @@ class TemplatePreview extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _thermalLogoPreview() {
+    try {
+      final settings = Hive.box<dynamic>('app_settings');
+      final key = size == '80mm'
+          ? 'business_logo_print_80_base64'
+          : 'business_logo_print_58_base64';
+      final encoded = settings.get(key)?.toString() ??
+          settings.get('business_logo_base64')?.toString() ??
+          '';
+      if (encoded.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.only(bottom: 5),
+          child: Icon(Icons.storefront, size: 34, color: Colors.black),
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Center(
+          child: Image.memory(
+            base64Decode(encoded),
+            width: size == '80mm' ? 150 : 100,
+            height: 54,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.storefront, size: 34, color: Colors.black),
+          ),
+        ),
+      );
+    } catch (_) {
+      return const Icon(Icons.storefront, size: 34, color: Colors.black);
+    }
   }
 
   Widget _thermalTotal(String label, String amount, {bool bold = false}) {
@@ -786,8 +990,8 @@ class TemplatePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = size == '58mm' || size == '80mm';
-    final width = size == '58mm'
+    final compact = size == '50mm' || size == '58mm' || size == '80mm';
+    final width = (size == '50mm' || size == '58mm')
         ? 205.0
         : size == '80mm'
             ? 300.0

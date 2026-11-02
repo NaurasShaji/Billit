@@ -266,7 +266,7 @@ class ThermalPrinterService {
 
     final template =
         InvoiceTemplateService.load(InvoiceTemplateService.selected);
-    final is58mm = template['paperSize'] == '58mm';
+    final is58mm = template['paperSize'] == '50mm' || template['paperSize'] == '58mm';
     final profile = await CapabilityProfile.load();
     final generator =
         Generator(is58mm ? PaperSize.mm58 : PaperSize.mm80, profile);
@@ -286,7 +286,11 @@ class ThermalPrinterService {
         settings.get('business_gstin', defaultValue: '').toString();
     final footerText =
         template['footerText']?.toString() ?? 'Thank you for your business.';
-    final logoBase64 = settings.get('business_logo_base64') as String?;
+    final printLogoKey = is58mm
+        ? 'business_logo_print_58_base64'
+        : 'business_logo_print_80_base64';
+    final logoBase64 = settings.get(printLogoKey) as String? ??
+        settings.get('business_logo_base64') as String?;
     img.Image? invoiceLogo;
     if (template['showLogo'] == true &&
         logoBase64 != null &&
@@ -473,8 +477,8 @@ class ThermalPrinterService {
     if (template['showBusinessName'] == true) {
       bytes += generator.text(
         businessName,
-        styles: const PosStyles(
-            align: PosAlign.center,
+        styles: PosStyles(
+            align: headerPosAlignment,
             bold: true,
             height: PosTextSize.size2,
             width: PosTextSize.size2),
@@ -493,11 +497,11 @@ class ThermalPrinterService {
     }
     if (template['showEmail'] == true && businessEmail.isNotEmpty) {
       bytes += generator.text(businessEmail,
-          styles: const PosStyles(align: PosAlign.center));
+          styles: PosStyles(align: headerPosAlignment));
     }
     if (template['showBusinessGstin'] == true && businessGstin.isNotEmpty) {
       bytes += generator.text('GSTIN: $businessGstin',
-          styles: const PosStyles(align: PosAlign.center));
+          styles: PosStyles(align: headerPosAlignment));
     }
     bytes += generator.text(invoiceHeading,
         styles: PosStyles(align: headerPosAlignment, bold: true));

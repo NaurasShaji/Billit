@@ -46,12 +46,13 @@ class InvoiceService {
     bool includeFooter = true,
     bool includeGST = true,
     ThermalSize thermalSize = ThermalSize.mm80,
+    bool sharePdf = false,
   }) async {
     if (useThermalPrinter &&
         (InvoiceTemplateService.selected == 'A4' ||
             InvoiceTemplateService.selected == 'A5')) {
       // Full-page formats are exported through the PDF print/share flow.
-      await PdfService.generateInvoice(sale);
+      await PdfService.generateInvoice(sale, share: sharePdf);
     } else if (useThermalPrinter) {
       // Thermal formats use the selected 58mm or 80mm ESC/POS layout.
       await _thermalPrinter.printInvoice(sale);
@@ -63,6 +64,7 @@ class InvoiceService {
         includeHeader: includeHeader,
         includeFooter: includeFooter,
         includeGST: includeGST,
+        share: sharePdf,
       );
     }
   }
@@ -84,6 +86,7 @@ class InvoiceService {
     bool includeHeader = true,
     bool includeFooter = true,
     bool includeGST = true,
+    bool share = false,
   }) async {
     await PdfService.generateInvoice(
       sale,
@@ -91,6 +94,7 @@ class InvoiceService {
       includeHeader: includeHeader,
       includeFooter: includeFooter,
       includeGST: includeGST,
+      share: share,
     );
   }
 }
