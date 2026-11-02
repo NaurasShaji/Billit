@@ -18,9 +18,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
   };
 
   static const _paletteNames = <String, String>{
-    'green': 'Garden Green',
+    'green': 'Classic Green',
     'blue': 'Classic Blue',
-    'purple': 'Royal Purple',
+    'purple': 'Classic Purple',
     'amber': 'Warm Amber',
     'teal': 'Calm Teal',
     'rose': 'Rose',
@@ -118,7 +118,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${_paletteNames[selectedTheme] ?? 'Garden Green'} · ${themeMode[0].toUpperCase()}${themeMode.substring(1)} mode',
+                          '${_paletteNames[selectedTheme] ?? 'Classic Green'} · ${themeMode[0].toUpperCase()}${themeMode.substring(1)} mode',
                           style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme
