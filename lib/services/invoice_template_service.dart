@@ -154,7 +154,7 @@ class InvoiceTemplateService {
 
   static List<String> validate(Map<String, dynamic> value) {
     final size = value['paperSize'].toString();
-    final compact = size == '58mm' || size == '80mm';
+    final compact = size == '50mm' || size == '58mm' || size == '80mm';
     final selected = (value['columns'] as List?)?.cast<String>() ?? <String>[];
     const widths58 = {
       'serial': 2,
