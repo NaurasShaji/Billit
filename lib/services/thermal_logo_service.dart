@@ -51,13 +51,16 @@ class ThermalLogoService {
       width: right - left + 1,
       height: bottom - top + 1,
     );
-    final padding = (targetWidth * 0.025).round().clamp(4, 16);
+    final padding = (targetWidth * 0.025).round().clamp(4, 16).toInt();
     final availableWidth = targetWidth - padding * 2;
-    final scale = availableWidth / content.width;
-    final resizedHeight = (content.height * scale).round().clamp(1, 1200);
+    final scale = (availableWidth / content.width)
+        .clamp(0.0001, 1200 / content.height)
+        .toDouble();
+    final resizedWidth = (content.width * scale).round().clamp(1, availableWidth).toInt();
+    final resizedHeight = (content.height * scale).round().clamp(1, 1200).toInt();
     final resized = img.copyResize(
       content,
-      width: availableWidth,
+      width: resizedWidth,
       height: resizedHeight,
       interpolation: img.Interpolation.average,
     );
@@ -76,7 +79,7 @@ class ThermalLogoService {
     for (var y = 0; y < height; y++) {
       for (var x = 0; x < width; x++) {
         final index = y * width + x;
-        final oldValue = luminance[index].clamp(0.0, 255.0);
+        final oldValue = luminance[index].clamp(0.0, 255.0).toDouble();
         final newValue = oldValue < 160 ? 0.0 : 255.0;
         final error = oldValue - newValue;
         output.setPixelRgb(x, y, newValue.toInt(), newValue.toInt(), newValue.toInt());
@@ -86,7 +89,9 @@ class ThermalLogoService {
           final ny = y + dy;
           if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
             final next = ny * width + nx;
-            luminance[next] = (luminance[next] + error * factor).clamp(0.0, 255.0);
+            luminance[next] = (luminance[next] + error * factor)
+                .clamp(0.0, 255.0)
+                .toDouble();
           }
         }
 
