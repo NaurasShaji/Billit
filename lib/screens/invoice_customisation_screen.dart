@@ -176,7 +176,7 @@ class _InvoiceCustomisationScreenState
       onChanged: (v) => setValue(k, v));
   @override
   Widget build(BuildContext context) {
-    final compact = size == '58mm' || size == '80mm';
+    final compact = size == '50mm' || size == '58mm' || size == '80mm';
     final warnings = InvoiceTemplateService.validate(value);
     return Scaffold(
         appBar: AppBar(title: const Text('Invoice Customisation'), actions: [
@@ -199,6 +199,7 @@ class _InvoiceCustomisationScreenState
                       labelText: 'Default paper size',
                       border: OutlineInputBorder()),
                   items: const [
+                    DropdownMenuItem(value: '50mm', child: Text('50mm POS (384-dot)')),
                     DropdownMenuItem(value: '58mm', child: Text('58mm POS')),
                     DropdownMenuItem(value: '80mm', child: Text('80mm POS')),
                     DropdownMenuItem(value: 'A5', child: Text('A5')),
@@ -471,7 +472,7 @@ class TemplatePreview extends StatelessWidget {
     final columns = (value['columns'] as List).cast<String>();
     final visibleColumns =
         columns.isEmpty ? <String>['product', 'amount'] : columns;
-    final compact = size == '58mm';
+    final compact = size == '50mm' || size == '58mm';
     final footerAlign = value['footerAlignment'] == 'left'
         ? TextAlign.left
         : value['footerAlignment'] == 'right'
@@ -892,7 +893,7 @@ class TemplatePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = size == '58mm' || size == '80mm';
-    final width = size == '58mm'
+    final width = (size == '50mm' || size == '58mm')
         ? 205.0
         : size == '80mm'
             ? 300.0
