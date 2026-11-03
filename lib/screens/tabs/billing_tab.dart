@@ -1227,7 +1227,6 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       );
       final messageId = await WhatsappCloudApiService().sendInvoice(
         backendUrl: settings.get('whatsapp_backend_url', defaultValue: '').toString(),
-        apiKey: settings.get('whatsapp_api_key', defaultValue: '').toString(),
         phone: sale.customerPhone,
         invoiceId: sale.id,
         pdfBytes: pdfBytes,
