@@ -29,6 +29,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _upiNotePrefix;
   late String _invoiceAccent;
   late final TextEditingController _invoiceFooter;
+  late final TextEditingController _whatsappBackendUrl;
+  late final TextEditingController _whatsappApiKey;
 
   Uint8List? _appLogoBytes;
   Uint8List? _invoiceLogoBytes;
@@ -77,6 +79,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
         .contains(_invoiceAccent)) {
       _invoiceAccent = 'blue';
     }
+    _whatsappBackendUrl = TextEditingController(text: _settings.get('whatsapp_backend_url', defaultValue: '').toString());
+    _whatsappApiKey = TextEditingController(text: _settings.get('whatsapp_api_key', defaultValue: '').toString());
     _invoiceFooter = TextEditingController(
         text: _settings
             .get('invoice_footer_text',
@@ -114,6 +118,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _upiPayeeName.dispose();
     _upiNotePrefix.dispose();
     _invoiceFooter.dispose();
+    _whatsappBackendUrl.dispose();
+    _whatsappApiKey.dispose();
     super.dispose();
   }
 
@@ -235,6 +241,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
           ? 'INV'
           : _invoicePrefix.text.trim().toUpperCase(),
       'next_invoice_number': nextInvoiceNumber,
+      'whatsapp_backend_url': _whatsappBackendUrl.text.trim(),
+      'whatsapp_api_key': _whatsappApiKey.text.trim(),
     });
     await _saveImage('app_logo_base64', _appLogoBytes, _clearAppLogo);
     await _saveImage(
@@ -509,6 +517,25 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                   key: 'qr',
                   bytes: _paymentQrBytes,
                   placeholderIcon: Icons.qr_code_2,
+                ),
+                const SizedBox(height: 20),
+                const Text('WhatsApp Cloud API',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text(
+                    'Connect Billit to your self-hosted WhatsApp API backend. Meta access tokens must remain on the backend; do not paste them here.',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _whatsappBackendUrl,
+                  keyboardType: TextInputType.url,
+                  decoration: _decoration('Backend HTTPS URL', Icons.cloud_outlined),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _whatsappApiKey,
+                  obscureText: true,
+                  decoration: _decoration('Billit backend API key', Icons.key_outlined),
                 ),
                 const SizedBox(height: 20),
                 const Text('Invoice numbering',
