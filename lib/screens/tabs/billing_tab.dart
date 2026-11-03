@@ -1231,6 +1231,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         invoiceId: sale.id,
         pdfBytes: pdfBytes,
         filename: 'invoice_${sale.id}.pdf',
+        customerName: sale.customerName,
+        totalAmount: sale.totalAmount,
         caption: 'Thank you ${sale.customerName.isEmpty ? "for your purchase" : sale.customerName}. Your Billit invoice ${sale.id} is attached.',
       );
       if (!mounted) return;
