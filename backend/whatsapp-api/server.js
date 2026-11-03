@@ -3,12 +3,14 @@ import crypto from 'node:crypto';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const port = Number(process.env.PORT || 8080);
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024, files: 1 } });
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map((value) => value.trim()).filter(Boolean);
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'billit-whatsapp-api' }));
 
 function requireClientKey(req, res, next) {
@@ -40,23 +42,27 @@ async function metaRequest(url, options) {
   return payload;
 }
 
-app.post('/api/whatsapp/send-invoice', requireClientKey, upload.single('invoice'), async (req, res) => {
+const sendInvoiceLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false });
+
+app.post('/api/whatsapp/send-invoice', sendInvoiceLimiter, requireClientKey, upload.single('invoice'), async (req, res) => {
   try {
     const token = process.env.META_ACCESS_TOKEN;
     const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
-    const version = process.env.META_GRAPH_API_VERSION || 'v23.0';
+    const version = process.env.META_GRAPH_API_VERSION || 'v26.0';
     if (!token || !phoneNumberId) return res.status(503).json({ error: 'WhatsApp Cloud API credentials are not configured.' });
     if (!req.file || req.file.mimetype !== 'application/pdf') return res.status(400).json({ error: 'Attach an invoice PDF.' });
 
     const to = normalizePhone(req.body.phone);
     const invoiceId = String(req.body.invoiceId || '').trim();
+    if (!/^[A-Za-z0-9._-]{1,80}$/.test(invoiceId)) return res.status(400).json({ error: 'Invoice ID contains unsupported characters.' });
+    const filename = 'invoice-' + invoiceId + '.pdf';
     const caption = String(req.body.caption || '').trim().slice(0, 1024);
     if (!invoiceId) return res.status(400).json({ error: 'Invoice ID is required.' });
 
     const form = new FormData();
     form.append('messaging_product', 'whatsapp');
     form.append('type', 'application/pdf');
-    form.append('file', new Blob([req.file.buffer], { type: 'application/pdf' }), req.file.originalname || ('invoice-' + invoiceId + '.pdf'));
+    form.append('file', new Blob([req.file.buffer], { type: 'application/pdf' }), filename);
 
     const media = await metaRequest('https://graph.facebook.com/' + version + '/' + phoneNumberId + '/media', {
       method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form,
@@ -66,7 +72,7 @@ app.post('/api/whatsapp/send-invoice', requireClientKey, upload.single('invoice'
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'document',
-        document: { id: media.id, filename: req.file.originalname || ('invoice-' + invoiceId + '.pdf'), caption: caption || ('Invoice ' + invoiceId) },
+        document: { id: media.id, filename, caption: caption || ('Invoice ' + invoiceId) },
       }),
     });
     return res.json({ success: true, invoiceId, recipient: to, messageId: sent?.messages?.[0]?.id || null, status: 'accepted_by_whatsapp' });
