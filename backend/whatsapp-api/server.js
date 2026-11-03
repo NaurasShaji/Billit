@@ -67,13 +67,44 @@ app.post('/api/whatsapp/send-invoice', sendInvoiceLimiter, requireClientKey, upl
     const media = await metaRequest('https://graph.facebook.com/' + version + '/' + phoneNumberId + '/media', {
       method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form,
     });
+    const templateName = String(process.env.WHATSAPP_INVOICE_TEMPLATE_NAME || '').trim();
+    const messagePayload = templateName
+      ? {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to,
+          type: 'template',
+          template: {
+            name: templateName,
+            language: { code: process.env.WHATSAPP_INVOICE_TEMPLATE_LANGUAGE || 'en' },
+            components: [
+              {
+                type: 'header',
+                parameters: [{ type: 'document', document: { id: media.id, filename } }],
+              },
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: String(req.body.customerName || 'Customer').slice(0, 100) },
+                  { type: 'text', text: invoiceId },
+                  { type: 'text', text: String(req.body.totalAmount || '0').slice(0, 40) },
+                ],
+              },
+            ],
+          },
+        }
+      : {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to,
+          type: 'document',
+          document: { id: media.id, filename, caption: caption || ('Invoice ' + invoiceId) },
+        };
+
     const sent = await metaRequest('https://graph.facebook.com/' + version + '/' + phoneNumberId + '/messages', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'document',
-        document: { id: media.id, filename, caption: caption || ('Invoice ' + invoiceId) },
-      }),
+      body: JSON.stringify(messagePayload),
     });
     return res.json({ success: true, invoiceId, recipient: to, messageId: sent?.messages?.[0]?.id || null, status: 'accepted_by_whatsapp' });
   } catch (error) {
