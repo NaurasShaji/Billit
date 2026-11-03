@@ -1,23 +1,78 @@
 # Billit WhatsApp Cloud API backend
 
-Node.js 20+ service that keeps Meta credentials on the server. It accepts a PDF from Billit, uploads it to Meta's media endpoint, then sends it as a WhatsApp document message.
+This Node.js 20+ service is the server-side bridge between Billit and Meta's official WhatsApp Business Cloud API. It keeps the Meta access token out of the Flutter application, receives a generated invoice PDF, uploads it to WhatsApp media storage, and sends the PDF as a document message.
 
-## Setup
-1. Copy .env.example to .env.
-2. Set BILLIT_API_KEY, META_ACCESS_TOKEN and META_PHONE_NUMBER_ID. Choose a Graph API version supported by your Meta app.
-3. Run npm install && npm start.
-4. Deploy behind HTTPS. Never commit .env.
+## Configure Meta
+
+1. Create a Meta app and add the WhatsApp product.
+2. Connect a WhatsApp Business Account and register a sender phone number.
+3. Obtain the sender **Phone Number ID** and a long-lived/system-user access token.
+4. Ensure the token has the `whatsapp_business_messaging` permission.
+5. Add the customer's number as an allowed recipient while using a Meta test number.
+
+Meta's official documentation: https://developers.facebook.com/documentation/business-messaging/whatsapp/
+
+## Run locally
+
+1. Install Node.js 20 or newer.
+2. Copy `.env.example` to `.env` and fill in all secrets and IDs.
+3. Run:
+
+   ```bash
+   npm install
+   npm start
+   ```
+
+4. The health check is available at `GET /health`.
+5. Deploy behind HTTPS before connecting a production Billit installation.
+
+## Environment variables
+
+- `BILLIT_API_KEY`: long random key shared with Billit. Never commit it.
+- `META_ACCESS_TOKEN`: Meta system-user access token. This stays on the server.
+- `META_PHONE_NUMBER_ID`: WhatsApp sender Phone Number ID.
+- `META_GRAPH_API_VERSION`: pinned Graph API version; default is `v26.0`.
+- `PORT`: HTTP port; default `8080`.
+- `CORS_ORIGIN`: optional comma-separated allowed browser origins. Native mobile clients do not require CORS.
+
+## Billit configuration
+
+Open **App & Invoice Settings → WhatsApp Cloud API** and enter:
+- The deployed backend's HTTPS base URL (without the endpoint path).
+- The `BILLIT_API_KEY`.
+
+The key is stored using Flutter Secure Storage. The Meta access token must never be entered in Billit.
 
 ## API
-- GET /health
-- POST /api/whatsapp/send-invoice (multipart: phone, invoiceId, optional caption, PDF field invoice; header x-billit-api-key).
 
-A 10-digit number is treated as an Indian mobile number (+91). Supply country code for other regions.
+### Send invoice PDF
 
-## Meta requirements and limitations
-Configure a Meta app with WhatsApp enabled, a WhatsApp Business Account and a registered sender number. The token requires whatsapp_business_messaging permission.
-This endpoint sends a free-form document message. It is subject to Meta's customer-service window (normally 24 hours after the customer last messaged the business). Outside that window an approved message template is required; template creation/submission and template sending are not included.
-A successful response means Meta accepted the request, not that the recipient received/read it. Delivery receipts require a webhook, not included here.
+`POST /api/whatsapp/send-invoice`
 
-## Security
-Keep META_ACCESS_TOKEN only in backend environment variables. Use HTTPS and a unique BILLIT_API_KEY. The shared client key is only a basic gate, not user identity; add rate limiting and proper authentication before public production deployment.
+Headers:
+- `x-billit-api-key: <BILLIT_API_KEY>`
+
+Multipart form fields:
+- `phone`: customer phone number. A 10-digit number is treated as an Indian number and prefixed with 91; other numbers must include their country code.
+- `invoiceId`: invoice identifier.
+- `caption`: optional message caption.
+- `invoice`: PDF file (maximum 15 MB).
+
+The backend uploads the PDF to `/{PHONE_NUMBER_ID}/media`, then sends the resulting media ID through `/{PHONE_NUMBER_ID}/messages` as a document message.
+
+The endpoint is rate-limited to 30 requests per IP per 15 minutes. A successful response means Meta accepted the send request; it does not prove delivery or that the customer read the message.
+
+## WhatsApp policy constraints
+
+- Free-form document messages are subject to WhatsApp's customer-service window, generally 24 hours after the customer last messages the business.
+- Outside that window, the business must use an approved WhatsApp message template. Template management and template-based invoice sending are not implemented in this branch yet.
+- The customer must have provided the number and the business must follow WhatsApp opt-in and messaging policies.
+- Delivery/read receipts and inbound replies require a configured webhook; webhook processing is not implemented here.
+
+## Security and production notes
+
+- Keep `.env` out of source control. Use your hosting provider's secret/environment-variable manager.
+- Use HTTPS and a unique, high-entropy `BILLIT_API_KEY`.
+- The Billit client key is a shared client credential, not per-user authentication. It can be extracted from a compromised device. For a multi-business/public deployment, replace it with authenticated per-business server sessions or short-lived tokens and add audit logging.
+- The backend has request rate limiting and configurable CORS. Restrict `CORS_ORIGIN` to the deployed web app origin if using Flutter Web.
+- Never log access tokens, API keys, invoice PDFs, or full customer phone numbers.
