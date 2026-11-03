@@ -945,6 +945,14 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                                                   tooltip: 'Print Invoice',
                                                 ),
                                                 IconButton(
+                                                  icon: const Icon(Icons.send_to_mobile_outlined),
+                                                  color: Colors.green.shade700,
+                                                  onPressed: sale.customerPhone.trim().isEmpty
+                                                      ? null
+                                                      : () => _sendInvoiceOnWhatsApp(sale),
+                                                  tooltip: 'Send invoice via WhatsApp',
+                                                ),
+                                                IconButton(
                                                   icon: Icon(Icons.edit,
                                                       color: _primaryColor),
                                                   onPressed: () async {
@@ -1189,6 +1197,28 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
   Future<void> _sendInvoiceOnWhatsApp(Sale sale) async {
     final settings = Hive.box<dynamic>('app_settings');
+    if (sale.customerPhone.trim().isEmpty) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 12),
+                Text('Sending invoice via WhatsApp...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     try {
       final pdfBytes = await PdfService.generateInvoice(
         sale,
@@ -1204,17 +1234,17 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         filename: 'invoice_${sale.id}.pdf',
         caption: 'Thank you ${sale.customerName.isEmpty ? "for your purchase" : sale.customerName}. Your Billit invoice ${sale.id} is attached.',
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invoice accepted by WhatsApp. Message ID: $messageId')),
-        );
-      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('WhatsApp accepted the invoice. Message ID: $messageId')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('WhatsApp invoice failed: $e'), backgroundColor: _errorColor),
-        );
-      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('WhatsApp invoice failed: $e'), backgroundColor: _errorColor),
+      );
     }
   }
 
