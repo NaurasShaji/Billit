@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../widgets/responsive_page.dart';
 import '../services/thermal_logo_service.dart';
 
@@ -14,6 +15,7 @@ class InvoiceSettingsScreen extends StatefulWidget {
 }
 
 class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
+  static const _secureStorage = FlutterSecureStorage();
   final _formKey = GlobalKey<FormState>();
   late final Box<dynamic> _settings;
   late final TextEditingController _appName;
@@ -80,7 +82,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       _invoiceAccent = 'blue';
     }
     _whatsappBackendUrl = TextEditingController(text: _settings.get('whatsapp_backend_url', defaultValue: '').toString());
-    _whatsappApiKey = TextEditingController(text: _settings.get('whatsapp_api_key', defaultValue: '').toString());
+    _whatsappApiKey = TextEditingController();
     _invoiceFooter = TextEditingController(
         text: _settings
             .get('invoice_footer_text',
@@ -92,6 +94,14 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _printLogo80Bytes = _decodeImage('business_logo_print_80_base64');
     _ensurePrintReadyLogos();
     _paymentQrBytes = _decodeImage('payment_qr_base64');
+    _loadWhatsappApiKey();
+  }
+
+  Future<void> _loadWhatsappApiKey() async {
+    final key = await _secureStorage.read(key: 'whatsapp_api_key');
+    if (mounted && key != null && _whatsappApiKey.text.isEmpty) {
+      _whatsappApiKey.text = key;
+    }
   }
 
   Uint8List? _decodeImage(String key) {
@@ -242,8 +252,14 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
           : _invoicePrefix.text.trim().toUpperCase(),
       'next_invoice_number': nextInvoiceNumber,
       'whatsapp_backend_url': _whatsappBackendUrl.text.trim(),
-      'whatsapp_api_key': _whatsappApiKey.text.trim(),
     });
+    final whatsappKey = _whatsappApiKey.text.trim();
+    if (whatsappKey.isEmpty) {
+      await _secureStorage.delete(key: 'whatsapp_api_key');
+    } else {
+      await _secureStorage.write(key: 'whatsapp_api_key', value: whatsappKey);
+    }
+    await _settings.delete('whatsapp_api_key');
     await _saveImage('app_logo_base64', _appLogoBytes, _clearAppLogo);
     await _saveImage(
         'business_logo_base64', _invoiceLogoBytes, _clearInvoiceLogo);
@@ -530,6 +546,15 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                   controller: _whatsappBackendUrl,
                   keyboardType: TextInputType.url,
                   decoration: _decoration('Backend HTTPS URL', Icons.cloud_outlined),
+                  validator: (value) {
+                    final raw = value?.trim() ?? '';
+                    if (raw.isEmpty) return null;
+                    final uri = Uri.tryParse(raw);
+                    if (uri == null || !uri.hasAuthority || uri.host.isEmpty || uri.scheme != 'https') {
+                      return 'Enter a valid HTTPS URL';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
