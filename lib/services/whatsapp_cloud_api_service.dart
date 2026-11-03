@@ -2,14 +2,16 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class WhatsappCloudApiService {
   Future<String> sendInvoice({
-    required String backendUrl, required String apiKey, required String phone,
+    required String backendUrl, required String phone,
     required String invoiceId, required Uint8List pdfBytes, required String filename,
     String? caption,
   }) async {
     final base = backendUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+    final apiKey = await const FlutterSecureStorage().read(key: 'whatsapp_api_key') ?? '';
     if (base.isEmpty || apiKey.trim().isEmpty) throw Exception('Configure the WhatsApp backend URL and API key in Invoice Settings.');
     final uri = Uri.tryParse(base);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty || (!kDebugMode && uri.scheme != 'https')) throw Exception('Enter a valid HTTPS WhatsApp backend URL.');
