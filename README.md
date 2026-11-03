@@ -37,6 +37,15 @@ Billit is a point-of-sale and retail management app for billing, inventory, GST,
 - Record daily wage payments and monthly salary payments, with summaries of employees and payments for the current day or month.
 - Review payroll/expense totals by day, month, or year, including daily wages, monthly salaries, other expenses, and net expenses.
 
+### WhatsApp invoice delivery
+
+- Send a generated invoice PDF to the customer's WhatsApp number through the official Meta WhatsApp Cloud API.
+- Configure the Billit backend URL and client API key in App & Invoice Settings.
+- The Meta access token and WhatsApp phone-number ID are configured only in the backend environment; they are not entered into the Flutter app.
+- The backend implementation and deployment instructions are in `backend/whatsapp-api/`.
+
+WhatsApp delivery requires a configured and deployed backend, a Meta WhatsApp Business account, and a registered sender number. Free-form document messages are subject to Meta's customer-service window; outside that window an approved message template is required. This branch does not include template management or delivery-status webhooks.
+
 ### Backup, printer, and account tools
 
 - Back up products, sales, expenses, and employee records to Google Drive, browse available backups, and restore a selected backup.
