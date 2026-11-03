@@ -32,6 +32,8 @@ Meta's official documentation: https://developers.facebook.com/documentation/bus
 - `META_ACCESS_TOKEN`: Meta system-user access token. This stays on the server.
 - `META_PHONE_NUMBER_ID`: WhatsApp sender Phone Number ID.
 - `META_GRAPH_API_VERSION`: pinned Graph API version; default is `v26.0`.
+- `WHATSAPP_INVOICE_TEMPLATE_NAME`: optional approved template name. Set this to use a document-header template for business-initiated invoice messages.
+- `WHATSAPP_INVOICE_TEMPLATE_LANGUAGE`: template language code; defaults to `en`.
 - `PORT`: HTTP port; default `8080`.
 - `CORS_ORIGIN`: optional comma-separated allowed browser origins. Native mobile clients do not require CORS.
 
@@ -65,7 +67,7 @@ The endpoint is rate-limited to 30 requests per IP per 15 minutes. A successful 
 ## WhatsApp policy constraints
 
 - Free-form document messages are subject to WhatsApp's customer-service window, generally 24 hours after the customer last messages the business.
-- Outside that window, the business must use an approved WhatsApp message template. Template management and template-based invoice sending are not implemented in this branch yet.
+- For business-initiated messages outside that window, create and get approval for a WhatsApp utility template with a **document header** and three body placeholders, in this order: customer name, invoice ID, total amount. Then set `WHATSAPP_INVOICE_TEMPLATE_NAME` and `WHATSAPP_INVOICE_TEMPLATE_LANGUAGE` on the backend. The exact template name, language and parameter order must match the approved template in Meta.
 - The customer must have provided the number and the business must follow WhatsApp opt-in and messaging policies.
 - Delivery/read receipts and inbound replies require a configured webhook; webhook processing is not implemented here.
 
