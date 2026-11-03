@@ -9,6 +9,7 @@ import '../../services/auth_service.dart';
 import '../../services/cart_service.dart';
 import '../../services/pdf_service.dart'; // Import the new PDF service
 import '../../services/invoice_service.dart'; // Import for generateInvoice function
+import '../../services/whatsapp_cloud_api_service.dart';
 import '../edit_invoice_screen.dart'; // Added import for EditInvoiceScreen
 import '../../widgets/shopping_cart_section.dart';
 import '../../widgets/print_option_dialog.dart';
@@ -553,7 +554,26 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                       items: items,
                       products: products,
                       onClearAll: () {
-                        _cartService.clearCart();
+                        final sendOnWhatsApp = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Send invoice on WhatsApp?'),
+            content: Text('Send invoice $id as a PDF to ${sale.customerPhone}?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Not now')),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                icon: const Icon(Icons.send),
+                label: const Text('Send PDF'),
+              ),
+            ],
+          ),
+        );
+        if (sendOnWhatsApp == true && mounted) {
+          await _sendInvoiceOnWhatsApp(sale);
+        }
+
+        _cartService.clearCart();
                         _customerName.clear();
                         _customerPhone.clear();
                         _discountController.clear();
@@ -1159,6 +1179,36 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
             backgroundColor: _errorColor,
             behavior: SnackBarBehavior.floating,
           ),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendInvoiceOnWhatsApp(Sale sale) async {
+    final settings = Hive.box<dynamic>('app_settings');
+    try {
+      final pdfBytes = await PdfService.generateInvoice(
+        sale,
+        includeGST: sale.gstEnabled,
+      );
+      final messageId = await WhatsappCloudApiService().sendInvoice(
+        backendUrl: settings.get('whatsapp_backend_url', defaultValue: '').toString(),
+        apiKey: settings.get('whatsapp_api_key', defaultValue: '').toString(),
+        phone: sale.customerPhone,
+        invoiceId: sale.id,
+        pdfBytes: pdfBytes,
+        filename: 'invoice_${sale.id}.pdf',
+        caption: 'Thank you ${sale.customerName.isEmpty ? "for your purchase" : sale.customerName}. Your Billit invoice ${sale.id} is attached.',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invoice accepted by WhatsApp. Message ID: $messageId')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('WhatsApp invoice failed: $e'), backgroundColor: _errorColor),
         );
       }
     }
