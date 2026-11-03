@@ -8,6 +8,7 @@ class WhatsappCloudApiService {
   Future<String> sendInvoice({
     required String backendUrl, required String phone,
     required String invoiceId, required Uint8List pdfBytes, required String filename,
+    required String customerName, required double totalAmount,
     String? caption,
   }) async {
     final base = backendUrl.trim().replaceFirst(RegExp(r'/+$'), '');
@@ -20,6 +21,8 @@ class WhatsappCloudApiService {
       ..headers['x-billit-api-key'] = apiKey.trim()
       ..fields['phone'] = phone.trim()
       ..fields['invoiceId'] = invoiceId
+      ..fields['customerName'] = customerName
+      ..fields['totalAmount'] = totalAmount.toStringAsFixed(2)
       ..fields['caption'] = caption ?? 'Thank you for your purchase. Invoice $invoiceId is attached.'
       ..files.add(http.MultipartFile.fromBytes('invoice', pdfBytes, filename: filename));
     final streamed = await request.send().timeout(const Duration(seconds: 60));
