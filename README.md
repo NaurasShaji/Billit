@@ -13,6 +13,7 @@ Billit is a point-of-sale and retail management app for billing, inventory, GST,
 - Enter customer name and phone number, apply a discount, and choose Cash, Card, or UPI.
 - Calculate the sale total, product cost, and profit; completing a sale records the invoice and updates stock.
 - Browse saved invoices, edit or delete an invoice, and generate a PDF or print a receipt.
+- Send generated invoice PDFs to customers through the official WhatsApp Business Cloud API using a separately deployed backend.
 - Look up customers by name or phone number and review their past invoices.
 
 ### Products and inventory
