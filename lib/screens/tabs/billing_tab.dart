@@ -554,25 +554,6 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                       items: items,
                       products: products,
                       onClearAll: () {
-                        final sendOnWhatsApp = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Send invoice on WhatsApp?'),
-            content: Text('Send invoice $id as a PDF to ${sale.customerPhone}?'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Not now')),
-              FilledButton.icon(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                icon: const Icon(Icons.send),
-                label: const Text('Send PDF'),
-              ),
-            ],
-          ),
-        );
-        if (sendOnWhatsApp == true && mounted) {
-          await _sendInvoiceOnWhatsApp(sale);
-        }
-
         _cartService.clearCart();
                         _customerName.clear();
                         _customerPhone.clear();
@@ -1137,6 +1118,28 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
         if (printOption != null) {
           await _handlePrintInvoice(sale, printOption);
+        }
+
+        final sendOnWhatsApp = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Send invoice on WhatsApp?'),
+            content: Text('Send invoice ${sale.id} as a PDF to ${sale.customerPhone}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Not now'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                icon: const Icon(Icons.send),
+                label: const Text('Send PDF'),
+              ),
+            ],
+          ),
+        );
+        if (sendOnWhatsApp == true && mounted) {
+          await _sendInvoiceOnWhatsApp(sale);
         }
 
         _cartService.clearCart();
