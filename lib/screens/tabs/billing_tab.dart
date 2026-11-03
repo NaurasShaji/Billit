@@ -1193,6 +1193,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       final pdfBytes = await PdfService.generateInvoice(
         sale,
         includeGST: sale.gstEnabled,
+        save: false,
       );
       final messageId = await WhatsappCloudApiService().sendInvoice(
         backendUrl: settings.get('whatsapp_backend_url', defaultValue: '').toString(),
