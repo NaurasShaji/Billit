@@ -40,13 +40,55 @@ Billit is a point-of-sale and retail management app for billing, inventory, GST,
 
 ### WhatsApp invoice delivery
 
-- Send a generated invoice PDF to the customer's WhatsApp number through the official Meta WhatsApp Cloud API.
-- Configure the Billit backend URL and client API key in App & Invoice Settings.
-- The Meta access token and WhatsApp phone-number ID are configured only in the backend environment; they are not entered into the Flutter app.
-- The backend implementation and deployment instructions are in `backend/whatsapp-api/`.
+Billit can send invoice PDFs to customers using the official Meta WhatsApp Business Cloud API. This is a server-mediated integration: the Flutter app sends the generated PDF to your Billit backend, and the backend communicates with Meta.
 
-WhatsApp delivery requires a configured and deployed backend, a Meta WhatsApp Business account, and a registered sender number. Free-form document messages are subject to Meta's customer-service window; outside that window an approved message template is required. This branch does not include template management or delivery-status webhooks.
+**In the app**
 
+- Open **App & Invoice Settings → WhatsApp Cloud API**.
+- Enter the deployed backend's HTTPS base URL and the Billit backend API key.
+- The backend API key is stored locally using Flutter Secure Storage, rather than in the ordinary Hive settings box.
+- In Invoice History, use the WhatsApp action on an invoice to send its PDF to the customer's saved phone number.
+- Billit reports whether Meta accepted or rejected the send request. Acceptance is not confirmation of delivery or read status.
+
+**Backend setup**
+
+The backend is in `backend/whatsapp-api/` and requires Node.js 20 or newer.
+
+1. Create a Meta app, add the WhatsApp product, connect a WhatsApp Business Account, and register a sender number.
+2. Obtain the WhatsApp **Phone Number ID** and a long-lived/system-user access token with the `whatsapp_business_messaging` permission.
+3. Copy `.env.example` to `.env` in `backend/whatsapp-api/` and configure:
+   - `BILLIT_API_KEY`: a unique, high-entropy key also entered in Billit's Invoice Settings.
+   - `META_ACCESS_TOKEN`: Meta access token. Keep this only on the backend.
+   - `META_PHONE_NUMBER_ID`: the registered WhatsApp sender's Phone Number ID.
+   - `META_GRAPH_API_VERSION`: Graph API version; the example defaults to `v26.0`.
+   - `WHATSAPP_INVOICE_TEMPLATE_NAME` and `WHATSAPP_INVOICE_TEMPLATE_LANGUAGE`: optional approved template configuration.
+   - `PORT` and optional `CORS_ORIGIN`: backend port and allowed browser origins.
+4. Install dependencies and start the service:
+
+   ```bash
+   cd backend/whatsapp-api
+   npm install
+   npm start
+   ```
+
+5. Deploy the service behind HTTPS, then enter its base URL and the same `BILLIT_API_KEY` in Billit. The health endpoint is `GET /health`.
+
+**Message-window and template rules**
+
+- Without a template configured, the backend sends a free-form PDF document message. This is subject to WhatsApp's customer-service window, generally 24 hours after the customer last messages the business.
+- For business-initiated invoice messages outside that window, configure an approved WhatsApp utility template with a **document header** and three body placeholders, in this order: customer name, invoice ID, and total amount.
+- Set `WHATSAPP_INVOICE_TEMPLATE_NAME` and `WHATSAPP_INVOICE_TEMPLATE_LANGUAGE` to match the approved template in Meta exactly. Template creation and approval happen in Meta; Billit does not create or submit templates.
+- Follow WhatsApp opt-in and messaging policies. A customer phone number alone does not establish consent to receive business messages.
+
+**Backend API and limitations**
+
+- `POST /api/whatsapp/send-invoice`: accepts the customer phone, invoice ID, optional caption, customer name, total amount, and a PDF upload in the `invoice` field.
+- A 10-digit phone number is treated as an Indian number and prefixed with country code `91`; other numbers must include their country code.
+- PDF uploads are limited to 15 MB. The endpoint applies request rate limiting and requires the `x-billit-api-key` header.
+- Delivery/read receipts, inbound replies, automated retries, per-business authentication, and a WhatsApp webhook are not implemented in this version.
+- The shared Billit API key is a basic backend gate, not per-user or per-business authentication. Add stronger authentication and tenant isolation before exposing this service to multiple businesses or a public production environment.
+
+See [the WhatsApp backend README](backend/whatsapp-api/README.md) for the full configuration and deployment notes.
 ### Backup, printer, and account tools
 
 - Back up products, sales, expenses, and employee records to Google Drive, browse available backups, and restore a selected backup.
