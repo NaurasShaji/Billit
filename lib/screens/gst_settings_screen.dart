@@ -87,7 +87,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
   }
 
   void _markDirty() {
-    if (!_dirty && mounted) setState(() => _dirty = true);
+    if (mounted) setState(() => _dirty = true);
   }
 
   void _change(VoidCallback update) {
