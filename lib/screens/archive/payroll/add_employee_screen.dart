@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../../models/employee.dart';
 import '../../../services/boxes.dart';
+import '../../../utils/theme_colors.dart';
 
 class AddEmployeeScreen extends StatefulWidget {
   const AddEmployeeScreen({super.key});
@@ -71,7 +72,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
+                                color: Colors.blue.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -231,7 +232,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
+                              color: Colors.blue.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -324,8 +325,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
                                       color: isDailyWage
-                                          ? Colors.orange.shade50
-                                          : Colors.green.shade50,
+                                          ? Colors.orange.withValues(alpha: 0.12)
+                                          : Colors.green.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -359,8 +360,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                                       vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: isDailyWage
-                                                    ? Colors.orange.shade100
-                                                    : Colors.green.shade100,
+                                                    ? Colors.orange.withValues(alpha: 0.18)
+                                                    : Colors.green.withValues(alpha: 0.18),
                                                 borderRadius:
                                                     BorderRadius.circular(10),
                                               ),
@@ -372,8 +373,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w500,
                                                   color: isDailyWage
-                                                      ? Colors.orange.shade700
-                                                      : Colors.green.shade700,
+                                                      ? Colors.orange.shade700.adaptive(context)
+                                                      : Colors.green.shade700.adaptive(context),
                                                 ),
                                               ),
                                             ),
@@ -397,7 +398,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                           children: [
                                             Container(
                                               decoration: BoxDecoration(
-                                                color: Colors.blue.shade50,
+                                                color: Colors.blue.withValues(alpha: 0.12),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                               ),
@@ -413,7 +414,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                                             const SizedBox(width: 8),
                                             Container(
                                               decoration: BoxDecoration(
-                                                color: Colors.red.shade50,
+                                                color: Colors.red.withValues(alpha: 0.12),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                               ),
@@ -514,7 +515,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  color: Colors.red.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -530,7 +531,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                             employee.name,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: Colors.red.shade700,
+                              color: Colors.red.shade700.adaptive(context),
                             ),
                           ),
                           Text(

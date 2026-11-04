@@ -4,6 +4,7 @@ import '../services/drive_backup_service.dart';
 import '../services/drive_sync_service.dart';
 import '../services/boxes.dart';
 import '../models/models.dart';
+import '../widgets/responsive_page.dart';
 
 class BackupRestoreScreen extends StatefulWidget {
   const BackupRestoreScreen({super.key});
@@ -268,17 +269,19 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               label: const Text('Create Backup'),
             )
           : null,
-      body: _isLoading
+      body: ResponsivePage(
+        maxWidth: 900,
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : !isConnected
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.cloud_off_outlined,
                         size: 64,
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -289,7 +292,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                       Text(
                         'Connect to enable cloud backup and restore',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -299,8 +302,18 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                           try {
                             await DriveBackupService.instance.signIn();
                             await _refreshBackups();
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Google Drive sign-in failed: ${e is StateError ? e.message : e}'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
                           } finally {
-                            setState(() => _isLoading = false);
+                            if (mounted) setState(() => _isLoading = false);
                           }
                         },
                         icon: const Icon(Icons.login),
@@ -314,10 +327,10 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.backup_outlined,
                             size: 64,
-                            color: Colors.grey,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -328,7 +341,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                           Text(
                             'Create your first backup using the button below',
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: Colors.grey,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -349,7 +362,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(
-                              color: Colors.grey.withValues(alpha: 0.2),
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                             ),
                           ),
                           child: ListTile(
@@ -384,6 +397,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                         );
                       },
                     ),
+      ),
     );
   }
 }

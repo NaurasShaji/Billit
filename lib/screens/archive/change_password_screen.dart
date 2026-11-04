@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
+import '../../utils/theme_colors.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -109,7 +110,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         appBar: AppBar(
           title: const Text('Change Password'),
         ),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -132,7 +133,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 'Only administrators can change passwords.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -162,9 +163,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: Colors.blue.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue[200]!),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.4)!),
                   ),
                   child: Row(
                     children: [
@@ -178,7 +179,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         child: Text(
                           'Admin Password Management',
                           style: TextStyle(
-                            color: Colors.blue[700],
+                            color: Colors.blue[700].adaptive(context),
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -234,7 +235,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           _obscureCurrentPassword
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -265,7 +266,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         _obscureNewPassword
                             ? Icons.visibility
                             : Icons.visibility_off,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -290,7 +291,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         _obscureConfirmPassword
                             ? Icons.visibility
                             : Icons.visibility_off,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -340,9 +341,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: Colors.blue.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue[200]!),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.4)!),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,7 +359,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           Text(
                             'Password Requirements',
                             style: TextStyle(
-                              color: Colors.blue[700],
+                              color: Colors.blue[700].adaptive(context),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -369,7 +370,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       Text(
                         '• Minimum 6 characters long\n• Only letters (a-z, A-Z) and numbers (0-9) allowed',
                         style: TextStyle(
-                          color: Colors.blue[700],
+                          color: Colors.blue[700].adaptive(context),
                           fontSize: 12,
                           height: 1.4,
                         ),
@@ -385,15 +386,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: context.subtleFill,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant!),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -403,7 +404,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               ? 'Admin password changes require current password verification.'
                               : 'Worker password changes do not require current password.',
                           style: TextStyle(
-                            color: Colors.grey[700],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 13,
                           ),
                         ),

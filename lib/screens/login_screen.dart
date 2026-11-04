@@ -200,6 +200,8 @@ class _LoginScreenState extends State<LoginScreen>
                               // Username Field
                               TextFormField(
                                 controller: _usernameController,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.username],
                                 decoration: InputDecoration(
                                   labelText: 'Username',
                                   prefixIcon: const Icon(Icons.person_outline),
@@ -219,10 +221,18 @@ class _LoginScreenState extends State<LoginScreen>
                               TextFormField(
                                 controller: _passwordController,
                                 obscureText: _obscure,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [AutofillHints.password],
+                                onFieldSubmitted: (_) {
+                                  if (!_loading) _handleLogin();
+                                },
                                 decoration: InputDecoration(
                                   labelText: 'Password',
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   suffixIcon: IconButton(
+                                    tooltip: _obscure
+                                        ? 'Show password'
+                                        : 'Hide password',
                                     onPressed: () =>
                                         setState(() => _obscure = !_obscure),
                                     icon: Icon(
@@ -235,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   filled: true,
-                                  fillColor: Colors.grey[50],
+                                  fillColor: appColors.surfaceContainerHighest,
                                 ),
                                 validator: (v) => v == null || v.isEmpty
                                     ? 'Please enter password'
@@ -276,7 +286,10 @@ class _LoginScreenState extends State<LoginScreen>
                                         _selectedRole == UserType.worker
                                             ? appColors.primary
                                             : appColors.tertiary,
-                                    foregroundColor: Colors.white,
+                                    foregroundColor:
+                                        _selectedRole == UserType.worker
+                                            ? appColors.onPrimary
+                                            : appColors.onTertiary,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),

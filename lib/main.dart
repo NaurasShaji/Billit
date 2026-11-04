@@ -414,6 +414,26 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
         borderRadius: BorderRadius.circular(radius),
       ),
     ),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: dark ? scheme.surfaceContainerLow : scheme.surface,
+      indicatorColor: scheme.primary.withValues(alpha: dark ? 0.28 : 0.14),
+      selectedIconTheme: IconThemeData(color: scheme.primary),
+      unselectedIconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: dark ? scheme.surfaceContainerHigh : scheme.surface,
+      surfaceTintColor: Colors.transparent,
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: dark ? scheme.surfaceContainerLow : scheme.surface,
+      surfaceTintColor: Colors.transparent,
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: dark ? scheme.surfaceContainer : scheme.surface,
+      selectedColor: scheme.secondaryContainer,
+      side: BorderSide(color: scheme.outlineVariant),
+      checkmarkColor: scheme.onSecondaryContainer,
+    ),
   );
 }
 
