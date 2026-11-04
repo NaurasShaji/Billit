@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 import 'package:image/image.dart' as img;
 
@@ -18,7 +19,20 @@ class ThermalLogoService {
 
     // Normalize EXIF orientation before trimming or resizing.
     final oriented = img.bakeOrientation(decoded);
-    final grayscale = img.grayscale(oriented);
+
+    // Printer output is at most 576 pixels wide. Downsample very large phone
+    // photos before scanning pixels to avoid excessive memory use.
+    const maxSourceDimension = 1600;
+    final largestDimension = math.max(oriented.width, oriented.height);
+    final processingImage = largestDimension > maxSourceDimension
+        ? img.copyResize(
+            oriented,
+            width: (oriented.width * maxSourceDimension / largestDimension).round(),
+            height: (oriented.height * maxSourceDimension / largestDimension).round(),
+            interpolation: img.Interpolation.average,
+          )
+        : oriented;
+    final grayscale = img.grayscale(processingImage);
 
     // Find the visible artwork bounds. Near-white and transparent pixels are
     // treated as whitespace so white/transparent padding is removed.
