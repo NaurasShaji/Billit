@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../services/boxes.dart';
 import '../../../models/expense.dart';
+import '../../../utils/theme_colors.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -94,7 +95,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.red.shade50,
+                                color: Colors.red.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -181,15 +182,15 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                             const SizedBox(width: 12),
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.green.shade50,
+                                color: Colors.green.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
                                 border:
-                                    Border.all(color: Colors.green.shade200),
+                                    Border.all(color: Colors.green.withValues(alpha: 0.4)),
                               ),
                               child: IconButton(
                                 tooltip: 'Add new category',
                                 icon: Icon(Icons.add,
-                                    color: Colors.green.shade700),
+                                    color: Colors.green.shade700.adaptive(context)),
                                 onPressed: _addNewCategory,
                               ),
                             ),
@@ -359,7 +360,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
+                              color: Colors.blue.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -442,7 +443,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                       Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: Colors.orange.shade50,
+                                          color: Colors.orange.withValues(alpha: 0.12),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                         ),
