@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../utils/theme_colors.dart';
+import '../widgets/responsive_page.dart';
 
 /// Appearance & personalisation.
 ///
@@ -175,7 +176,8 @@ class AppearanceSettingsScreen extends StatelessWidget {
                     SizedBox(
                       width: 380,
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),+                        child: preview,
+                        padding: const EdgeInsets.all(16),
+                        child: preview,
                       ),
                     ),
                   ],
@@ -1230,7 +1232,8 @@ class _PreviewPanel extends StatelessWidget {
                   ),
                 ),
               ],
-            ),+          ),
+            ),
+          ),
           const Divider(height: 1),
           IgnorePointer(
             child: ExcludeSemantics(
