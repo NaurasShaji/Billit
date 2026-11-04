@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../models/employee.dart';
 import '../../../models/expense.dart';
 import '../../../services/boxes.dart';
+import '../../../utils/theme_colors.dart';
 
 class MonthlySalaryScreen extends StatelessWidget {
   const MonthlySalaryScreen({super.key});
@@ -107,7 +108,7 @@ class MonthlySalaryScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
+                                  color: Colors.green.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
@@ -208,8 +209,8 @@ class MonthlySalaryScreen extends StatelessWidget {
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: isPaidThisMonth
-                                            ? Colors.green.shade50
-                                            : Colors.blue.shade50,
+                                            ? Colors.green.withValues(alpha: 0.12)
+                                            : Colors.blue.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Icon(
@@ -250,8 +251,8 @@ class MonthlySalaryScreen extends StatelessWidget {
                                           horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
                                         color: isPaidThisMonth
-                                            ? Colors.green.shade100
-                                            : Colors.red.shade100,
+                                            ? Colors.green.withValues(alpha: 0.18)
+                                            : Colors.red.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Row(
@@ -263,8 +264,8 @@ class MonthlySalaryScreen extends StatelessWidget {
                                                 : Icons.pending,
                                             size: 16,
                                             color: isPaidThisMonth
-                                                ? Colors.green.shade700
-                                                : Colors.red.shade700,
+                                                ? Colors.green.shade700.adaptive(context)
+                                                : Colors.red.shade700.adaptive(context),
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
@@ -275,8 +276,8 @@ class MonthlySalaryScreen extends StatelessWidget {
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
                                               color: isPaidThisMonth
-                                                  ? Colors.green.shade700
-                                                  : Colors.red.shade700,
+                                                  ? Colors.green.shade700.adaptive(context)
+                                                  : Colors.red.shade700.adaptive(context),
                                             ),
                                           ),
                                         ],
@@ -355,13 +356,13 @@ class MonthlySalaryScreen extends StatelessWidget {
                                             : 'Pay Salary'),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: isPaidThisMonth
-                                              ? Colors.grey.shade400
+                                              ? Theme.of(context).colorScheme.outline
                                               : Colors.green.shade600,
                                           foregroundColor: Colors.white,
                                           disabledBackgroundColor:
-                                              Colors.grey.shade300,
+                                              Theme.of(context).colorScheme.surfaceContainerHighest,
                                           disabledForegroundColor:
-                                              Colors.grey.shade600,
+                                              Theme.of(context).colorScheme.onSurfaceVariant,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(12),
@@ -467,7 +468,7 @@ class MonthlySalaryScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: Colors.green.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -480,7 +481,7 @@ class MonthlySalaryScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Colors.green.shade700,
+                      color: Colors.green.shade700.adaptive(context),
                     ),
                   ),
                 ],
