@@ -162,6 +162,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, result) async {
         if (!didPop && _dirty && await confirmDiscardChanges(context) && context.mounted) {
+          setState(() => _dirty = false);
           Navigator.of(context).pop();
         }
       },
