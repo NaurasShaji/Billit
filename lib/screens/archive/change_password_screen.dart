@@ -179,7 +179,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         child: Text(
                           'Admin Password Management',
                           style: TextStyle(
-                            color: Colors.blue[700].adaptive(context),
+                            color: Colors.blue.shade700.adaptive(context),
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -359,7 +359,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           Text(
                             'Password Requirements',
                             style: TextStyle(
-                              color: Colors.blue[700].adaptive(context),
+                              color: Colors.blue.shade700.adaptive(context),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -370,7 +370,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       Text(
                         '• Minimum 6 characters long\n• Only letters (a-z, A-Z) and numbers (0-9) allowed',
                         style: TextStyle(
-                          color: Colors.blue[700].adaptive(context),
+                          color: Colors.blue.shade700.adaptive(context),
                           fontSize: 12,
                           height: 1.4,
                         ),
