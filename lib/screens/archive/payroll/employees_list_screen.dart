@@ -32,7 +32,7 @@ class EmployeesListScreen extends StatelessWidget {
                   children: [
                     Text('₹${e.wage.toStringAsFixed(2)}'),
                     const SizedBox(width: 8),
-                    IconButton(
+                    IconButton(tooltip: 'Delete', 
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () => _showDeleteDialog(context, box, e),
                     ),
