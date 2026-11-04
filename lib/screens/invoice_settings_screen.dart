@@ -115,7 +115,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   }
 
   void _markDirty() {
-    if (!_dirty && mounted) setState(() => _dirty = true);
+    if (mounted) setState(() => _dirty = true);
   }
 
   @override
@@ -191,6 +191,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
         final print58 = ThermalLogoService.for58mm(bytes);
         final print80 = ThermalLogoService.for80mm(bytes);
         setState(() {
+          _dirty = true;
           _invoiceLogoBytes = bytes;
           _printLogo58Bytes = print58;
           _printLogo80Bytes = print80;
