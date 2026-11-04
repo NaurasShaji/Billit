@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 import '../services/thermal_printer_service.dart';
+import '../widgets/responsive_page.dart';
 
 class PrinterSettingsScreen extends StatefulWidget {
   const PrinterSettingsScreen({super.key});
@@ -162,7 +163,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
           ),
         ],
       ),
-      body: _isLoading
+      body: ResponsivePage(
+        maxWidth: 900,
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -242,6 +245,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     _bluetoothDeviceTile(device),
               ],
             ),
+      ),
     );
   }
 
