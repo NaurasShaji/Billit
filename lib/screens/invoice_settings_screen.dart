@@ -2,10 +2,18 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../widgets/responsive_page.dart';
 import '../widgets/settings_components.dart';
 import '../services/thermal_logo_service.dart';
+
+Future<List<Uint8List>> _prepareThermalLogosInBackground(Uint8List bytes) async {
+  return [
+    ThermalLogoService.for58mm(bytes),
+    ThermalLogoService.for80mm(bytes),
+  ];
+}
 
 class InvoiceSettingsScreen extends StatefulWidget {
   const InvoiceSettingsScreen({super.key});
@@ -41,6 +49,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   bool _clearPaymentQr = false;
   bool _saving = false;
   bool _dirty = false;
+  bool _processingInvoiceLogo = false;
 
   @override
   void initState() {
@@ -149,76 +158,99 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
   Future<void> _ensurePrintReadyLogos() async {
     final original = _invoiceLogoBytes;
-    if (original == null) return;
+    if (original == null ||
+        (_printLogo58Bytes != null && _printLogo80Bytes != null)) {
+      return;
+    }
     try {
-      final converted58 = _printLogo58Bytes ?? ThermalLogoService.for58mm(original);
-      final converted80 = _printLogo80Bytes ?? ThermalLogoService.for80mm(original);
-      if (!mounted) return;
+      final converted = await compute(_prepareThermalLogosInBackground, original);
+      if (!mounted || !identical(_invoiceLogoBytes, original)) return;
       setState(() {
-        _printLogo58Bytes = converted58;
-        _printLogo80Bytes = converted80;
+        _printLogo58Bytes = converted[0];
+        _printLogo80Bytes = converted[1];
       });
-      await _settings.put('business_logo_print_58_base64', base64Encode(converted58));
-      await _settings.put('business_logo_print_80_base64', base64Encode(converted80));
+      await _settings.put('business_logo_print_58_base64', base64Encode(converted[0]));
+      await _settings.put('business_logo_print_80_base64', base64Encode(converted[1]));
     } catch (e) {
       debugPrint('Could not prepare existing invoice logo for thermal printing: $e');
     }
   }
 
   Future<void> _pickImage(String key) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-      allowMultiple: false,
-    );
-    if (result == null ||
-        result.files.isEmpty ||
-        result.files.single.bytes == null) {
-      return;
-    }
-    final bytes = result.files.single.bytes!;
-    if (key == 'invoice') {
-      final extension = result.files.single.extension?.toLowerCase();
-      if (!const {'png', 'jpg', 'jpeg', 'webp'}.contains(extension)) {
-        if (mounted) {
+    if (key == 'invoice' && _processingInvoiceLogo) return;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+        allowMultiple: false,
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read the selected image. Try another file.')),
+        );
+        return;
+      }
+
+      if (key == 'invoice') {
+        final extension = file.extension?.toLowerCase();
+        if (!const {'png', 'jpg', 'jpeg', 'webp'}.contains(extension)) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Choose a PNG, JPG, JPEG or WebP image.')),
           );
+          return;
+        }
+        if (bytes.lengthInBytes > 20 * 1024 * 1024) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('This image is too large. Choose an image smaller than 20 MB.')),
+          );
+          return;
+        }
+
+        setState(() => _processingInvoiceLogo = true);
+        try {
+          // The image conversion is CPU-intensive. Run it off the UI isolate
+          // so selecting a large phone photo does not freeze the app.
+          final printLogos = await compute(_prepareThermalLogosInBackground, bytes);
+          if (!mounted) return;
+          setState(() {
+            _dirty = true;
+            _invoiceLogoBytes = bytes;
+            _printLogo58Bytes = printLogos[0];
+            _printLogo80Bytes = printLogos[1];
+            _clearInvoiceLogo = false;
+          });
+        } catch (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not process invoice logo: $error')),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _processingInvoiceLogo = false);
         }
         return;
       }
-      try {
-        final print58 = ThermalLogoService.for58mm(bytes);
-        final print80 = ThermalLogoService.for80mm(bytes);
-        setState(() {
-          _dirty = true;
-          _invoiceLogoBytes = bytes;
-          _printLogo58Bytes = print58;
-          _printLogo80Bytes = print80;
-          _clearInvoiceLogo = false;
-        });
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not process invoice logo: $e')),
-          );
+
+      setState(() {
+        _dirty = true;
+        if (key == 'app') {
+          _appLogoBytes = bytes;
+          _clearAppLogo = false;
+        } else {
+          _paymentQrBytes = bytes;
+          _clearPaymentQr = false;
         }
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not select image: $error')),
+        );
       }
-      return;
     }
-    setState(() {
-      _dirty = true;
-      if (key == 'app') {
-        _appLogoBytes = bytes;
-        _clearAppLogo = false;
-      } else if (key == 'invoice') {
-        _invoiceLogoBytes = bytes;
-        _clearInvoiceLogo = false;
-      } else {
-        _paymentQrBytes = bytes;
-        _clearPaymentQr = false;
-      }
-    });
   }
 
   void _removeImage(String key) {
@@ -364,13 +396,23 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                     child: Text(bytes == null
                         ? 'No image selected'
                         : 'Image selected')),
-                IconButton(
+                if (key == 'invoice' && _processingInvoiceLogo)
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  IconButton(
                     tooltip: 'Choose image',
                     onPressed: () => _pickImage(key),
                     icon: const Icon(Icons.upload_file)),
                 IconButton(
                     tooltip: 'Remove image',
-                    onPressed: bytes == null ? null : () => _removeImage(key),
+                    onPressed: bytes == null || (key == 'invoice' && _processingInvoiceLogo) ? null : () => _removeImage(key),
                     icon: const Icon(Icons.delete_outline)),
               ],
             ),
@@ -396,7 +438,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
           appBar: AppBar(
             title: const Text('App & Invoice Settings'),
             bottom: const TabBar(
-              isScrollable: true,
+              isScrollable: false,
+              labelPadding: EdgeInsets.zero,
+              labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
               tabs: [
                 Tab(icon: Icon(Icons.store_outlined), text: 'Business'),
                 Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Invoice'),
