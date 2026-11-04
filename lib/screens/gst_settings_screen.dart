@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../widgets/responsive_page.dart';
+import '../widgets/settings_components.dart';
 
 class GstSettingsScreen extends StatefulWidget {
   const GstSettingsScreen({super.key});
@@ -18,6 +19,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
   late String _stateCode;
   late final TextEditingController _defaultRate;
   bool _saving = false;
+  bool _dirty = false;
 
   static const _states = <String, String>{
     '01': 'Jammu and Kashmir',
@@ -81,11 +83,23 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
     if (_registrationType != 'regular') _gstEnabled = false;
     _defaultRate = TextEditingController(
       text: (_settings.get('gst_rate', defaultValue: 0.0) as num).toString(),
-    );
+    )..addListener(_markDirty);
+  }
+
+  void _markDirty() {
+    if (mounted) setState(() => _dirty = true);
+  }
+
+  void _change(VoidCallback update) {
+    setState(() {
+      update();
+      _dirty = true;
+    });
   }
 
   @override
   void dispose() {
+    _defaultRate.removeListener(_markDirty);
     _defaultRate.dispose();
     super.dispose();
   }
@@ -118,6 +132,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
         'gst_default_interstate_sale': _defaultInterstate,
       });
       if (!mounted) return;
+      setState(() => _dirty = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text(
@@ -137,165 +152,161 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isRegular = _registrationType == 'regular';
-    return Scaffold(
-      appBar: AppBar(title: const Text('GST Settings')),
-      body: ResponsivePage(
-        maxWidth: 850,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+    final rate = double.tryParse(_defaultRate.text.trim()) ?? 0;
+    const sampleBase = 1000.0;
+    final sampleTax = sampleBase * rate / 100;
+    final displayedTax = _gstInclusive ? sampleBase - sampleBase / (1 + rate / 100) : sampleTax;
+    final displayedTotal = _gstInclusive ? sampleBase : sampleBase + sampleTax;
+
+    return PopScope(
+      canPop: !_dirty,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop && _dirty && await confirmDiscardChanges(context) && context.mounted) {
+          setState(() => _dirty = false);
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('GST Settings')),
+        body: ResponsivePage(
+          maxWidth: 850,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              SettingsSection(
+                title: 'Registration',
+                subtitle: 'Set the GST profile and place of business used for billing.',
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(children: [
-                      Icon(Icons.receipt_long_outlined),
-                      SizedBox(width: 10),
-                      Expanded(
-                          child: Text('GST configuration',
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.bold))),
-                    ]),
-                    const SizedBox(height: 8),
-                    Text(
-                      'These settings are separate from Appearance & Personalisation. Product-specific GST rates and HSN codes remain editable in Product Management.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 18),
                     DropdownButtonFormField<String>(
                       initialValue: _registrationType,
-                      decoration: _decoration(
-                          'GST registration type', Icons.business_outlined),
+                      decoration: _decoration('GST registration type', Icons.business_outlined),
                       items: const [
-                        DropdownMenuItem(
-                            value: 'regular',
-                            child: Text('Regular GST taxpayer')),
-                        DropdownMenuItem(
-                            value: 'composition',
-                            child: Text('Composition scheme')),
-                        DropdownMenuItem(
-                            value: 'unregistered',
-                            child: Text('Not GST registered')),
+                        DropdownMenuItem(value: 'regular', child: Text('Regular GST taxpayer')),
+                        DropdownMenuItem(value: 'composition', child: Text('Composition scheme')),
+                        DropdownMenuItem(value: 'unregistered', child: Text('Not GST registered')),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
-                        setState(() {
+                        _change(() {
                           _registrationType = value;
                           if (value != 'regular') _gstEnabled = false;
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     DropdownButtonFormField<String>(
                       initialValue: _stateCode,
-                      decoration: _decoration(
-                          'Business state / UT', Icons.location_on_outlined),
-                      items: _states.entries
-                          .map((entry) => DropdownMenuItem(
-                                value: entry.key,
-                                child: Text('${entry.key} — ${entry.value}'),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) setState(() => _stateCode = value);
-                      },
+                      decoration: _decoration('Business state / UT', Icons.location_on_outlined),
+                      items: _states.entries.map((entry) => DropdownMenuItem(
+                        value: entry.key, child: Text('${entry.key} — ${entry.value}'),
+                      )).toList(),
+                      onChanged: (value) { if (value != null) _change(() => _stateCode = value); },
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Seller GSTIN is configured under App & Invoice Settings. Check that its state code matches the selected state.',
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('The seller GSTIN is configured under App & Invoice Settings. Ensure its state code matches this selection.',
+                        style: Theme.of(context).textTheme.bodySmall),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: const Text('Enable GST calculations in billing'),
-                    subtitle: Text(isRegular
-                        ? 'Allows the cashier to apply GST to a bill.'
-                        : 'Disabled for composition and unregistered profiles. Do not use this app to collect GST under these profiles.'),
-                    value: _gstEnabled && isRegular,
-                    onChanged: isRegular
-                        ? (value) => setState(() => _gstEnabled = value)
-                        : null,
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title:
-                        const Text('Catalogue prices include GST by default'),
-                    subtitle: const Text(
-                        'Cashiers can still change this on an individual bill.'),
-                    value: _gstInclusive,
-                    onChanged: (value) => setState(() => _gstInclusive = value),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Default to interstate sale (IGST)'),
-                    subtitle: const Text(
-                        'Sets the initial billing choice; verify the place of supply for each transaction.'),
-                    value: _defaultInterstate,
-                    onChanged: (value) =>
-                        setState(() => _defaultInterstate = value),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              const SizedBox(height: 12),
+              SettingsSection(
+                title: 'Billing behaviour',
+                subtitle: 'Choose how GST is applied when creating a bill.',
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Tax defaults',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable GST calculations'),
+                      subtitle: Text(isRegular
+                        ? 'Allow GST to be applied during billing.'
+                        : 'Available only for regular GST registration.'),
+                      value: _gstEnabled && isRegular,
+                      onChanged: isRegular ? (value) => _change(() => _gstEnabled = value) : null,
+                    ),
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Catalogue prices include GST'),
+                      subtitle: const Text('Cashiers can override this on an individual bill.'),
+                      value: _gstInclusive,
+                      onChanged: (value) => _change(() => _gstInclusive = value),
+                    ),
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Default to interstate sale (IGST)'),
+                      subtitle: const Text('This is only a default; verify place of supply for every transaction.'),
+                      value: _defaultInterstate,
+                      onChanged: (value) => _change(() => _defaultInterstate = value),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              SettingsSection(
+                title: 'Tax defaults',
+                subtitle: 'Fallback values used only when a product has no individual GST rate.',
+                child: Column(
+                  children: [
                     TextFormField(
                       controller: _defaultRate,
                       enabled: _gstEnabled && isRegular,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration:
-                          _decoration('Fallback GST rate (%)', Icons.percent),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: _decoration('Fallback GST rate (%)', Icons.percent),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Used only when a product has no individual GST rate. Confirm the correct rate and HSN classification for each product; GST rates are not interchangeable across goods.',
-                      style: Theme.of(context).textTheme.bodySmall,
+                    const SizedBox(height: 8),
+                    Text('Product-specific GST rates and HSN codes remain authoritative. Confirm classifications and applicable rates before issuing invoices.',
+                      style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              SettingsSection(
+                title: 'Example calculation',
+                subtitle: 'Illustrative preview using a taxable value of ₹1,000.',
+                child: Column(
+                  children: [
+                    _previewRow('Taxable value', '₹${sampleBase.toStringAsFixed(2)}'),
+                    _previewRow('GST rate', '${rate.toStringAsFixed(2)}%'),
+                    _previewRow('GST portion', '₹${displayedTax.toStringAsFixed(2)}'),
+                    const Divider(height: 18),
+                    _previewRow('Example total', '₹${displayedTotal.toStringAsFixed(2)}', emphasize: true),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(_gstInclusive ? 'GST is included in the sample price.' : 'GST is added to the sample taxable value.',
+                        style: Theme.of(context).textTheme.bodySmall),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Important: Billit is a billing and record-keeping tool, not a GST compliance certification or filing service. Composition taxpayers must not collect GST separately. Verify invoice rules, HSN/SAC, rates, place of supply, e-invoicing/e-way bill applicability and return reporting with a qualified tax professional.',
-                ),
+              const SizedBox(height: 12),
+              const SettingsSection(
+                title: 'Compliance note',
+                child: Text('Billit is a billing and record-keeping tool, not a GST compliance certification or filing service. Composition taxpayers must not collect GST separately. Verify invoice rules, HSN/SAC, rates, place of supply, e-invoicing/e-way bill applicability and return reporting with a qualified tax professional.'),
               ),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: _saving ? null : _save,
-              icon: _saving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.save_outlined),
-              label: const Text('Save GST settings'),
-            ),
-          ],
+            ],
+          ),
         ),
+        bottomNavigationBar: SettingsSaveBar(
+          dirty: _dirty, saving: _saving, onSave: _save, saveLabel: 'Save GST settings',
+        ),
+      ),
+    );
+  }
+
+  Widget _previewRow(String label, String value, {bool emphasize = false}) {
+    final style = Theme.of(context).textTheme.bodyLarge;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: emphasize ? style?.copyWith(fontWeight: FontWeight.w700) : style)),
+          Text(value, style: emphasize ? style?.copyWith(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary) : style),
+        ],
       ),
     );
   }
