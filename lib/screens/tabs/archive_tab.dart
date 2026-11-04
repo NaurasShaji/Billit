@@ -8,6 +8,7 @@ import '../archive/payroll/daily_wage_screen.dart';
 import '../archive/payroll/monthly_salary_screen.dart';
 import '../archive/backup_restore_screen.dart';
 import '../archive/change_password_screen.dart';
+import '../security_question_settings_screen.dart';
 import '../archive/customer_lookup_screen.dart';
 import '../archive/bulk_product_import_screen.dart';
 import '../archive/gst_exports_screen.dart';
@@ -120,6 +121,12 @@ class ArchiveTab extends StatelessWidget {
           icon: Icons.settings_outlined,
           color: Colors.deepPurple,
           items: [
+            ArchiveCategoryItem(
+              icon: Icons.security_outlined,
+              title: 'Security Question',
+              subtitle: 'Change the admin password recovery question and answer',
+              builder: (_) => const SecurityQuestionSettingsScreen(),
+            ),
             ArchiveCategoryItem(
               icon: Icons.lock_outline,
               title: 'Change Password',
