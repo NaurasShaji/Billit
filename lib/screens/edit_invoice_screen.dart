@@ -815,7 +815,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen>
                   ),
                 ),
                 if (!widget.isViewOnly)
-                  IconButton(
+                  IconButton(tooltip: 'Delete', 
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: () {
                       setState(() {
@@ -885,7 +885,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen>
                   ),
                   child: Row(
                     children: [
-                      IconButton(
+                      IconButton(tooltip: 'Remove', 
                         icon: const Icon(Icons.remove, size: 20),
                         onPressed: widget.isViewOnly
                             ? null
@@ -907,7 +907,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen>
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
-                      IconButton(
+                      IconButton(tooltip: 'Add', 
                         icon: const Icon(Icons.add, size: 20),
                         onPressed: widget.isViewOnly
                             ? null

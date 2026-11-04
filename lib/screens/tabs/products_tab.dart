@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
 import '../manage_product_screen.dart';
+import '../../widgets/app_components.dart';
 
 class ProductsTab extends StatefulWidget {
   const ProductsTab({super.key});
@@ -272,13 +273,53 @@ class _ProductsTabState extends State<ProductsTab> {
     );
   }
 
+  bool get _hasActiveFilters =>
+      query.trim().isNotEmpty ||
+      unitFilter != null ||
+      category != 'All' ||
+      subCategory != 'All';
+
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      query = '';
+      unitFilter = null;
+      category = 'All';
+      subCategory = 'All';
+    });
+  }
+
+  Widget _buildEmptyState() {
+    final filtered = _hasActiveFilters;
+    return AppEmptyState(
+      icon: filtered ? Icons.search_off : Icons.inventory_2_outlined,
+      title: filtered ? 'No products match' : 'No products yet',
+      message: filtered
+          ? 'Try a different search or clear the filters.'
+          : 'Add your first product to start billing.',
+      actions: [
+        if (filtered)
+          FilledButton.tonalIcon(
+            onPressed: _clearFilters,
+            icon: const Icon(Icons.filter_alt_off),
+            label: const Text('Clear filters'),
+          ),
+        FilledButton.icon(
+          onPressed: () => _openEditor(),
+          icon: const Icon(Icons.add),
+          label: const Text('Add product'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildGridView(List<Product> products) {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
       sliver: SliverGrid.builder(
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 300,
-          mainAxisExtent: 230,
+          mainAxisExtent: 230 * textScaleFactor(context),
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
@@ -484,12 +525,12 @@ class _ProductsTabState extends State<ProductsTab> {
               // Action Buttons
               Column(
                 children: [
-                  IconButton(
+                  IconButton(tooltip: 'Edit', 
                     onPressed: () => _openEditor(product: product),
                     icon: Icon(Icons.edit,
                         color: Theme.of(context).colorScheme.primary),
                   ),
-                  IconButton(
+                  IconButton(tooltip: 'Delete', 
                     onPressed: () async {
                       final confirm = await showDialog<bool>(
                             context: context,
@@ -839,72 +880,6 @@ class _ProductsTabState extends State<ProductsTab> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final hasActiveFilters = query.trim().isNotEmpty ||
-        unitFilter != null ||
-        category != 'All' ||
-        subCategory != 'All';
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              hasActiveFilters
-                  ? Icons.search_off_rounded
-                  : Icons.inventory_2_outlined,
-              size: 56,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              hasActiveFilters ? 'No matching products' : 'No products yet',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              hasActiveFilters
-                  ? 'Try changing your search or filters.'
-                  : 'Add your first product to start managing your inventory.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            if (hasActiveFilters) ...[
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    query = '';
-                    unitFilter = null;
-                    category = 'All';
-                    subCategory = 'All';
-                  });
-                },
-                icon: const Icon(Icons.filter_alt_off),
-                label: const Text('Clear filters'),
-              ),
-            ] else ...[
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => _openEditor(),
-                icon: const Icon(Icons.add),
-                label: const Text('Add product'),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 

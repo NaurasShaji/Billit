@@ -274,7 +274,6 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     required String label,
     required DateTime date,
     required VoidCallback onTap,
-    required VoidCallback onShare,
   }) {
     return Card(
       elevation: 0,

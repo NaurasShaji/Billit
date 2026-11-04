@@ -3,9 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
+import '../widgets/app_components.dart';
 
 class ProductSelectionScreen extends StatefulWidget {
-  const ProductSelectionScreen({super.key});
+  const ProductSelectionScreen({super.key, this.initialQuery});
+
+  /// Optional text to pre-fill the search box with.
+  final String? initialQuery;
 
   @override
   State<ProductSelectionScreen> createState() => _ProductSelectionScreenState();
@@ -36,6 +40,11 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
       curve: Curves.easeOutCubic,
     ));
 
+    final initial = widget.initialQuery?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _searchController.text = initial;
+      _searchQuery = initial;
+    }
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
@@ -105,14 +114,14 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
 
     return Scaffold(
       resizeToAvoidBottomInset: true, // Ensures resizing when keyboard appears
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Select Products',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 0,
         actions: [
           IconButton(
@@ -139,7 +148,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                     Container(
                       height: 16,
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: Theme.of(context).scaffoldBackgroundColor,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
@@ -167,11 +176,11 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
       padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 12),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -184,10 +193,10 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
           onSubmitted: (_) => _submitSearch(),
           decoration: InputDecoration(
             hintText: 'Search by name, barcode or category...',
-            hintStyle: TextStyle(color: Colors.grey[500]),
+            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             prefixIcon: Icon(Icons.search, color: theme.primaryColor, size: 24),
             suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
+                ? IconButton(tooltip: 'Clear', 
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       _searchController.clear();
@@ -199,7 +208,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).colorScheme.surface,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 16,
@@ -252,14 +261,14 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
           // Stock filter
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3)),
             ),
             child: CheckboxListTile(
-              title: const Text(
+              title: Text(
                 'Show only in-stock items',
-                style: TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 14),
               ),
               value: _showOnlyInStock,
               onChanged: (value) {
@@ -268,8 +277,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                 });
               },
               checkColor: theme.primaryColor,
-              activeColor: Colors.white,
-              side: const BorderSide(color: Colors.white),
+              activeColor: Theme.of(context).colorScheme.onPrimary,
+              side: BorderSide(color: Theme.of(context).colorScheme.onPrimary),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
             ),
           ),
@@ -285,13 +294,13 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+          border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 18),
+            Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -299,15 +308,15 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
                       fontSize: 11,
                     ),
                   ),
                   Text(
                     value,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -317,8 +326,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                 ],
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down,
-                color: Colors.white70, size: 18),
+            Icon(Icons.keyboard_arrow_down,
+                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), size: 18),
           ],
         ),
       ),
@@ -341,7 +350,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -397,7 +406,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -455,7 +464,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                   Text(
                     '${filteredProducts.length} product${filteredProducts.length == 1 ? '' : 's'} found',
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -485,9 +494,9 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
   Widget _buildProductsGrid(List<Product> products, ThemeData theme) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 340,
-        mainAxisExtent: 170,
+        mainAxisExtent: 170 * textScaleFactor(context),
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -532,7 +541,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: isOutOfStock ? Colors.grey.shade100 : Colors.white,
+            color: isOutOfStock ? Theme.of(context).colorScheme.surfaceContainerHighest : Theme.of(context).colorScheme.surface,
           ),
           child: isGrid
               ? _buildGridContent(product, theme, isOutOfStock, isLowStock)
@@ -555,7 +564,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
-                  color: isOutOfStock ? Colors.grey : Colors.black87,
+                  color: isOutOfStock ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.onSurface,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -568,7 +577,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
         Text(
           product.category,
           style: TextStyle(
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 12,
           ),
         ),
@@ -584,13 +593,13 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
-                    color: isOutOfStock ? Colors.grey : theme.primaryColor,
+                    color: isOutOfStock ? Theme.of(context).colorScheme.outline : theme.primaryColor,
                   ),
                 ),
                 Text(
                   'per ${product.unit.name}',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 11,
                   ),
                 ),
@@ -598,13 +607,13 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
             ),
             Container(
               decoration: BoxDecoration(
-                color: isOutOfStock ? Colors.grey.shade300 : theme.primaryColor,
+                color: isOutOfStock ? Theme.of(context).colorScheme.outlineVariant : theme.primaryColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
                 icon: Icon(
                   isOutOfStock ? Icons.block : Icons.add_shopping_cart,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   size: 20,
                 ),
                 onPressed: isOutOfStock
@@ -650,7 +659,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
-                        color: isOutOfStock ? Colors.grey : Colors.black87,
+                        color: isOutOfStock ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -661,7 +670,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
               Text(
                 product.category,
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -673,13 +682,13 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: isOutOfStock ? Colors.grey : theme.primaryColor,
+                      color: isOutOfStock ? Theme.of(context).colorScheme.outline : theme.primaryColor,
                     ),
                   ),
                   Text(
                     ' per ${product.unit.name}',
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -690,13 +699,13 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
         ),
         Container(
           decoration: BoxDecoration(
-            color: isOutOfStock ? Colors.grey.shade300 : theme.primaryColor,
+            color: isOutOfStock ? Theme.of(context).colorScheme.outlineVariant : theme.primaryColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
             icon: Icon(
               isOutOfStock ? Icons.block : Icons.add_shopping_cart,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
             ),
             onPressed: isOutOfStock
                 ? null
@@ -714,13 +723,13 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.red,
+          color: Theme.of(context).colorScheme.error,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text(
+        child: Text(
           'Out of Stock',
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onError,
             fontSize: 10,
             fontWeight: FontWeight.bold,
           ),
@@ -773,7 +782,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
             Icon(
               Icons.search_off,
               size: 80,
-              color: Colors.grey[400],
+              color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(height: 20),
             Text(
@@ -781,7 +790,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -789,7 +798,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
               'Try adjusting your search or filters',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
