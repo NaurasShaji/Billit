@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
 import '../../services/drive_backup_service.dart';
+import '../../utils/theme_colors.dart';
 
 class BackupRestoreScreen extends StatelessWidget {
   const BackupRestoreScreen({super.key});
@@ -12,7 +13,7 @@ class BackupRestoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Backup & Restore',
@@ -232,8 +233,11 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       await DriveBackupService.instance.signIn();
       await _refreshDriveBackups();
       await _maybeRunAutoBackup();
-    } catch (_) {
-      // ignore
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackbar(
+            'Google Drive sign-in failed: ${e is StateError ? e.message : e}');
+      }
     } finally {
       if (mounted) setState(() => _isSigningIn = false);
     }
@@ -455,7 +459,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.panelColor,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
@@ -515,8 +519,8 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       child: ElevatedButton.icon(
         onPressed: _isSigningIn || isSignedIn ? null : _initGoogle,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.teal.shade700,
+          backgroundColor: context.panelColor,
+          foregroundColor: Colors.teal.shade700.adaptive(context),
           padding: EdgeInsets.symmetric(vertical: isTablet ? 20 : 16),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -746,7 +750,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
             Text(
               'Schedule regular backups to keep your data safe',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
             ),
@@ -757,7 +761,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
               decoration: BoxDecoration(
                 color: Colors.grey.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
               ),
               child: DropdownButton<int>(
                 value: _autoBackupDays,
@@ -880,7 +884,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
           Icon(
             Icons.cloud_outlined,
             size: 64,
-            color: Colors.grey.shade400,
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
           Text(
@@ -888,7 +892,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -896,7 +900,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
             'Create your first backup to get started',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade500,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -919,12 +923,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
           decoration: BoxDecoration(
             color: isLatest
                 ? Colors.green.withValues(alpha: 0.05)
-                : Colors.grey.shade50,
+                : context.subtleFill,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isLatest
                   ? Colors.green.withValues(alpha: 0.3)
-                  : Colors.grey.shade200,
+                  : Theme.of(context).colorScheme.outlineVariant,
             ),
           ),
           child: ListTile(
@@ -943,7 +947,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
               ),
               child: Icon(
                 Icons.insert_drive_file,
-                color: isLatest ? Colors.green : Colors.grey.shade600,
+                color: isLatest ? Colors.green : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             title: Row(
