@@ -670,28 +670,45 @@ class _HomeScreenState extends State<HomeScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= ResponsiveBreakpoints.desktop) {
-            return Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: _index,
-                  onDestinationSelected: (i) => setState(() => _index = i),
-                  labelType: NavigationRailLabelType.all,
-                  destinations: [
-                    for (var i = 0; i < labels.length; i++)
-                      NavigationRailDestination(
-                        icon: Icon(icons[i]),
-                        label: Text(labels[i]),
+            return ValueListenableBuilder<Box<dynamic>>(
+              valueListenable:
+                  Hive.box<dynamic>('app_settings').listenable(),
+              builder: (context, settings, _) {
+                final iconStyle = settings
+                    .get('navigation_icon_style', defaultValue: 'outlined')
+                    .toString();
+                final raw = settings.get('navigation_icon_overrides',
+                    defaultValue: <String, String>{});
+                final overrides = raw is Map ? raw : <String, String>{};
+                final railIcons = _applyCustomNavigationIcons(
+                  _navigationIcons(isAdmin: isAdmin, style: iconStyle),
+                  navigationKeys,
+                  overrides,
+                );
+                return Row(
+                  children: [
+                    NavigationRail(
+                      selectedIndex: _index,
+                      onDestinationSelected: (i) => setState(() => _index = i),
+                      labelType: NavigationRailLabelType.all,
+                      destinations: [
+                        for (var i = 0; i < labels.length; i++)
+                          NavigationRailDestination(
+                            icon: Icon(railIcons[i]),
+                            label: Text(labels[i]),
+                          ),
+                      ],
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(
+                      child: ResponsivePage(
+                        maxWidth: 1600,
+                        child: IndexedStack(index: _index, children: tabs),
                       ),
+                    ),
                   ],
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: ResponsivePage(
-                    maxWidth: 1600,
-                    child: IndexedStack(index: _index, children: tabs),
-                  ),
-                ),
-              ],
+                );
+              },
             );
           }
           return IndexedStack(index: _index, children: tabs);
