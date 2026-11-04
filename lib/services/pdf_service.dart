@@ -16,7 +16,7 @@ class PdfService {
   static const double thermalWidth58mm = 164.0; // 58mm width
   static const double thermalWidth80mm = 227.0; // 80mm width
 
-  static Future<Uint8List> generateInvoice(
+  static Future<void> generateInvoice(
     Sale sale, {
     ThermalSize thermalSize = ThermalSize.mm80,
     bool includeHeader = true,
@@ -24,7 +24,6 @@ class PdfService {
     bool includeGST = true,
     bool fullPage = true,
     bool share = false,
-    bool save = true,
   }) async {
     final doc = pw.Document();
     final template =
@@ -118,21 +117,20 @@ class PdfService {
         ],
         subject: filename,
       );
-      return pdfBytes;
+      return;
     }
 
-    if (save) {
-      await FilePicker.platform.saveFile(
-        dialogTitle: 'Save invoice PDF',
-        fileName: filename,
-        type: FileType.custom,
-        allowedExtensions: const ['pdf'],
-        bytes: pdfBytes,
-      );
+    final savedPath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save invoice PDF',
+      fileName: filename,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      bytes: pdfBytes,
+    );
+    if (savedPath == null) {
+      // The user cancelled the save dialog; no share sheet is opened.
+      return;
     }
-    // Return the generated document so callers can hand it to an API.
-    // A cancelled save dialog does not discard the generated PDF bytes.
-    return pdfBytes;
   }
 
   static List<pw.Widget> _buildFullPageInvoice(
