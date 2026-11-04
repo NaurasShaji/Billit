@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../widgets/responsive_page.dart';
+import '../widgets/settings_components.dart';
 import '../services/thermal_logo_service.dart';
 
 class InvoiceSettingsScreen extends StatefulWidget {
@@ -39,6 +40,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   bool _clearInvoiceLogo = false;
   bool _clearPaymentQr = false;
   bool _saving = false;
+  bool _dirty = false;
 
   @override
   void initState() {
@@ -88,6 +90,18 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _printLogo80Bytes = _decodeImage('business_logo_print_80_base64');
     _ensurePrintReadyLogos();
     _paymentQrBytes = _decodeImage('payment_qr_base64');
+    _appName.addListener(_markDirty);
+    _name.addListener(_markDirty);
+    _address.addListener(_markDirty);
+    _phone.addListener(_markDirty);
+    _email.addListener(_markDirty);
+    _gstin.addListener(_markDirty);
+    _invoicePrefix.addListener(_markDirty);
+    _nextInvoiceNumber.addListener(_markDirty);
+    _upiId.addListener(_markDirty);
+    _upiPayeeName.addListener(_markDirty);
+    _upiNotePrefix.addListener(_markDirty);
+    _invoiceFooter.addListener(_markDirty);
   }
 
   Uint8List? _decodeImage(String key) {
@@ -100,8 +114,24 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     }
   }
 
+  void _markDirty() {
+    if (!_dirty && mounted) setState(() => _dirty = true);
+  }
+
   @override
   void dispose() {
+    _appName.removeListener(_markDirty);
+    _name.removeListener(_markDirty);
+    _address.removeListener(_markDirty);
+    _phone.removeListener(_markDirty);
+    _email.removeListener(_markDirty);
+    _gstin.removeListener(_markDirty);
+    _invoicePrefix.removeListener(_markDirty);
+    _nextInvoiceNumber.removeListener(_markDirty);
+    _upiId.removeListener(_markDirty);
+    _upiPayeeName.removeListener(_markDirty);
+    _upiNotePrefix.removeListener(_markDirty);
+    _invoiceFooter.removeListener(_markDirty);
     _appName.dispose();
     _name.dispose();
     _address.dispose();
@@ -176,6 +206,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       return;
     }
     setState(() {
+      _dirty = true;
       if (key == 'app') {
         _appLogoBytes = bytes;
         _clearAppLogo = false;
@@ -191,6 +222,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
   void _removeImage(String key) {
     setState(() {
+      _dirty = true;
       if (key == 'app') {
         _appLogoBytes = null;
         _clearAppLogo = true;
@@ -265,7 +297,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await _saveImage('payment_qr_base64', _paymentQrBytes, _clearPaymentQr);
 
     if (!mounted) return;
-    setState(() => _saving = false);
+    setState(() { _saving = false; _dirty = false; });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
           content: Text('App, business, UPI and invoice settings saved')),
@@ -349,205 +381,226 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('App & Invoice Settings')),
-      body: ResponsivePage(
-          maxWidth: 900,
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const Text('Application',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _appName,
-                  decoration: _decoration('App name', Icons.apps),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Enter an app name'
-                      : null,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                    'This name is used inside the app and as its application title. Changing the Android launcher label requires a new app build.',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
-                const SizedBox(height: 8),
-                _imageSetting(
-                  title: 'Application logo',
-                  description:
-                      'Logo shown in the app UI. This is separate from the invoice logo.',
-                  key: 'app',
-                  bytes: _appLogoBytes,
-                  placeholderIcon: Icons.apps,
-                ),
-                const SizedBox(height: 20),
-                const Text('Business details',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                TextFormField(
-                    controller: _name,
-                    decoration:
-                        _decoration('Business / shop name', Icons.store),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Enter business name'
-                        : null),
-                const SizedBox(height: 12),
-                TextFormField(
-                    controller: _address,
-                    maxLines: 2,
-                    decoration: _decoration(
-                        'Business address', Icons.location_on_outlined)),
-                const SizedBox(height: 12),
-                TextFormField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
-                    decoration:
-                        _decoration('Phone number', Icons.phone_outlined)),
-                const SizedBox(height: 12),
-                TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration:
-                        _decoration('Email (optional)', Icons.email_outlined)),
-                const SizedBox(height: 12),
-                TextFormField(
-                    controller: _gstin,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: _decoration(
-                        'Business GSTIN (optional)', Icons.verified_outlined)),
-                const SizedBox(height: 8),
-                const Text('Invoice design',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _invoiceAccent,
-                  decoration: _decoration('Invoice accent colour',
-                      Icons.format_color_fill_outlined),
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'blue', child: Text('Classic Blue')),
-                    DropdownMenuItem(
-                        value: 'green', child: Text('Classic Green')),
-                    DropdownMenuItem(
-                        value: 'purple', child: Text('Classic Purple')),
-                    DropdownMenuItem(value: 'teal', child: Text('Teal')),
-                    DropdownMenuItem(
-                        value: 'orange', child: Text('Warm Orange')),
-                    DropdownMenuItem(value: 'pink', child: Text('Pink')),
-                    DropdownMenuItem(value: 'indigo', child: Text('Indigo')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) setState(() => _invoiceAccent = value);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _invoiceFooter,
-                  maxLines: 2,
-                  maxLength: 120,
-                  decoration: _decoration(
-                      'Invoice footer message', Icons.notes_outlined),
-                ),
-                const SizedBox(height: 8),
-                _imageSetting(
-                  title: 'Invoice / bill logo',
-                  description:
-                      'Used on PDF invoices and thermal receipts. For crisp thermal output, use a high-contrast logo with minimal fine detail. Recommended maximum printable width: 384 px for 58mm and 576 px for 80mm; Billit automatically converts the uploaded image for each paper width.',
-                  key: 'invoice',
-                  bytes: _invoiceLogoBytes,
-                  placeholderIcon: Icons.receipt_long,
-                ),
-                const SizedBox(height: 8),
-                const SizedBox(height: 20),
-                const Text('Dynamic UPI payment QR',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                const Text(
-                    'Configure your UPI details once. Each new bill will get a QR containing that invoice ID and the exact bill total in INR. A compatible UPI app is required to pay.',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _upiId,
-                  decoration: _decoration('UPI ID / VPA (e.g. shop@bank)',
-                      Icons.account_balance_wallet_outlined),
-                  validator: (value) {
-                    final upi = value?.trim() ?? '';
-                    if (upi.isNotEmpty &&
-                        (!upi.contains('@') || upi.contains(' '))) {
-                      return 'Enter a valid UPI ID or leave it blank';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _upiPayeeName,
-                  decoration: _decoration(
-                      'Payee / business name', Icons.storefront_outlined),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _upiNotePrefix,
-                  decoration:
-                      _decoration('Payment note prefix', Icons.notes_outlined),
-                  maxLength: 30,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                    'The QR is generated locally from the saved UPI ID and bill total. No payment is processed by Billit, and payment completion must be verified in your UPI app/bank.',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
-                const SizedBox(height: 12),
-                _imageSetting(
-                  title: 'Static payment QR fallback (optional)',
-                  description:
-                      'Used only when no UPI ID is configured. A dynamic invoice QR takes priority when the UPI ID is set.',
-                  key: 'qr',
-                  bytes: _paymentQrBytes,
-                  placeholderIcon: Icons.qr_code_2,
-                ),
-                const SizedBox(height: 20),
-                const Text('Invoice numbering',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                TextFormField(
-                    controller: _invoicePrefix,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration:
-                        _decoration('Invoice number prefix', Icons.tag)),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _nextInvoiceNumber,
-                  keyboardType: TextInputType.number,
-                  decoration: _decoration(
-                      'Next invoice number', Icons.format_list_numbered),
-                  validator: (value) {
-                    final number = int.tryParse(value?.trim() ?? '');
-                    if (number == null || number < 1) {
-                      return 'Enter a positive integer';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: _saving ? null : _save,
-                  icon: _saving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.save),
-                  label: const Text('Save settings'),
-                ),
+    return DefaultTabController(
+      length: 4,
+      child: PopScope(
+        canPop: !_dirty,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (!didPop && _dirty && await confirmDiscardChanges(context) && context.mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('App & Invoice Settings'),
+            bottom: const TabBar(
+              isScrollable: true,
+              tabs: [
+                Tab(icon: Icon(Icons.store_outlined), text: 'Business'),
+                Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Invoice'),
+                Tab(icon: Icon(Icons.payments_outlined), text: 'Payments'),
+                Tab(icon: Icon(Icons.apps_outlined), text: 'Application'),
               ],
             ),
-          )),
+          ),
+          body: ResponsivePage(
+            maxWidth: 900,
+            child: Form(
+              key: _formKey,
+              child: TabBarView(
+                children: [
+                  _settingsTab([
+                    SettingsSection(
+                      title: 'Business details',
+                      subtitle: 'These details appear on invoices and receipts.',
+                      child: Column(children: [
+                        TextFormField(controller: _name, decoration: _decoration('Business / shop name', Icons.store),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter business name' : null),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _address, maxLines: 2, decoration: _decoration('Business address', Icons.location_on_outlined)),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _phone, keyboardType: TextInputType.phone, decoration: _decoration('Phone number', Icons.phone_outlined)),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: _decoration('Email (optional)', Icons.email_outlined),
+                          validator: (v) {
+                            final value = v?.trim() ?? '';
+                            if (value.isNotEmpty && !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) return 'Enter a valid email address';
+                            return null;
+                          }),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _gstin, textCapitalization: TextCapitalization.characters, decoration: _decoration('Business GSTIN (optional)', Icons.verified_outlined)),
+                      ]),
+                    ),
+                  ]),
+                  _settingsTab([
+                    SettingsSection(
+                      title: 'Invoice design',
+                      subtitle: 'Configure the visual identity of your invoices.',
+                      child: Column(children: [
+                        DropdownButtonFormField<String>(
+                          value: _invoiceAccent,
+                          decoration: _decoration('Invoice accent colour', Icons.format_color_fill_outlined),
+                          items: const [
+                            DropdownMenuItem(value: 'blue', child: Text('Classic Blue')),
+                            DropdownMenuItem(value: 'green', child: Text('Classic Green')),
+                            DropdownMenuItem(value: 'purple', child: Text('Classic Purple')),
+                            DropdownMenuItem(value: 'teal', child: Text('Teal')),
+                            DropdownMenuItem(value: 'orange', child: Text('Warm Orange')),
+                            DropdownMenuItem(value: 'pink', child: Text('Pink')),
+                            DropdownMenuItem(value: 'indigo', child: Text('Indigo')),
+                          ],
+                          onChanged: (value) { if (value != null) setState(() { _invoiceAccent = value; _dirty = true; }); },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _invoiceFooter, maxLines: 2, maxLength: 120,
+                          decoration: _decoration('Invoice footer message', Icons.notes_outlined)),
+                      ]),
+                    ),
+                    const SizedBox(height: 12),
+                    _imageSetting(
+                      title: 'Invoice / bill logo',
+                      description: 'Used on PDF invoices and thermal receipts.',
+                      key: 'invoice', bytes: _invoiceLogoBytes, placeholderIcon: Icons.receipt_long,
+                    ),
+                    const SizedBox(height: 12),
+                    SettingsSection(
+                      title: 'Invoice numbering',
+                      child: Column(children: [
+                        TextFormField(controller: _invoicePrefix, textCapitalization: TextCapitalization.characters,
+                          decoration: _decoration('Invoice number prefix', Icons.tag)),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _nextInvoiceNumber, keyboardType: TextInputType.number,
+                          decoration: _decoration('Next invoice number', Icons.format_list_numbered),
+                          validator: (value) {
+                            final number = int.tryParse(value?.trim() ?? '');
+                            if (number == null || number < 1) return 'Enter a positive whole number';
+                            return null;
+                          }),
+                      ]),
+                    ),
+                    const SizedBox(height: 12),
+                    _invoicePreview(),
+                  ]),
+                  _settingsTab([
+                    SettingsSection(
+                      title: 'Dynamic UPI payment QR',
+                      subtitle: 'Each bill can generate a QR containing its invoice ID and exact bill total.',
+                      child: Column(children: [
+                        TextFormField(controller: _upiId,
+                          decoration: _decoration('UPI ID / VPA (e.g. shop@bank)', Icons.account_balance_wallet_outlined),
+                          validator: (value) {
+                            final upi = value?.trim() ?? '';
+                            if (upi.isNotEmpty && (!upi.contains('@') || upi.contains(' '))) return 'Enter a valid UPI ID or leave it blank';
+                            return null;
+                          }),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _upiPayeeName, decoration: _decoration('Payee / business name', Icons.storefront_outlined)),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: _upiNotePrefix, maxLength: 30, decoration: _decoration('Payment note prefix', Icons.notes_outlined)),
+                        const SizedBox(height: 8),
+                        Text('The QR is generated locally. Billit does not process payments; verify payment completion in your UPI app or bank.',
+                          style: Theme.of(context).textTheme.bodySmall),
+                      ]),
+                    ),
+                    const SizedBox(height: 12),
+                    _imageSetting(
+                      title: 'Static payment QR fallback',
+                      description: 'Optional fallback used only when no UPI ID is configured.',
+                      key: 'qr', bytes: _paymentQrBytes, placeholderIcon: Icons.qr_code_2,
+                    ),
+                  ]),
+                  _settingsTab([
+                    SettingsSection(
+                      title: 'Application identity',
+                      subtitle: 'Customise the name and logo shown inside the app.',
+                      child: Column(children: [
+                        TextFormField(controller: _appName, decoration: _decoration('App name', Icons.apps),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an app name' : null),
+                        const SizedBox(height: 8),
+                        Text('Changing the Android launcher label may require a new app build.',
+                          style: Theme.of(context).textTheme.bodySmall),
+                      ]),
+                    ),
+                    const SizedBox(height: 12),
+                    _imageSetting(
+                      title: 'Application logo',
+                      description: 'Logo shown in the app UI. Separate from the invoice logo.',
+                      key: 'app', bytes: _appLogoBytes, placeholderIcon: Icons.apps,
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+          ),
+          bottomNavigationBar: SettingsSaveBar(
+            dirty: _dirty, saving: _saving, onSave: _save, saveLabel: 'Save settings',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _settingsTab(List<Widget> children) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: children,
+    );
+  }
+
+  Widget _invoicePreview() {
+    final accent = <String, Color>{
+      'blue': Colors.blue, 'green': Colors.green, 'purple': Colors.purple,
+      'teal': Colors.teal, 'orange': Colors.orange, 'pink': Colors.pink,
+      'indigo': Colors.indigo,
+    }[_invoiceAccent] ?? Colors.blue;
+    final invoiceNo = '${_invoicePrefix.text.trim().isEmpty ? 'INV' : _invoicePrefix.text.trim().toUpperCase()}-${_nextInvoiceNumber.text.trim().isEmpty ? '1' : _nextInvoiceNumber.text.trim()}';
+    return SettingsSection(
+      title: 'Live invoice preview',
+      subtitle: 'A sample preview of the details and accent currently selected.',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            if (_invoiceLogoBytes != null)
+              Image.memory(_invoiceLogoBytes!, width: 48, height: 48, fit: BoxFit.contain)
+            else
+              Icon(Icons.receipt_long_outlined, size: 40, color: accent),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_name.text.trim().isEmpty ? 'Your business name' : _name.text.trim(),
+                style: TextStyle(fontWeight: FontWeight.w800, color: accent, fontSize: 17)),
+              Text(_address.text.trim().isEmpty ? 'Business address' : _address.text.trim(),
+                maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall),
+            ])),
+          ]),
+          const Divider(height: 24),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            const Text('INVOICE', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+            Text(invoiceNo, style: TextStyle(fontWeight: FontWeight.w700, color: accent)),
+          ]),
+          const SizedBox(height: 14),
+          const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('Sample item'), Text('₹1,000.00'),
+          ]),
+          const Divider(height: 20),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            const Text('Total', style: TextStyle(fontWeight: FontWeight.w800)),
+            Text('₹1,000.00', style: TextStyle(fontWeight: FontWeight.w800, color: accent)),
+          ]),
+          if (_invoiceFooter.text.trim().isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Center(child: Text(_invoiceFooter.text.trim(), textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall)),
+          ],
+        ]),
+      ),
     );
   }
 }
