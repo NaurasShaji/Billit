@@ -153,11 +153,28 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       : fontStyle == 'monospace'
           ? 'monospace'
           : 'sans-serif';
-  final scheme = ColorScheme.fromSeed(
+  final baseScheme = ColorScheme.fromSeed(
     seedColor: _themeSeedColor(themeName),
     brightness: brightness,
   );
   final dark = brightness == Brightness.dark;
+  // A single neutral surface ramp keeps dark-mode screens visually consistent.
+  final scheme = dark
+      ? baseScheme.copyWith(
+          surface: const Color(0xFF101418),
+          surfaceContainerLowest: const Color(0xFF0B0E11),
+          surfaceContainerLow: const Color(0xFF151B20),
+          surfaceContainer: const Color(0xFF1A2229),
+          surfaceContainerHigh: const Color(0xFF202830),
+          surfaceContainerHighest: const Color(0xFF29343D),
+          onSurface: const Color(0xFFE2E8ED),
+          onSurfaceVariant: const Color(0xFFB4BEC8),
+          outline: const Color(0xFF8793A0),
+          outlineVariant: const Color(0xFF3A4650),
+          inverseSurface: const Color(0xFFE2E8ED),
+          onInverseSurface: const Color(0xFF1A2229),
+        )
+      : baseScheme;
   final base = ThemeData(brightness: brightness);
   return ThemeData(
     colorScheme: scheme,
@@ -165,19 +182,26 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
     scaffoldBackgroundColor: dark
         ? (backgroundStyle == 'plain'
-            ? const Color(0xFF0B0E11)
-            : const Color(0xFF101418))
+            ? scheme.surfaceContainerLowest
+            : scheme.surface)
         : (backgroundStyle == 'plain'
             ? scheme.surface
             : Color.alphaBlend(
                 scheme.primary.withValues(alpha: 0.035), scheme.surface)),
-    textTheme: base.textTheme,
+    textTheme: base.textTheme.apply(
+      fontFamily: fontFamily,
+      bodyColor: scheme.onSurface,
+      displayColor: scheme.onSurface,
+    ),
+    iconTheme: IconThemeData(color: scheme.onSurface),
+    canvasColor: dark ? scheme.surfaceContainerHigh : scheme.surface,
+    cardColor: dark ? scheme.surfaceContainer : scheme.surface,
     fontFamily: fontFamily,
     primaryColor: scheme.primary,
     appBarTheme: AppBarTheme(
       backgroundColor: appBarStyle == 'brand'
           ? scheme.primary
-          : (dark ? const Color(0xFF171D22) : scheme.surface),
+          : (dark ? scheme.surfaceContainerLow : scheme.surface),
       foregroundColor:
           appBarStyle == 'brand' ? scheme.onPrimary : scheme.onSurface,
       elevation: 0,
@@ -189,7 +213,7 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
               : scheme.onSurfaceVariant),
     ),
     cardTheme: CardThemeData(
-      color: dark ? const Color(0xFF1A2229) : scheme.surface,
+      color: dark ? scheme.surfaceContainer : scheme.surface,
       surfaceTintColor: Colors.transparent,
       elevation: surfaceStyle == 'flat' || dark ? 0 : 2,
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -210,7 +234,7 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     inputDecorationTheme: InputDecorationTheme(
       filled: inputStyle == 'filled',
       fillColor: inputStyle == 'filled'
-          ? (dark ? const Color(0xFF202830) : scheme.surface)
+          ? (dark ? scheme.surfaceContainerHigh : scheme.surface)
           : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radius),
@@ -263,6 +287,40 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        foregroundColor: buttonStyle == 'minimal'
+            ? scheme.onSurface
+            : buttonStyle == 'tonal'
+                ? scheme.onSecondaryContainer
+                : scheme.primary,
+        backgroundColor: buttonStyle == 'minimal'
+            ? Colors.transparent
+            : buttonStyle == 'tonal'
+                ? scheme.secondaryContainer
+                : scheme.primary.withValues(alpha: 0.06),
+        side: BorderSide(
+          color: buttonStyle == 'minimal'
+              ? scheme.outlineVariant
+              : buttonStyle == 'tonal'
+                  ? scheme.secondaryContainer
+                  : scheme.primary.withValues(alpha: 0.45),
+        ),
+        minimumSize: const Size(44, 44),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: buttonStyle == 'minimal'
+            ? scheme.onSurface
+            : buttonStyle == 'tonal'
+                ? scheme.onSecondaryContainer
+                : scheme.primary,
+        backgroundColor: buttonStyle == 'tonal'
+            ? scheme.secondaryContainer
+            : buttonStyle == 'minimal'
+                ? Colors.transparent
+                : scheme.primary.withValues(alpha: 0.06),
         minimumSize: const Size(44, 44),
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
@@ -327,12 +385,13 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     dropdownMenuTheme: DropdownMenuThemeData(
       textStyle: TextStyle(color: scheme.onSurface),
       menuStyle: MenuStyle(
-        backgroundColor: WidgetStateProperty.all(scheme.surface),
+        backgroundColor: WidgetStateProperty.all(
+            dark ? scheme.surfaceContainerHigh : scheme.surface),
         surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: dark ? const Color(0xFF171D22) : scheme.surface,
+      backgroundColor: dark ? scheme.surfaceContainerLow : scheme.surface,
       surfaceTintColor: Colors.transparent,
       indicatorColor: scheme.primary.withValues(alpha: dark ? 0.28 : 0.14),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
@@ -349,7 +408,7 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
       contentTextStyle: const TextStyle(color: Colors.white),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: dark ? const Color(0xFF1A2229) : scheme.surface,
+      backgroundColor: dark ? scheme.surfaceContainerHigh : scheme.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
