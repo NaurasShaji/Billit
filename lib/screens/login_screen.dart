@@ -339,6 +339,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showForgotPasswordDialog() {
+    final securityQuestion = Provider.of<AuthService>(context, listen: false).getAdminSecurityQuestion();
     final securityAnswerController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -409,7 +410,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 2), // Reduced spacing
                               Text(
-                                'What is the name of your favourite pet?',
+                                securityQuestion,
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme
