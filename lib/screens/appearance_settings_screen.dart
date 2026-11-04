@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../utils/theme_colors.dart';
-import '../widgets/responsive_page.dart';
 
 /// Appearance & personalisation.
 ///
@@ -27,7 +26,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
   };
 
   static const _paletteNames = <String, String>{
-    'green': 'Garden Green',
+    'green': 'Classic Green',
     'blue': 'Classic Blue',
     'purple': 'Royal Purple',
     'amber': 'Warm Amber',
@@ -217,7 +216,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       _SettingsSection(
         title: 'Accent colour',
         subtitle: 'Used for navigation, buttons and highlights.',
-        trailing: _PillLabel(_paletteNames[s.theme] ?? 'Garden Green'),
+        trailing: _PillLabel(_paletteNames[s.theme] ?? 'Classic Green'),
         child: Wrap(
           spacing: 8,
           runSpacing: 10,
@@ -1281,11 +1280,11 @@ class _PreviewPanel extends StatelessWidget {
                                 leading: CircleAvatar(
                                   backgroundColor: scheme.primaryContainer,
                                   foregroundColor: scheme.onPrimaryContainer,
-                                  child: const Icon(Icons.local_florist_outlined),
+                                  child: const Icon(Icons.inventory_2_outlined),
                                 ),
-                                title: const Text('Red roses'),
-                                subtitle: const Text('24 in stock'),
-                                trailing: const Text('₹250',
+                                title: const Text('Wireless mouse'),
+                                subtitle: const Text('24 units in stock'),
+                                trailing: const Text('₹850',
                                     style:
                                         TextStyle(fontWeight: FontWeight.w700)),
                               ),
@@ -1294,11 +1293,11 @@ class _PreviewPanel extends StatelessWidget {
                                 leading: CircleAvatar(
                                   backgroundColor: scheme.secondaryContainer,
                                   foregroundColor: scheme.onSecondaryContainer,
-                                  child: const Icon(Icons.spa_outlined),
+                                  child: const Icon(Icons.shopping_bag_outlined),
                                 ),
-                                title: const Text('Tulip bunch'),
-                                subtitle: const Text('6 in stock'),
-                                trailing: const Text('₹180',
+                                title: const Text('Notebook pack'),
+                                subtitle: const Text('6 packs in stock'),
+                                trailing: const Text('₹120',
                                     style:
                                         TextStyle(fontWeight: FontWeight.w700)),
                               ),
