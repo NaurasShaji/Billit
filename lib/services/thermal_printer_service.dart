@@ -332,7 +332,7 @@ class ThermalPrinterService {
       }
       if (template['showPhone'] == true && businessPhone.isNotEmpty) {
         bytes += generator.text(businessPhone,
-            styles: const PosStyles(align: PosAlign.center));
+            styles: PosStyles(align: headerPosAlignment));
       }
       if (template['showEmail'] == true && businessEmail.isNotEmpty) {
         bytes += generator.text(businessEmail,
