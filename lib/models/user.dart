@@ -21,6 +21,8 @@ class User extends HiveObject {
   late UserType userType;
   @HiveField(4)
   String securityAnswer = 'Buddy'; // Default security answer
+  @HiveField(5)
+  String securityQuestion = 'What is the name of your favourite pet?';
 
   static String hash(String input) {
     return input.codeUnits

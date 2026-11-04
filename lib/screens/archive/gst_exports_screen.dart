@@ -595,37 +595,65 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             ),
           ],
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.35,
             children: [
-              FilledButton.icon(
-                onPressed: _exportingStatement || _exportingPdf
-                    ? null
-                    : _exportSalesStatement,
-                icon: const Icon(Icons.table_view_outlined),
-                label: const Text('Download CSV'),
+              SizedBox.expand(
+                child: FilledButton.icon(
+                  onPressed: _exportingStatement || _exportingPdf
+                      ? null
+                      : _exportSalesStatement,
+                  icon: const Icon(Icons.table_view_outlined, size: 19),
+                  label: const Text('Download CSV', maxLines: 1, softWrap: false),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
-              OutlinedButton.icon(
-                onPressed: _exportingStatement || _exportingPdf
-                    ? null
-                    : () => _exportSalesStatementPdf(),
-                icon: const Icon(Icons.picture_as_pdf_outlined),
-                label: const Text('Download PDF'),
+              SizedBox.expand(
+                child: OutlinedButton.icon(
+                  onPressed: _exportingStatement || _exportingPdf
+                      ? null
+                      : () => _exportSalesStatementPdf(),
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 19),
+                  label: const Text('Download PDF', maxLines: 1, softWrap: false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
-              OutlinedButton.icon(
-                onPressed: _exportingStatement || _exportingPdf
-                    ? null
-                    : () => _exportSalesStatement(share: true),
-                icon: const Icon(Icons.share_outlined),
-                label: const Text('Share CSV'),
+              SizedBox.expand(
+                child: OutlinedButton.icon(
+                  onPressed: _exportingStatement || _exportingPdf
+                      ? null
+                      : () => _exportSalesStatement(share: true),
+                  icon: const Icon(Icons.share_outlined, size: 19),
+                  label: const Text('Share CSV', maxLines: 1, softWrap: false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
-              OutlinedButton.icon(
-                onPressed: _exportingStatement || _exportingPdf
-                    ? null
-                    : () => _exportSalesStatementPdf(share: true),
-                icon: const Icon(Icons.share_outlined),
-                label: const Text('Share PDF'),
+              SizedBox.expand(
+                child: OutlinedButton.icon(
+                  onPressed: _exportingStatement || _exportingPdf
+                      ? null
+                      : () => _exportSalesStatementPdf(share: true),
+                  icon: const Icon(Icons.share_outlined, size: 19),
+                  label: const Text('Share PDF', maxLines: 1, softWrap: false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
             ],
           ),

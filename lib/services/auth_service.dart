@@ -140,6 +140,36 @@ class AuthService extends ChangeNotifier {
     return usersBox.values.toList();
   }
 
+  String getAdminSecurityQuestion() {
+    final usersBox = Hive.box<User>(Boxes.users);
+    final admin = usersBox.values.firstWhere(
+      (user) => user.userType == UserType.admin,
+      orElse: () => throw Exception('Admin account not found'),
+    );
+    return admin.securityQuestion;
+  }
+
+  Future<void> updateAdminSecurityQuestion({
+    required String currentPassword,
+    required String question,
+    required String answer,
+  }) async {
+    if (!isAdmin || currentUser == null) {
+      throw Exception('Only the signed-in administrator can update this setting');
+    }
+    if (currentUser!.password != User.hash(currentPassword)) {
+      throw Exception('Current password is incorrect');
+    }
+    if (question.trim().isEmpty || answer.trim().isEmpty) {
+      throw Exception('Choose a question and enter its answer');
+    }
+    currentUser!
+      ..securityQuestion = question.trim()
+      ..securityAnswer = answer.trim();
+    await currentUser!.save();
+    notifyListeners();
+  }
+
   /// Reset admin password using security question
   /// This is used for forgot password functionality
   Future<void> resetAdminPassword(
