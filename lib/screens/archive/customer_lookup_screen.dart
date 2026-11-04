@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
 import '../edit_invoice_screen.dart';
+import '../../utils/theme_colors.dart';
 
 class CustomerLookupScreen extends StatefulWidget {
   const CustomerLookupScreen({super.key});
@@ -145,7 +146,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Customer Lookup',
@@ -190,7 +191,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.panelColor,
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
@@ -206,7 +207,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                   decoration: InputDecoration(
                     hintText: 'Search customers by name or phone',
                     hintStyle: TextStyle(
-                      color: Colors.grey[500],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 16,
                     ),
                     prefixIcon: Icon(
@@ -215,10 +216,10 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                       size: 22,
                     ),
                     suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
+                        ? IconButton(tooltip: 'Clear', 
                             icon: Icon(
                               Icons.clear,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             onPressed: () {
                               _searchController.clear();
@@ -289,7 +290,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.panelColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -352,7 +353,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
           Icon(
             Icons.search_off,
             size: 80,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 20),
           Text(
@@ -361,7 +362,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                 : 'No customers found',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -371,7 +372,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
               'Try searching with a different name or phone number',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -435,7 +436,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                                 : 'No phone number',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -443,7 +444,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                     ),
                     Icon(
                       Icons.arrow_forward_ios,
-                      color: Colors.grey[400],
+                      color: Theme.of(context).colorScheme.outline,
                       size: 16,
                     ),
                   ],
@@ -523,7 +524,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                         Icon(
                           Icons.access_time,
                           size: 16,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -531,13 +532,13 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
                               .format(invoice.date),
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const Spacer(),
                         Icon(
                           Icons.arrow_forward_ios,
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.outline,
                           size: 16,
                         ),
                       ],
