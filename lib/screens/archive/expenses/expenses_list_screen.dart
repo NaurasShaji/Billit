@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../services/boxes.dart';
 import '../../../models/expense.dart';
+import '../../../utils/theme_colors.dart';
 
 class ExpensesListScreen extends StatefulWidget {
   const ExpensesListScreen({super.key});
@@ -63,7 +64,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
               unselectedLabelStyle:
                   const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               indicator: BoxDecoration(
-                color: Colors.white,
+                color: context.panelColor,
                 borderRadius: BorderRadius.circular(10),
               ),
               labelColor: Colors.red.shade600,
@@ -153,7 +154,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: Colors.red.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: IconButton(
@@ -168,7 +169,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
+                            color: Colors.blue.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: TextButton.icon(
@@ -183,7 +184,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
                                       : _anchor.year.toString(),
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade700,
+                                color: Colors.blue.shade700.adaptive(context),
                                 fontSize: 16,
                               ),
                             ),
@@ -193,7 +194,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
                       const SizedBox(width: 8),
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: Colors.red.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: IconButton(
@@ -239,7 +240,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.shade50,
+                                      color: Colors.green.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -403,7 +404,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.indigo.shade50,
+                                      color: Colors.indigo.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
@@ -671,7 +672,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  color: Colors.red.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: IconButton(
@@ -795,9 +796,9 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: Colors.red.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade200),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -816,7 +817,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen>
                     '${expense.category} • ${NumberFormat.simpleCurrency(locale: 'en_IN').format(expense.amount)}',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.red.shade700,
+                      color: Colors.red.shade700.adaptive(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
