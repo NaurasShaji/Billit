@@ -287,6 +287,40 @@ ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        foregroundColor: buttonStyle == 'minimal'
+            ? scheme.onSurface
+            : buttonStyle == 'tonal'
+                ? scheme.onSecondaryContainer
+                : scheme.primary,
+        backgroundColor: buttonStyle == 'minimal'
+            ? Colors.transparent
+            : buttonStyle == 'tonal'
+                ? scheme.secondaryContainer
+                : scheme.primary.withValues(alpha: 0.06),
+        side: BorderSide(
+          color: buttonStyle == 'minimal'
+              ? scheme.outlineVariant
+              : buttonStyle == 'tonal'
+                  ? scheme.secondaryContainer
+                  : scheme.primary.withValues(alpha: 0.45),
+        ),
+        minimumSize: const Size(44, 44),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: buttonStyle == 'minimal'
+            ? scheme.onSurface
+            : buttonStyle == 'tonal'
+                ? scheme.onSecondaryContainer
+                : scheme.primary,
+        backgroundColor: buttonStyle == 'tonal'
+            ? scheme.secondaryContainer
+            : buttonStyle == 'minimal'
+                ? Colors.transparent
+                : scheme.primary.withValues(alpha: 0.06),
         minimumSize: const Size(44, 44),
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
