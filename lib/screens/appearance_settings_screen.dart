@@ -160,7 +160,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                                     ? Icon(Icons.check,
                                         color: entry.value.computeLuminance() >
                                                 0.55
-                                            ? Colors.black87
+                                            ? Theme.of(context).colorScheme.onSurface
                                             : Colors.white,
                                         size: 21)
                                     : null,
