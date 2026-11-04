@@ -5,6 +5,8 @@ import 'gst_settings_screen.dart';
 import 'invoice_settings_screen.dart';
 import 'invoice_customisation_screen.dart';
 import 'printer_settings_screen.dart';
+import '../utils/theme_colors.dart';
+import '../widgets/responsive_page.dart';
 
 class SettingsScreen extends StatelessWidget {
   final bool isAdmin;
@@ -95,7 +97,9 @@ class SettingsScreen extends StatelessWidget {
         title: const Text('Settings',
             style: TextStyle(fontWeight: FontWeight.w700)),
       ),
-      body: SafeArea(
+      body: ResponsivePage(
+        maxWidth: 820,
+        child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
           children: [
@@ -130,7 +134,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: 10),
                       Container(
                         decoration: BoxDecoration(
-                          color: scheme.surface,
+                          color: context.panelColor,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: scheme.outlineVariant),
                         ),
@@ -154,6 +158,7 @@ class SettingsScreen extends StatelessWidget {
                 )),
           ],
         ),
+      ),
       ),
     );
   }
