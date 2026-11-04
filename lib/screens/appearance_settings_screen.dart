@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../utils/theme_colors.dart';
+import '../widgets/responsive_page.dart';
+
+/// Appearance & personalisation.
+///
+/// Settings are grouped into four tabs (Colour, Style, Navigation, Display).
+/// On wide windows a live preview of the real theme is pinned on the right;
+/// on narrow screens it appears at the top of the Colour and Style tabs.
+/// All settings keys are unchanged from the previous version.
 class AppearanceSettingsScreen extends StatelessWidget {
   const AppearanceSettingsScreen({super.key});
 
@@ -18,9 +27,9 @@ class AppearanceSettingsScreen extends StatelessWidget {
   };
 
   static const _paletteNames = <String, String>{
-    'green': 'Classic Green',
+    'green': 'Garden Green',
     'blue': 'Classic Blue',
-    'purple': 'Classic Purple',
+    'purple': 'Royal Purple',
     'amber': 'Warm Amber',
     'teal': 'Calm Teal',
     'rose': 'Rose',
@@ -30,739 +39,664 @@ class AppearanceSettingsScreen extends StatelessWidget {
     'ocean': 'Ocean',
   };
 
+  static const _defaults = <String, dynamic>{
+    'app_theme': 'green',
+    'theme_mode': 'system',
+    'ui_density': 'comfortable',
+    'product_view': 'list',
+    'navigation_style': 'classic',
+    'navigation_icon_style': 'outlined',
+    'surface_style': 'outlined',
+    'app_bar_style': 'surface',
+    'font_style': 'system',
+    'background_style': 'tinted',
+    'input_style': 'filled',
+    'button_style': 'filled',
+    'text_scale': 1.0,
+    'corner_radius': 16.0,
+    'low_stock_threshold': 10,
+  };
+
   Future<void> _save(String key, dynamic value) async {
     await Hive.box<dynamic>('app_settings').put(key, value);
   }
 
+  Future<void> _confirmReset(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset appearance?'),
+        content: const Text(
+            'Colours, layout, navigation and text size go back to the defaults. Your products and invoices are not affected.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await Hive.box<dynamic>('app_settings').putAll(<String, dynamic>{
+        ..._defaults,
+        'navigation_icon_overrides': <String, String>{},
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final settings = Hive.box<dynamic>('app_settings');
     return ValueListenableBuilder<Box<dynamic>>(
-      valueListenable: settings.listenable(),
+      valueListenable: Hive.box<dynamic>('app_settings').listenable(),
       builder: (context, box, _) {
-        final selectedTheme =
-            box.get('app_theme', defaultValue: 'green').toString();
-        final themeMode =
-            box.get('theme_mode', defaultValue: 'system').toString();
-        final density =
-            box.get('ui_density', defaultValue: 'comfortable').toString();
-        final productView =
-            box.get('product_view', defaultValue: 'list').toString();
-        final textScale =
-            (box.get('text_scale', defaultValue: 1.0) as num).toDouble();
-        final radius =
-            (box.get('corner_radius', defaultValue: 16.0) as num).toDouble();
-        final lowStockThreshold =
-            (box.get('low_stock_threshold', defaultValue: 10) as num)
-                .toDouble();
-        final navigationStyle =
-            box.get('navigation_style', defaultValue: 'classic').toString();
-        final navigationIconStyle = box
-            .get('navigation_icon_style', defaultValue: 'outlined')
-            .toString();
-        final surfaceStyle =
-            box.get('surface_style', defaultValue: 'outlined').toString();
-        final appBarStyle =
-            box.get('app_bar_style', defaultValue: 'surface').toString();
-        final fontStyle =
-            box.get('font_style', defaultValue: 'system').toString();
-        final backgroundStyle =
-            box.get('background_style', defaultValue: 'tinted').toString();
-        final inputStyle =
-            box.get('input_style', defaultValue: 'filled').toString();
-        final buttonStyle =
-            box.get('button_style', defaultValue: 'filled').toString();
-        final navigationIconOverridesRaw = box
-            .get('navigation_icon_overrides', defaultValue: <String, String>{});
-        final navigationIconOverrides = navigationIconOverridesRaw is Map
-            ? Map<String, String>.from(navigationIconOverridesRaw)
-            : <String, String>{};
-        final color = _palettes[selectedTheme] ?? _palettes['green']!;
+        final s = _Values(box);
+        return DefaultTabController(
+          length: 4,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Appearance & Personalisation'),
+              actions: [
+                IconButton(
+                  tooltip: 'Reset appearance',
+                  icon: const Icon(Icons.restart_alt),
+                  onPressed: () => _confirmReset(context),
+                ),
+                const SizedBox(width: 4),
+              ],
+            ),
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                final wide =
+                    constraints.maxWidth >= ResponsiveBreakpoints.desktop;
+                final paletteName =
+                    _paletteNames[s.theme] ?? _paletteNames['green']!;
+                final preview = _PreviewPanel(
+                  paletteName: paletteName,
+                  modeLabel:
+                      '${s.themeMode[0].toUpperCase()}${s.themeMode.substring(1)} mode',
+                );
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Appearance & Personalisation'),
-          ),
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 850),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(radius + 4),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.palette_outlined,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
-                            size: 30),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Make Billit yours',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                              ),
+                final tabs = Column(
+                  children: [
+                    Material(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      child: const Align(
+                        alignment: Alignment.centerLeft,
+                        child: TabBar(
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          tabs: [
+                            Tab(
+                                icon: Icon(Icons.palette_outlined),
+                                text: 'Colour'),
+                            Tab(
+                                icon: Icon(Icons.style_outlined),
+                                text: 'Style'),
+                            Tab(
+                                icon: Icon(Icons.explore_outlined),
+                                text: 'Navigation'),
+                            Tab(
+                                icon: Icon(Icons.text_fields),
+                                text: 'Display'),
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${_paletteNames[selectedTheme] ?? 'Classic Green'} · ${themeMode[0].toUpperCase()}${themeMode.substring(1)} mode',
-                          style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _sectionTitle(context, 'Colour theme',
-                      'Choose an accent colour for navigation and controls.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: _palettes.entries.map((entry) {
-                          final selected = entry.key == selectedTheme;
-                          return Tooltip(
-                            message: _paletteNames[entry.key]!,
-                            child: InkWell(
-                              onTap: () => _save('app_theme', entry.key),
-                              customBorder: const CircleBorder(),
-                              child: Container(
-                                width: 42,
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: entry.value,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: selected
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Colors.transparent,
-                                    width: selected ? 3 : 0,
-                                  ),
-                                ),
-                                child: selected
-                                    ? Icon(Icons.check,
-                                        color: entry.value.computeLuminance() >
-                                                0.55
-                                            ? Theme.of(context).colorScheme.onSurface
-                                            : Colors.white,
-                                        size: 21)
-                                    : null,
-                              ),
-                            ),
-                          );
-                        }).toList(),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Light and dark mode',
-                      'Follow your device or set a mode manually.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                              value: 'system',
-                              icon: Icon(Icons.settings_brightness),
-                              label: Text('System')),
-                          ButtonSegment(
-                              value: 'light',
-                              icon: Icon(Icons.light_mode_outlined),
-                              label: Text('Light')),
-                          ButtonSegment(
-                              value: 'dark',
-                              icon: Icon(Icons.dark_mode_outlined),
-                              label: Text('Dark')),
-                        ],
-                        selected: {themeMode},
-                        onSelectionChanged: (values) =>
-                            _save('theme_mode', values.first),
-                        showSelectedIcon: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Navigation icon skin',
-                      'Choose a neutral icon family for Overview, Billing, Inventory and Reports.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
+                    Expanded(
+                      child: TabBarView(
                         children: [
-                          RadioListTile<String>(
-                            value: 'outlined',
-                            groupValue: navigationIconStyle,
-                            title: const Text('Outlined'),
-                            subtitle: const Text('Light, clean line icons.'),
-                            secondary: const Icon(Icons.dashboard_outlined),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _save('navigation_icon_style', value);
-                              }
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'rounded',
-                            groupValue: navigationIconStyle,
-                            title: const Text('Rounded'),
-                            subtitle: const Text('Soft rounded icon shapes.'),
-                            secondary: const Icon(Icons.dashboard_rounded),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _save('navigation_icon_style', value);
-                              }
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'filled',
-                            groupValue: navigationIconStyle,
-                            title: const Text('Filled'),
-                            subtitle: const Text('Bold solid icons.'),
-                            secondary: const Icon(Icons.dashboard),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _save('navigation_icon_style', value);
-                              }
-                            },
-                          ),
+                          _tabPage([
+                            if (!wide) preview,
+                            ..._colourSections(context, s),
+                          ]),
+                          _tabPage([
+                            if (!wide) preview,
+                            ..._styleSections(context, s),
+                          ]),
+                          _tabPage(_navigationSections(context, s)),
+                          _tabPage(_displaySections(context, s)),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Individual navigation icons',
-                      'Choose a separate icon for each destination. Changes apply immediately.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _navigationIconPicker(
-                              context,
-                              'Overview',
-                              'overview',
-                              Icons.dashboard_outlined,
-                              navigationIconOverrides),
-                          const Divider(height: 24),
-                          _navigationIconPicker(
-                              context,
-                              'Billing',
-                              'billing',
-                              Icons.receipt_long_outlined,
-                              navigationIconOverrides),
-                          const Divider(height: 24),
-                          _navigationIconPicker(
-                              context,
-                              'Inventory',
-                              'inventory',
-                              Icons.inventory_2_outlined,
-                              navigationIconOverrides),
-                          const Divider(height: 24),
-                          _navigationIconPicker(
-                              context,
-                              'Reports',
-                              'reports',
-                              Icons.bar_chart_outlined,
-                              navigationIconOverrides),
-                          const Divider(height: 24),
-                          _navigationIconPicker(context, 'Archive', 'archive',
-                              Icons.archive_outlined, navigationIconOverrides),
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              onPressed: () => _save(
-                                  'navigation_icon_overrides',
-                                  <String, String>{}),
-                              icon: const Icon(Icons.restart_alt),
-                              label: const Text('Reset custom icons'),
-                            ),
-                          ),
-                        ],
+                  ],
+                );
+
+                if (!wide) return tabs;
+                return Row(
+                  children: [
+                    Expanded(child: tabs),
+                    VerticalDivider(
+                      width: 1,
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                    SizedBox(
+                      width: 380,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),+                        child: preview,
                       ),
                     ),
-                  ),
-                  _sectionTitle(context, 'Navigation bar style',
-                      'Choose how the main navigation looks on phones and tablets.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        children: [
-                          RadioListTile<String>(
-                            value: 'classic',
-                            groupValue: navigationStyle,
-                            title: const Text('Classic'),
-                            subtitle:
-                                const Text('Standard Material navigation bar.'),
-                            secondary: const Icon(Icons.view_day_outlined),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _save('navigation_style', value);
-                              }
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'floating',
-                            groupValue: navigationStyle,
-                            title: const Text('Floating'),
-                            subtitle: const Text(
-                                'Rounded bar with a selected-item highlight.'),
-                            secondary:
-                                const Icon(Icons.space_dashboard_outlined),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _save('navigation_style', value);
-                              }
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'underline',
-                            groupValue: navigationStyle,
-                            title: const Text('Underline'),
-                            subtitle: const Text(
-                                'Clean layout with a slim active indicator.'),
-                            secondary: const Icon(Icons.horizontal_rule),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _save('navigation_style', value);
-                              }
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'minimal',
-                            groupValue: navigationStyle,
-                            title: const Text('Minimal'),
-                            subtitle: const Text(
-                                'Simple icons and labels without a selected background.'),
-                            secondary: const Icon(Icons.more_horiz),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _save('navigation_style', value);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'App bar appearance',
-                      'Choose between a subtle surface header or a strong brand-colour header.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                              value: 'surface',
-                              icon: Icon(Icons.view_agenda_outlined),
-                              label: Text('Surface')),
-                          ButtonSegment(
-                              value: 'brand',
-                              icon: Icon(Icons.color_lens_outlined),
-                              label: Text('Brand')),
-                        ],
-                        selected: {appBarStyle},
-                        onSelectionChanged: (values) =>
-                            _save('app_bar_style', values.first),
-                        showSelectedIcon: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Card and panel style',
-                      'Control the depth and borders used across the interface.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        children: [
-                          RadioListTile<String>(
-                            value: 'outlined',
-                            groupValue: surfaceStyle,
-                            title: const Text('Outlined'),
-                            subtitle: const Text(
-                                'Defined panels with subtle borders.'),
-                            secondary: const Icon(Icons.crop_square),
-                            onChanged: (v) {
-                              if (v != null) _save('surface_style', v);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'elevated',
-                            groupValue: surfaceStyle,
-                            title: const Text('Elevated'),
-                            subtitle:
-                                const Text('Soft shadows and raised cards.'),
-                            secondary: const Icon(Icons.layers_outlined),
-                            onChanged: (v) {
-                              if (v != null) _save('surface_style', v);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'flat',
-                            groupValue: surfaceStyle,
-                            title: const Text('Flat'),
-                            subtitle: const Text(
-                                'Minimal surfaces without shadows or borders.'),
-                            secondary: const Icon(Icons.rectangle_outlined),
-                            onChanged: (v) {
-                              if (v != null) _save('surface_style', v);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Typography',
-                      'Choose the overall typeface style used throughout the app.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(value: 'system', label: Text('System')),
-                          ButtonSegment(value: 'serif', label: Text('Serif')),
-                          ButtonSegment(
-                              value: 'monospace', label: Text('Mono')),
-                        ],
-                        selected: {fontStyle},
-                        onSelectionChanged: (values) =>
-                            _save('font_style', values.first),
-                        showSelectedIcon: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Page background',
-                      'Choose the overall canvas behind cards and content.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                              value: 'tinted',
-                              icon: Icon(Icons.gradient),
-                              label: Text('Tinted')),
-                          ButtonSegment(
-                              value: 'plain',
-                              icon: Icon(Icons.crop_square),
-                              label: Text('Plain')),
-                        ],
-                        selected: {backgroundStyle},
-                        onSelectionChanged: (values) =>
-                            _save('background_style', values.first),
-                        showSelectedIcon: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Input field appearance',
-                      'Choose filled fields or a cleaner transparent outlined style.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                              value: 'filled',
-                              icon: Icon(Icons.format_color_fill),
-                              label: Text('Filled')),
-                          ButtonSegment(
-                              value: 'outlined',
-                              icon: Icon(Icons.border_outer),
-                              label: Text('Outlined')),
-                        ],
-                        selected: {inputStyle},
-                        onSelectionChanged: (values) =>
-                            _save('input_style', values.first),
-                        showSelectedIcon: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Button appearance',
-                      'Set the emphasis used by primary action buttons.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        children: [
-                          RadioListTile<String>(
-                            value: 'filled',
-                            groupValue: buttonStyle,
-                            title: const Text('Filled'),
-                            subtitle:
-                                const Text('Strong accent-colour buttons.'),
-                            secondary: const Icon(Icons.smart_button),
-                            onChanged: (v) {
-                              if (v != null) _save('button_style', v);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'tonal',
-                            groupValue: buttonStyle,
-                            title: const Text('Tonal'),
-                            subtitle:
-                                const Text('Softer colour-filled buttons.'),
-                            secondary: const Icon(Icons.rectangle_rounded),
-                            onChanged: (v) {
-                              if (v != null) _save('button_style', v);
-                            },
-                          ),
-                          RadioListTile<String>(
-                            value: 'minimal',
-                            groupValue: buttonStyle,
-                            title: const Text('Minimal'),
-                            subtitle: const Text(
-                                'Low-emphasis buttons with no elevation.'),
-                            secondary: const Icon(Icons.border_clear),
-                            onChanged: (v) {
-                              if (v != null) _save('button_style', v);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Display density',
-                      'Choose a more compact view or extra breathing room.'),
-                  Card(
-                    child: Column(
-                      children: [
-                        RadioListTile<String>(
-                          value: 'comfortable',
-                          groupValue: density,
-                          title: const Text('Comfortable'),
-                          subtitle: const Text(
-                              'More spacing; easier to tap on phones.'),
-                          secondary: const Icon(Icons.space_dashboard_outlined),
-                          onChanged: (value) {
-                            if (value != null) _save('ui_density', value);
-                          },
-                        ),
-                        const Divider(height: 1),
-                        RadioListTile<String>(
-                          value: 'compact',
-                          groupValue: density,
-                          title: const Text('Compact'),
-                          subtitle:
-                              const Text('Fits more rows on smaller screens.'),
-                          secondary:
-                              const Icon(Icons.view_compact_alt_outlined),
-                          onChanged: (value) {
-                            if (value != null) _save('ui_density', value);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Product catalogue layout',
-                      'Choose how inventory items are displayed.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                              value: 'list',
-                              icon: Icon(Icons.view_list_outlined),
-                              label: Text('List')),
-                          ButtonSegment(
-                              value: 'grid',
-                              icon: Icon(Icons.grid_view_rounded),
-                              label: Text('Grid')),
-                        ],
-                        selected: {productView},
-                        onSelectionChanged: (values) =>
-                            _save('product_view', values.first),
-                        showSelectedIcon: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(
-                      context, 'Text size', 'Adjust app text for readability.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Text('Small'),
-                              const Spacer(),
-                              Text('${(textScale * 100).round()}%',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold)),
-                              const Spacer(),
-                              const Text('Large'),
-                            ],
-                          ),
-                          Slider(
-                            min: 0.9,
-                            max: 1.2,
-                            divisions: 6,
-                            value: textScale.clamp(0.9, 1.2).toDouble(),
-                            label: '${(textScale * 100).round()}%',
-                            onChanged: (value) => _save('text_scale', value),
-                          ),
-                          const Text('Sample text · Invoice total ₹1,250.00',
-                              style: TextStyle(fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Inventory alerts',
-                      'Choose when a product should be flagged as low stock.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.inventory_2_outlined),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                  child: Text('Low-stock threshold')),
-                              Text('${lowStockThreshold.round()} units',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          Slider(
-                            min: 1,
-                            max: 100,
-                            divisions: 99,
-                            value:
-                                lowStockThreshold.clamp(1.0, 100.0).toDouble(),
-                            label: '${lowStockThreshold.round()}',
-                            onChanged: (value) =>
-                                _save('low_stock_threshold', value.round()),
-                          ),
-                          Text(
-                            'Products at or below this stock level appear in the dashboard alerts.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _sectionTitle(context, 'Corner style',
-                      'Set the roundness used by the app theme.'),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SegmentedButton<double>(
-                            segments: const [
-                              ButtonSegment(value: 8, label: Text('Sharp')),
-                              ButtonSegment(value: 16, label: Text('Rounded')),
-                              ButtonSegment(
-                                  value: 24, label: Text('Pill-like')),
-                            ],
-                            selected: {radius},
-                            onSelectionChanged: (values) =>
-                                _save('corner_radius', values.first),
-                            showSelectedIcon: false,
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.10),
-                              border: Border.all(
-                                  color: color.withValues(alpha: 0.6)),
-                              borderRadius: BorderRadius.circular(radius),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.receipt_long, color: color),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                    child: Text('Preview card',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w600))),
-                                Icon(Icons.check_circle, color: color),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await _save('app_theme', 'green');
-                      await _save('theme_mode', 'system');
-                      await _save('ui_density', 'comfortable');
-                      await _save('product_view', 'list');
-                      await _save('navigation_style', 'classic');
-                      await _save('navigation_icon_style', 'outlined');
-                      await _save(
-                          'navigation_icon_overrides', <String, String>{});
-                      await _save('surface_style', 'outlined');
-                      await _save('app_bar_style', 'surface');
-                      await _save('font_style', 'system');
-                      await _save('background_style', 'tinted');
-                      await _save('input_style', 'filled');
-                      await _save('button_style', 'filled');
-                      await _save('text_scale', 1.0);
-                      await _save('corner_radius', 16.0);
-                      await _save('low_stock_threshold', 10);
-                    },
-                    icon: const Icon(Icons.restart_alt),
-                    label: const Text('Reset appearance'),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ),
         );
       },
+    );
+  }
+
+  /// One scrollable tab page, centred and width-limited on big screens.
+  Widget _tabPage(List<Widget> children) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 780),
+        child: ListView(
+          primary: false,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          children: [
+            for (final child in children) ...[
+              child,
+              const SizedBox(height: 16),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Colour tab
+  // ---------------------------------------------------------------------
+  List<Widget> _colourSections(BuildContext context, _Values s) {
+    return [
+      _SettingsSection(
+        title: 'Accent colour',
+        subtitle: 'Used for navigation, buttons and highlights.',
+        trailing: _PillLabel(_paletteNames[s.theme] ?? 'Garden Green'),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 10,
+          children: [
+            for (final entry in _palettes.entries)
+              _SwatchTile(
+                color: entry.value,
+                label: _paletteNames[entry.key]!,
+                selected: entry.key == s.theme,
+                onTap: () => _save('app_theme', entry.key),
+              ),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Light or dark',
+        subtitle: 'Follow your device, or set a mode manually.',
+        child: _FullWidthSegments<String>(
+          value: s.themeMode,
+          onChanged: (v) => _save('theme_mode', v),
+          segments: const [
+            ButtonSegment(
+                value: 'system',
+                icon: Icon(Icons.settings_brightness),
+                label: Text('System')),
+            ButtonSegment(
+                value: 'light',
+                icon: Icon(Icons.light_mode_outlined),
+                label: Text('Light')),
+            ButtonSegment(
+                value: 'dark',
+                icon: Icon(Icons.dark_mode_outlined),
+                label: Text('Dark')),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Page background',
+        subtitle: 'The canvas behind cards and content.',
+        child: _FullWidthSegments<String>(
+          value: s.background,
+          onChanged: (v) => _save('background_style', v),
+          segments: const [
+            ButtonSegment(
+                value: 'tinted',
+                icon: Icon(Icons.gradient),
+                label: Text('Tinted')),
+            ButtonSegment(
+                value: 'plain',
+                icon: Icon(Icons.crop_square),
+                label: Text('Plain')),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Top bar',
+        subtitle: 'A quiet surface header or a bold brand-colour header.',
+        child: _OptionGrid<String>(
+          value: s.appBar,
+          onChanged: (v) => _save('app_bar_style', v),
+          minTileWidth: 220,
+          options: [
+            _Opt('surface', 'Surface',
+                subtitle: 'Subtle, blends with the page.',
+                visual: _barVisual(context, brand: false)),
+            _Opt('brand', 'Brand colour',
+                subtitle: 'Strong accent-colour header.',
+                visual: _barVisual(context, brand: true)),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  // ---------------------------------------------------------------------
+  // Style tab
+  // ---------------------------------------------------------------------
+  List<Widget> _styleSections(BuildContext context, _Values s) {
+    return [
+      _SettingsSection(
+        title: 'Corner style',
+        subtitle: 'How round cards, buttons and fields are.',
+        child: _OptionGrid<double>(
+          value: s.radius,
+          onChanged: (v) => _save('corner_radius', v),
+          minTileWidth: 170,
+          options: [
+            _Opt(8.0, 'Sharp', visual: _cornerVisual(context, 8)),
+            _Opt(16.0, 'Rounded', visual: _cornerVisual(context, 16)),
+            _Opt(24.0, 'Pill-like', visual: _cornerVisual(context, 24)),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Cards and panels',
+        subtitle: 'Depth and borders used across the interface.',
+        child: _OptionGrid<String>(
+          value: s.surface,
+          onChanged: (v) => _save('surface_style', v),
+          minTileWidth: 170,
+          options: [
+            _Opt('outlined', 'Outlined',
+                subtitle: 'Subtle borders.',
+                visual: _surfaceVisual(context, 'outlined')),
+            _Opt('elevated', 'Elevated',
+                subtitle: 'Soft shadows.',
+                visual: _surfaceVisual(context, 'elevated')),
+            _Opt('flat', 'Flat',
+                subtitle: 'No borders or shadows.',
+                visual: _surfaceVisual(context, 'flat')),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Buttons',
+        subtitle: 'Emphasis of the main action buttons.',
+        child: _OptionGrid<String>(
+          value: s.button,
+          onChanged: (v) => _save('button_style', v),
+          minTileWidth: 170,
+          options: [
+            _Opt('filled', 'Filled',
+                subtitle: 'Strong accent colour.',
+                visual: _buttonVisual(context, 'filled')),
+            _Opt('tonal', 'Tonal',
+                subtitle: 'Softer colour.',
+                visual: _buttonVisual(context, 'tonal')),
+            _Opt('minimal', 'Minimal',
+                subtitle: 'Low emphasis.',
+                visual: _buttonVisual(context, 'minimal')),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Input fields',
+        subtitle: 'Filled fields or a cleaner outlined look.',
+        child: _OptionGrid<String>(
+          value: s.input,
+          onChanged: (v) => _save('input_style', v),
+          minTileWidth: 220,
+          options: [
+            _Opt('filled', 'Filled', visual: _inputVisual(context, true)),
+            _Opt('outlined', 'Outlined', visual: _inputVisual(context, false)),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Typography',
+        subtitle: 'The typeface used throughout the app.',
+        child: _OptionGrid<String>(
+          value: s.font,
+          onChanged: (v) => _save('font_style', v),
+          minTileWidth: 170,
+          options: [
+            _Opt('system', 'System',
+                subtitle: 'Clean sans-serif.',
+                visual: _fontVisual(context, _fontFamilies['system']!)),
+            _Opt('serif', 'Serif',
+                subtitle: 'Classic and formal.',
+                visual: _fontVisual(context, _fontFamilies['serif']!)),
+            _Opt('monospace', 'Mono',
+                subtitle: 'Fixed-width digits.',
+                visual: _fontVisual(context, _fontFamilies['monospace']!)),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  static const _fontFamilies = <String, String>{
+    'system': 'sans-serif',
+    'serif': 'serif',
+    'monospace': 'monospace',
+  };
+
+  // ---------------------------------------------------------------------
+  // Navigation tab
+  // ---------------------------------------------------------------------
+  List<Widget> _navigationSections(BuildContext context, _Values s) {
+    return [
+      _SettingsSection(
+        title: 'Navigation bar style',
+        subtitle: 'How the main navigation looks on phones and tablets.',
+        child: _OptionGrid<String>(
+          value: s.navStyle,
+          onChanged: (v) => _save('navigation_style', v),
+          minTileWidth: 230,
+          options: const [
+            _Opt('classic', 'Classic',
+                subtitle: 'Standard Material bar.', icon: Icons.view_day_outlined),
+            _Opt('floating', 'Floating',
+                subtitle: 'Rounded, with a highlight.',
+                icon: Icons.space_dashboard_outlined),
+            _Opt('underline', 'Underline',
+                subtitle: 'Slim active indicator.', icon: Icons.horizontal_rule),
+            _Opt('minimal', 'Minimal',
+                subtitle: 'Icons and labels only.', icon: Icons.more_horiz),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Icon style',
+        subtitle: 'One icon family for all navigation destinations.',
+        child: _OptionGrid<String>(
+          value: s.navIconStyle,
+          onChanged: (v) => _save('navigation_icon_style', v),
+          minTileWidth: 170,
+          options: const [
+            _Opt('outlined', 'Outlined',
+                subtitle: 'Light line icons.', icon: Icons.dashboard_outlined),
+            _Opt('rounded', 'Rounded',
+                subtitle: 'Soft shapes.', icon: Icons.dashboard_rounded),
+            _Opt('filled', 'Filled',
+                subtitle: 'Bold solid icons.', icon: Icons.dashboard),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Individual icons',
+        subtitle: 'Pick a different icon for each destination.',
+        trailing: TextButton.icon(
+          onPressed: () =>
+              _save('navigation_icon_overrides', <String, String>{}),
+          icon: const Icon(Icons.restart_alt, size: 18),
+          label: const Text('Reset'),
+        ),
+        child: Column(
+          children: [
+            _navigationIconPicker(context, 'Overview', 'overview',
+                Icons.dashboard_outlined, s.iconOverrides),
+            const Divider(height: 24),
+            _navigationIconPicker(context, 'Billing', 'billing',
+                Icons.receipt_long_outlined, s.iconOverrides),
+            const Divider(height: 24),
+            _navigationIconPicker(context, 'Inventory', 'inventory',
+                Icons.inventory_2_outlined, s.iconOverrides),
+            const Divider(height: 24),
+            _navigationIconPicker(context, 'Reports', 'reports',
+                Icons.bar_chart_outlined, s.iconOverrides),
+            const Divider(height: 24),
+            _navigationIconPicker(context, 'Archive', 'archive',
+                Icons.archive_outlined, s.iconOverrides),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  // ---------------------------------------------------------------------
+  // Display tab
+  // ---------------------------------------------------------------------
+  List<Widget> _displaySections(BuildContext context, _Values s) {
+    final scheme = Theme.of(context).colorScheme;
+    return [
+      _SettingsSection(
+        title: 'Text size',
+        subtitle: 'Make text easier to read.',
+        trailing: _PillLabel('${(s.textScale * 100).round()}%'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final preset in const <MapEntry<String, double>>[
+                  MapEntry('Small', 0.9),
+                  MapEntry('Default', 1.0),
+                  MapEntry('Large', 1.1),
+                  MapEntry('Extra large', 1.2),
+                ])
+                  ChoiceChip(
+                    label: Text(preset.key),
+                    selected: (s.textScale - preset.value).abs() < 0.001,
+                    onSelected: (_) => _save('text_scale', preset.value),
+                  ),
+              ],
+            ),
+            Slider(
+              min: 0.9,
+              max: 1.2,
+              divisions: 6,
+              value: s.textScale.clamp(0.9, 1.2).toDouble(),
+              label: '${(s.textScale * 100).round()}%',
+              onChanged: (value) => _save('text_scale', value),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.subtleFill,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Sample text · Invoice total ₹1,250.00',
+                style: TextStyle(color: scheme.onSurface),
+              ),
+            ),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Display density',
+        subtitle: 'More room, or more rows on screen.',
+        child: _OptionGrid<String>(
+          value: s.density,
+          onChanged: (v) => _save('ui_density', v),
+          minTileWidth: 220,
+          options: const [
+            _Opt('comfortable', 'Comfortable',
+                subtitle: 'More spacing; easier to tap.',
+                icon: Icons.space_dashboard_outlined),
+            _Opt('compact', 'Compact',
+                subtitle: 'Fits more rows on screen.',
+                icon: Icons.view_compact_alt_outlined),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Product catalogue',
+        subtitle: 'How inventory items are shown.',
+        child: _OptionGrid<String>(
+          value: s.productView,
+          onChanged: (v) => _save('product_view', v),
+          minTileWidth: 220,
+          options: const [
+            _Opt('list', 'List',
+                subtitle: 'One product per row.', icon: Icons.view_list_outlined),
+            _Opt('grid', 'Grid',
+                subtitle: 'Cards side by side.', icon: Icons.grid_view_rounded),
+          ],
+        ),
+      ),
+      _SettingsSection(
+        title: 'Low-stock alert',
+        subtitle: 'Flag products at or below this stock level.',
+        trailing: _PillLabel('${s.lowStock.round()} units'),
+        child: Slider(
+          min: 1,
+          max: 100,
+          divisions: 99,
+          value: s.lowStock.clamp(1.0, 100.0).toDouble(),
+          label: '${s.lowStock.round()}',
+          onChanged: (value) => _save('low_stock_threshold', value.round()),
+        ),
+      ),
+    ];
+  }
+
+  // ---------------------------------------------------------------------
+  // Small visual samples shown inside the option tiles
+  // ---------------------------------------------------------------------
+  Widget _barVisual(BuildContext context, {required bool brand}) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 56,
+      height: 30,
+      decoration: BoxDecoration(
+        color: brand ? scheme.primary : context.panelColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Container(
+        height: 5,
+        width: 22,
+        decoration: BoxDecoration(
+          color: brand ? scheme.onPrimary : scheme.onSurfaceVariant,
+          borderRadius: BorderRadius.circular(3),
+        ),
+      ),
+    );
+  }
+
+  Widget _cornerVisual(BuildContext context, double radius) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 50,
+      height: 34,
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.12),
+        border: Border.all(color: scheme.primary, width: 2),
+        borderRadius: BorderRadius.circular(radius * 0.75),
+      ),
+    );
+  }
+
+  Widget _surfaceVisual(BuildContext context, String style) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 50,
+      height: 34,
+      decoration: BoxDecoration(
+        color: style == 'flat' ? scheme.surfaceContainerHighest : context.panelColor,
+        borderRadius: BorderRadius.circular(8),
+        border: style == 'outlined'
+            ? Border.all(color: scheme.outline.withValues(alpha: 0.6))
+            : null,
+        boxShadow: style == 'elevated'
+            ? [
+                BoxShadow(
+                  color: scheme.shadow.withValues(alpha: 0.28),
+                  blurRadius: 7,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
+      ),
+    );
+  }
+
+  Widget _buttonVisual(BuildContext context, String style) {
+    final scheme = Theme.of(context).colorScheme;
+    final Color bg;
+    final Color fg;
+    switch (style) {
+      case 'tonal':
+        bg = scheme.secondaryContainer;
+        fg = scheme.onSecondaryContainer;
+        break;
+      case 'minimal':
+        bg = scheme.surfaceContainerHighest;
+        fg = scheme.onSurface;
+        break;
+      default:
+        bg = scheme.primary;
+        fg = scheme.onPrimary;
+    }
+    return Container(
+      width: 56,
+      height: 28,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        'Pay',
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
+      ),
+    );
+  }
+
+  Widget _inputVisual(BuildContext context, bool filled) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 56,
+      height: 28,
+      decoration: BoxDecoration(
+        color: filled ? scheme.surfaceContainerHigh : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: scheme.outline.withValues(alpha: 0.7)),
+      ),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Container(
+        height: 4,
+        width: 26,
+        decoration: BoxDecoration(
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  Widget _fontVisual(BuildContext context, String family) {
+    return SizedBox(
+      width: 50,
+      child: Text(
+        'Aa',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: family,
+          fontSize: 26,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
     );
   }
 
@@ -870,22 +804,579 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _sectionTitle(BuildContext context, String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+// =========================================================================
+// Reusable building blocks (private to this screen)
+// =========================================================================
+
+/// Snapshot of every appearance setting, read once per rebuild.
+class _Values {
+  _Values(Box<dynamic> box)
+      : theme = box.get('app_theme', defaultValue: 'green').toString(),
+        themeMode = box.get('theme_mode', defaultValue: 'system').toString(),
+        density =
+            box.get('ui_density', defaultValue: 'comfortable').toString(),
+        productView = box.get('product_view', defaultValue: 'list').toString(),
+        textScale =
+            (box.get('text_scale', defaultValue: 1.0) as num).toDouble(),
+        radius =
+            (box.get('corner_radius', defaultValue: 16.0) as num).toDouble(),
+        lowStock = (box.get('low_stock_threshold', defaultValue: 10) as num)
+            .toDouble(),
+        navStyle =
+            box.get('navigation_style', defaultValue: 'classic').toString(),
+        navIconStyle = box
+            .get('navigation_icon_style', defaultValue: 'outlined')
+            .toString(),
+        surface =
+            box.get('surface_style', defaultValue: 'outlined').toString(),
+        appBar = box.get('app_bar_style', defaultValue: 'surface').toString(),
+        font = box.get('font_style', defaultValue: 'system').toString(),
+        background =
+            box.get('background_style', defaultValue: 'tinted').toString(),
+        input = box.get('input_style', defaultValue: 'filled').toString(),
+        button = box.get('button_style', defaultValue: 'filled').toString(),
+        iconOverrides = _overrides(
+            box.get('navigation_icon_overrides', defaultValue: <String, String>{}));
+
+  final String theme;
+  final String themeMode;
+  final String density;
+  final String productView;
+  final double textScale;
+  final double radius;
+  final double lowStock;
+  final String navStyle;
+  final String navIconStyle;
+  final String surface;
+  final String appBar;
+  final String font;
+  final String background;
+  final String input;
+  final String button;
+  final Map<String, String> iconOverrides;
+
+  static Map<String, String> _overrides(dynamic raw) =>
+      raw is Map ? Map<String, String>.from(raw) : <String, String>{};
+}
+
+/// A titled card that groups related settings.
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 12),
+                  trailing!,
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small rounded label showing the current value of a section.
+class _PillLabel extends StatelessWidget {
+  const _PillLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: scheme.onPrimaryContainer,
+        ),
+      ),
+    );
+  }
+}
+
+/// Colour swatch with its name underneath.
+class _SwatchTile extends StatelessWidget {
+  const _SwatchTile({
+    required this.color,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Color color;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final onColor = color.computeLuminance() > 0.55 ? Colors.black : Colors.white;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 84,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selected ? scheme.onSurface : Colors.transparent,
+                      width: 3,
+                    ),
+                  ),
+                  child: selected
+                      ? Icon(Icons.check, color: onColor, size: 22)
+                      : null,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color:
+                        selected ? scheme.onSurface : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Segmented control that stretches across the card.
+class _FullWidthSegments<T> extends StatelessWidget {
+  const _FullWidthSegments({
+    required this.value,
+    required this.onChanged,
+    required this.segments,
+  });
+
+  final T value;
+  final ValueChanged<T> onChanged;
+  final List<ButtonSegment<T>> segments;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<T>(
+      segments: segments,
+      selected: {value},
+      onSelectionChanged: (values) => onChanged(values.first),
+      showSelectedIcon: false,
+      expandedInsets: EdgeInsets.zero,
+    );
+  }
+}
+
+/// One choice in an [_OptionGrid].
+class _Opt<T> {
+  const _Opt(this.value, this.label, {this.subtitle, this.icon, this.visual});
+
+  final T value;
+  final String label;
+  final String? subtitle;
+  final IconData? icon;
+  final Widget? visual;
+}
+
+/// Responsive grid of selectable option tiles (replaces tall radio lists).
+class _OptionGrid<T> extends StatelessWidget {
+  const _OptionGrid({
+    required this.options,
+    required this.value,
+    required this.onChanged,
+    this.minTileWidth = 200,
+  });
+
+  final List<_Opt<T>> options;
+  final T value;
+  final ValueChanged<T> onChanged;
+  final double minTileWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 12.0;
+        final fit = ((constraints.maxWidth + gap) / (minTileWidth + gap)).floor();
+        var columns = fit < 1 ? 1 : fit;
+        if (columns > options.length) columns = options.length;
+        final tileWidth = (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final option in options)
+              SizedBox(
+                width: tileWidth,
+                child: _OptionTile(
+                  label: option.label,
+                  subtitle: option.subtitle,
+                  icon: option.icon,
+                  visual: option.visual,
+                  selected: option.value == value,
+                  onTap: () => onChanged(option.value),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  const _OptionTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+    this.icon,
+    this.visual,
+  });
+
+  final String label;
+  final String? subtitle;
+  final IconData? icon;
+  final Widget? visual;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final leading = visual ??
+        (icon != null
+            ? Icon(
+                icon,
+                size: 26,
+                color: selected ? scheme.primary : scheme.onSurfaceVariant,
+              )
+            : null);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.primary.withValues(alpha: 0.10)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? scheme.primary : scheme.outlineVariant,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              if (leading != null) ...[
+                SizedBox(width: 56, child: Center(child: leading)),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle, color: scheme.primary, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A miniature, non-interactive screen built from the REAL theme widgets, so
+/// every change above is visible immediately.
+class _PreviewPanel extends StatelessWidget {
+  const _PreviewPanel({required this.paletteName, required this.modeLabel});
+
+  final String paletteName;
+  final String modeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 3),
-          Text(subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Icon(Icons.visibility_outlined,
+                    size: 18, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(
+                  'Live preview',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$paletteName · $modeLabel',
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),+          ),
+          const Divider(height: 1),
+          IgnorePointer(
+            child: ExcludeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 56,
+                    child: AppBar(
+                      primary: false,
+                      automaticallyImplyLeading: false,
+                      title: const Text('Billit'),
+                      actions: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(Icons.notifications_none),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    color: theme.scaffoldBackgroundColor,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today's sales",
+                          style: theme.textTheme.labelLarge
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₹12,480',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: scheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Card(
+                          margin: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: scheme.primaryContainer,
+                                  foregroundColor: scheme.onPrimaryContainer,
+                                  child: const Icon(Icons.local_florist_outlined),
+                                ),
+                                title: const Text('Red roses'),
+                                subtitle: const Text('24 in stock'),
+                                trailing: const Text('₹250',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w700)),
+                              ),
+                              const Divider(height: 1),
+                              ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: scheme.secondaryContainer,
+                                  foregroundColor: scheme.onSecondaryContainer,
+                                  child: const Icon(Icons.spa_outlined),
+                                ),
+                                title: const Text('Tulip bunch'),
+                                subtitle: const Text('6 in stock'),
+                                trailing: const Text('₹180',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w700)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            labelText: 'Customer name',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: () {},
+                                child: const Text('Pay'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {},
+                                child: const Text('Hold'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            const Chip(label: Text('Paid')),
+                            FilterChip(
+                              label: const Text('GST'),
+                              selected: true,
+                              onSelected: (_) {},
+                            ),
+                            const Chip(label: Text('Low stock')),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Switch(value: true, onChanged: (_) {}),
+                            const SizedBox(width: 4),
+                            const Text('Print receipt'),
+                            const Spacer(),
+                            Checkbox(value: true, onChanged: (_) {}),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  NavigationBar(
+                    selectedIndex: 0,
+                    onDestinationSelected: (_) {},
+                    destinations: const [
+                      NavigationDestination(
+                          icon: Icon(Icons.dashboard_outlined),
+                          label: 'Overview'),
+                      NavigationDestination(
+                          icon: Icon(Icons.receipt_long_outlined),
+                          label: 'Billing'),
+                      NavigationDestination(
+                          icon: Icon(Icons.inventory_2_outlined),
+                          label: 'Inventory'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
