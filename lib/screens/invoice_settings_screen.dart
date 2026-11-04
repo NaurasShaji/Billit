@@ -439,7 +439,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                       subtitle: 'Configure the visual identity of your invoices.',
                       child: Column(children: [
                         DropdownButtonFormField<String>(
-                          value: _invoiceAccent,
+                          initialValue: _invoiceAccent,
                           decoration: _decoration('Invoice accent colour', Icons.format_color_fill_outlined),
                           items: const [
                             DropdownMenuItem(value: 'blue', child: Text('Classic Blue')),
