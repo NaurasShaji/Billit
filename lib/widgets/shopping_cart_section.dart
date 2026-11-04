@@ -3,9 +3,6 @@ import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../screens/product_selection_screen.dart';
 
-const _primaryColor = Color(0xFF1565C0); // Blue 800
-const _errorColor = Color(0xFFD32F2F); // Red 700
-
 // Assuming these are defined in your models/ folder
 // import '../models/product.dart';
 // import '../models/sale.dart';
@@ -36,10 +33,10 @@ class ShoppingCartSection extends StatelessWidget {
       children: [
         Card(
           elevation: 0,
-          color: Theme.of(context).cardColor,
+          color: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey.shade200),
+            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -60,8 +57,8 @@ class ShoppingCartSection extends StatelessWidget {
             Expanded(
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -162,7 +159,7 @@ class _CartContent extends StatelessWidget {
           Icon(
             Icons.shopping_cart_outlined,
             size: 64,
-            color: Colors.grey.shade400,
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
           Text(
@@ -170,7 +167,7 @@ class _CartContent extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -178,7 +175,7 @@ class _CartContent extends StatelessWidget {
             'Start adding products to your cart',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade500,
+              color: Theme.of(context).colorScheme.outline,
             ),
           ),
         ],
@@ -281,9 +278,9 @@ class _CartItemWidget extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -306,7 +303,7 @@ class _CartItemWidget extends StatelessWidget {
                     Text(
                       'Category: ${product.category}',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
                     ),
@@ -314,8 +311,8 @@ class _CartItemWidget extends StatelessWidget {
                       'Stock: ${availableStock == availableStock.toInt() ? availableStock.toInt().toString() : availableStock.toString()} ${product.unit.name}',
                       style: TextStyle(
                         color: availableStock <= 0
-                            ? _errorColor
-                            : Colors.grey.shade600,
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -323,8 +320,8 @@ class _CartItemWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: _errorColor),
+              IconButton(tooltip: 'Delete', 
+                icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
                 onPressed: () => onRemove(item, product, index),
               ),
             ],
@@ -342,7 +339,7 @@ class _CartItemWidget extends StatelessWidget {
                     Text(
                       'Unit Price',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -358,16 +355,16 @@ class _CartItemWidget extends StatelessWidget {
                           prefixText: '₹',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                                color: _primaryColor, width: 2),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary, width: 2),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 0),
@@ -424,7 +421,7 @@ class _CartItemWidget extends StatelessWidget {
                   Text(
                     'Total',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -512,20 +509,20 @@ class _QuantityControlsState extends State<_QuantityControls> {
       children: [
         Text(
           'Quantity',
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
         ),
         const SizedBox(height: 4),
         Container(
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
+              IconButton(tooltip: 'Remove', 
                 onPressed: widget.quantity > 0
                     ? () => widget.onQuantityChanged(
                         (widget.quantity - increment).clamp(0, double.infinity))
@@ -562,7 +559,7 @@ class _QuantityControlsState extends State<_QuantityControls> {
                   },
                 ),
               ),
-              IconButton(
+              IconButton(tooltip: 'Add', 
                 onPressed: () =>
                     widget.onQuantityChanged(widget.quantity + increment),
                 icon: const Icon(Icons.add),
@@ -591,7 +588,7 @@ class _QuantityButton extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Material(
-      color: onPressed != null ? theme.primaryColor : Colors.grey.shade300,
+      color: onPressed != null ? theme.primaryColor : Theme.of(context).colorScheme.outlineVariant,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onPressed,
@@ -605,7 +602,7 @@ class _QuantityButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 20,
-            color: onPressed != null ? Colors.white : Colors.grey.shade500,
+            color: onPressed != null ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.outline,
           ),
         ),
       ),

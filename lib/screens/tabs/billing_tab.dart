@@ -1,4 +1,7 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +15,8 @@ import '../../services/invoice_service.dart'; // Import for generateInvoice func
 import '../edit_invoice_screen.dart'; // Added import for EditInvoiceScreen
 import '../../widgets/shopping_cart_section.dart';
 import '../../widgets/print_option_dialog.dart';
+import '../../widgets/responsive_page.dart';
+import '../product_selection_screen.dart';
 import '../barcode_scanner_screen.dart';
 
 class BillingTab extends StatefulWidget {
@@ -27,6 +32,12 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   final TextEditingController _discountController = TextEditingController();
   final TextEditingController _barcodeInputController = TextEditingController();
   final TextEditingController _customerGstin = TextEditingController();
+  final FocusNode _scanFocus = FocusNode();
+  bool _tabVisible = true;
+  bool _routeCurrent = true;
+  bool _processing = false;
+  int _freqSalesLen = -1;
+  List<String> _freqIds = const [];
   bool _applyGst = false;
   bool _interstateSale = false;
   bool _gstInclusive = false;
@@ -45,7 +56,6 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   Color get _errorColor => Theme.of(context).colorScheme.error;
   Color get _successColor => Colors.green.shade700;
   Color get _warningColor => Colors.orange.shade700;
-  Color get _surfaceColor => Theme.of(context).colorScheme.surface;
   Color get _cardColor => Theme.of(context).colorScheme.surface;
   Color get _textPrimary => Theme.of(context).colorScheme.onSurface;
   Color get _textSecondary => Theme.of(context).colorScheme.onSurfaceVariant;
@@ -149,10 +159,13 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
     // Listen to cart changes
     _cartService.addListener(_onCartChanged);
+    HardwareKeyboard.instance.addHandler(_handleKey);
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKey);
+    _scanFocus.dispose();
     _cartService.removeListener(_onCartChanged);
     _animationController?.dispose();
     _customerName.dispose();
@@ -195,11 +208,11 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       prefixIcon: Icon(icon, color: _primaryColor, size: 20),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -263,7 +276,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: isSelected ? _primaryColor.withValues(alpha: 0.1) : _cardColor,
           border: Border.all(
-            color: isSelected ? _primaryColor : Colors.grey.shade300,
+            color: isSelected ? _primaryColor : Theme.of(context).colorScheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -376,6 +389,803 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Shortcuts are only active while this tab is the visible one and no
+    // dialog / pushed page sits on top of it.
+    _tabVisible = TickerMode.of(context);
+    _routeCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+  }
+
+  // ---------------------------------------------------------------------
+  // Keyboard shortcuts
+  //   F2            focus the scan / quick-add field
+  //   F3 | Ctrl+F   browse products
+  //   Ctrl+Enter    complete the sale
+  //   Ctrl+P        print the most recent invoice
+  //   Esc           clear the scan field
+  // ---------------------------------------------------------------------
+  bool _handleKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (!mounted || !_tabVisible || !_routeCurrent) return false;
+    final key = event.logicalKey;
+    final ctrl = HardwareKeyboard.instance.isControlPressed;
+
+    if (key == LogicalKeyboardKey.f2) {
+      _focusScanField();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.f3 ||
+        (ctrl && key == LogicalKeyboardKey.keyF)) {
+      _openProductPicker();
+      return true;
+    }
+    if (ctrl &&
+        (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.numpadEnter)) {
+      if (items.isNotEmpty && !_processing) _handleCheckout();
+      return true;
+    }
+    if (ctrl && key == LogicalKeyboardKey.keyP) {
+      _printLastInvoice();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.escape && _scanFocus.hasFocus) {
+      _barcodeInputController.clear();
+      _scanFocus.unfocus();
+      return true;
+    }
+    return false;
+  }
+
+  void _focusScanField() {
+    _scanFocus.requestFocus();
+    _barcodeInputController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _barcodeInputController.text.length,
+    );
+  }
+
+  void _addProductToCart(Product product) {
+    final increment =
+        (product.unit == UnitType.kg || product.unit == UnitType.sqft)
+            ? 0.5
+            : 1.0;
+    if (_canAddToCart(product, increment)) {
+      final item = SaleItem()
+        ..productId = product.id
+        ..qty = increment
+        ..sellingPrice = product.sellingPrice
+        ..costPrice = product.costPrice
+        ..subtotal = product.sellingPrice * increment
+        ..unitLabel = product.unit.name;
+      _cartService.addItem(item);
+    } else {
+      _showStockLimitMessage(product.name, _getAvailableStock(product));
+    }
+  }
+
+  Future<void> _openProductPicker({String? query}) async {
+    final selected = await Navigator.of(context).push<Product>(
+      MaterialPageRoute(
+        builder: (_) => ProductSelectionScreen(initialQuery: query),
+      ),
+    );
+    if (selected != null && mounted) _addProductToCart(selected);
+  }
+
+  /// Enter in the quick-add field: an exact barcode adds that product, a name
+  /// with a single match adds it, several matches open the product list with
+  /// the text pre-filled.
+  Future<void> _handleScanSubmit(String raw) async {
+    final text = raw.trim();
+    if (text.isEmpty) return;
+    final lower = text.toLowerCase();
+    final active = Hive.box<Product>(Boxes.products)
+        .values
+        .where((p) => p.active)
+        .toList();
+
+    final isBarcode = active.any((p) => (p.barcode ?? '').trim() == text);
+    final byName =
+        active.where((p) => p.name.toLowerCase().contains(lower)).toList();
+
+    if (isBarcode || byName.isEmpty) {
+      await _handleScannedBarcode(text);
+    } else if (byName.length == 1) {
+      _barcodeInputController.clear();
+      _addProductToCart(byName.first);
+    } else {
+      _barcodeInputController.clear();
+      await _openProductPicker(query: text);
+    }
+    if (mounted) _scanFocus.requestFocus();
+  }
+
+  Future<void> _printSale(Sale sale) async {
+    final printOption = await showPrintOptionDialog(context, sale);
+    if (printOption != null) {
+      await _handlePrintInvoice(sale, printOption);
+    }
+  }
+
+  Future<void> _printLastInvoice() async {
+    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    if (sales.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('No invoices to print yet.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    await _printSale(sales.first);
+  }
+
+  Future<void> _editSale(Sale sale) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => EditInvoiceScreen(sale: sale)),
+    );
+    if (result == true && mounted) setState(() {});
+  }
+
+  Future<void> _confirmDeleteSale(Sale sale) async {
+    final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete Invoice?'),
+            content:
+                Text('Are you sure you want to delete invoice ${sale.id}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (confirm) await _deleteInvoice(sale);
+  }
+
+  // ---------------------------------------------------------------------
+  // UI building blocks
+  // ---------------------------------------------------------------------
+  ColorScheme get _cs => Theme.of(context).colorScheme;
+
+  Color get _successText => Theme.of(context).brightness == Brightness.dark
+      ? Colors.green.shade300
+      : Colors.green.shade700;
+
+  static const List<FontFeature> _tabularFigures = [
+    FontFeature.tabularFigures(),
+  ];
+
+  Widget _card({
+    required Widget child,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+  }) {
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: _cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: _cs.outlineVariant),
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+
+  Widget _shortcutHint() {
+    Widget chip(String keys, String label) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: _cs.outlineVariant),
+              ),
+              child: Text(
+                keys,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _cs.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: _cs.onSurfaceVariant),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Wrap(
+      runSpacing: 6,
+      children: [
+        chip('F2', 'Scan / quick add'),
+        chip('F3', 'Browse products'),
+        chip('Ctrl+Enter', 'Complete sale'),
+        chip('Ctrl+P', 'Print last invoice'),
+        chip('Esc', 'Clear field'),
+      ],
+    );
+  }
+
+  Widget _buildScanCard() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Quick Add', Icons.qr_code_scanner),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _barcodeInputController,
+                  focusNode: _scanFocus,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: _handleScanSubmit,
+                  decoration: _getInputDecoration(
+                    label: 'Scan barcode or type a product name',
+                    icon: Icons.qr_code_2,
+                    hint: 'Press Enter to add  (F2 to focus)',
+                  ),
+                ),
+              ),
+              if (isCameraScannerSupported) ...[
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  tooltip: 'Scan with camera',
+                  onPressed: _openCameraBarcodeScanner,
+                  icon: const Icon(Icons.camera_alt),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'USB scanners type the code and press Enter. A name with one match is added straight away; several matches open the product list.',
+            style: TextStyle(fontSize: 12, color: _textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCartSection(List<Product> products) {
+    return ShoppingCartSection(
+      items: items,
+      products: products,
+      onClearAll: () {
+        _cartService.clearCart();
+        _customerName.clear();
+        _customerPhone.clear();
+        _discountController.clear();
+        _customerGstin.clear();
+        setState(() {
+          _applyGst = false;
+          _interstateSale = false;
+        });
+      },
+      onAddProduct: _addProductToCart,
+      onUpdateCartItem: (item, product, index) {
+        item.subtotal = item.qty * item.sellingPrice;
+        _cartService.updateItem(index, item);
+      },
+      onRemoveCartItem: (item, product, index) {
+        _cartService.removeItem(index);
+      },
+    );
+  }
+
+  Widget _buildCustomerCard() {
+    return _card(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Customer Information', Icons.person_outline),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _customerName,
+            textInputAction: TextInputAction.next,
+            decoration: _getInputDecoration(
+              label: 'Customer Name',
+              icon: Icons.person_outline,
+              hint: 'Optional',
+            ),
+            onChanged: (value) {
+              _cartService.updateCustomerInfo(value, _customerPhone.text);
+            },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _customerPhone,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            decoration: _getInputDecoration(
+              label: 'Phone Number',
+              icon: Icons.phone_outlined,
+              hint: 'Optional',
+            ),
+            onChanged: (value) {
+              _cartService.updateCustomerInfo(_customerName.text, value);
+            },
+          ),
+          const SizedBox(height: 20),
+          _buildSectionHeader('Payment Method', Icons.payment_outlined),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildPaymentMethodTile(
+                  PaymentMethod.cash,
+                  'Cash',
+                  Icons.payments_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPaymentMethodTile(
+                  PaymentMethod.card,
+                  'Card',
+                  Icons.credit_card_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPaymentMethodTile(
+                  PaymentMethod.upi,
+                  'UPI',
+                  Icons.qr_code_outlined,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionsCard() {
+    return _card(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Discount & Tax', Icons.discount_outlined),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _discountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: _getInputDecoration(
+              label: 'Discount Amount',
+              icon: Icons.discount_outlined,
+              hint: 'Enter discount amount (optional)',
+            ),
+            onChanged: (value) {
+              final discount = double.tryParse(value) ?? 0.0;
+              final clampedDiscount = discount.clamp(0.0, _subtotal);
+              _cartService.updateDiscount(clampedDiscount);
+            },
+          ),
+          const SizedBox(height: 12),
+          if (_gstAvailable) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Apply GST'),
+              subtitle: const Text('Tax is calculated after discount.'),
+              value: _applyGst,
+              onChanged: (value) => setState(() {
+                _applyGst = value;
+                if (value) {
+                  _gstInclusive = Hive.box<dynamic>('app_settings')
+                      .get('gst_price_inclusive', defaultValue: false) as bool;
+                }
+              }),
+            ),
+            if (_applyGst) ...[
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Interstate sale (IGST)'),
+                subtitle: const Text('Leave unchecked for CGST + SGST.'),
+                value: _interstateSale,
+                onChanged: (value) =>
+                    setState(() => _interstateSale = value ?? false),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Prices already include GST'),
+                subtitle: const Text(
+                    'If enabled, GST is extracted from the listed price instead of added on top.'),
+                value: _gstInclusive,
+                onChanged: (value) =>
+                    setState(() => _gstInclusive = value ?? false),
+              ),
+              TextField(
+                controller: _customerGstin,
+                textCapitalization: TextCapitalization.characters,
+                decoration: _getInputDecoration(
+                  label: 'Customer GSTIN (optional)',
+                  icon: Icons.verified_outlined,
+                  hint: 'For B2B invoices',
+                ),
+              ),
+            ],
+          ] else
+            Text(
+              'GST is disabled. An admin can configure it in Invoice & GST Settings.',
+              style: TextStyle(fontSize: 12, color: _textSecondary),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(
+    String label,
+    String value, {
+    bool bold = false,
+    Color? color,
+    double size = 14,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: size, color: _cs.onSurfaceVariant),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: size,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+              color: color ?? _cs.onSurface,
+              fontFeatures: _tabularFigures,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _checkoutButton({bool compact = false}) {
+    final enabled = items.isNotEmpty && !_processing;
+    return FilledButton.icon(
+      onPressed: enabled ? _handleCheckout : null,
+      icon: const Icon(Icons.check_circle_outline),
+      label: Text(compact ? 'Complete Sale' : 'Complete Sale  (Ctrl+Enter)'),
+      style: FilledButton.styleFrom(
+        minimumSize: Size(compact ? 170 : double.infinity, 52),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  /// Totals + (optionally) the Complete Sale button.
+  Widget _buildSummaryCard(
+    NumberFormat cur,
+    String invoiceId, {
+    required bool showButton,
+  }) {
+    return _card(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _summaryRow('Invoice ID', invoiceId, size: 13),
+          Divider(height: 20, color: _cs.outlineVariant),
+          _summaryRow('Subtotal', cur.format(_subtotal)),
+          _summaryRow('Estimated profit', cur.format(_estimatedProfit),
+              color: _successText),
+          if (_discount > 0)
+            _summaryRow('Discount', '-${cur.format(_discount)}'),
+          if (_applyGst) ...[
+            _summaryRow('Taxable value', cur.format(_taxableAmount)),
+            if (!_interstateSale) ...[
+              _summaryRow('CGST', cur.format(_cgstAmount)),
+              _summaryRow('SGST', cur.format(_sgstAmount)),
+            ] else
+              _summaryRow('IGST', cur.format(_igstAmount)),
+          ],
+          Divider(height: 24, color: _cs.outlineVariant),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: _cs.onSurface,
+                ),
+              ),
+              Text(
+                cur.format(_grandTotal),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: _cs.primary,
+                  fontFeatures: _tabularFigures,
+                ),
+              ),
+            ],
+          ),
+          if (showButton) ...[
+            const SizedBox(height: 16),
+            _checkoutButton(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Pinned bar for narrow layouts: always visible total + action.
+  Widget _buildCompactCheckoutBar(NumberFormat cur) {
+    return Material(
+      color: _cs.surface,
+      elevation: 8,
+      shadowColor: _cs.shadow,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$itemCount item${itemCount == 1 ? '' : 's'}',
+                      style: TextStyle(
+                          fontSize: 12, color: _cs.onSurfaceVariant),
+                    ),
+                    Text(
+                      cur.format(_grandTotal),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: _cs.primary,
+                        fontFeatures: _tabularFigures,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _checkoutButton(compact: true),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  // ---------------------------------------------------------------------
+  // Frequently sold items (one-tap add) and right-click menu for invoices
+  // ---------------------------------------------------------------------
+  List<Product> _frequentProducts(List<Product> products) {
+    final salesBox = Hive.box<Sale>(Boxes.sales);
+    if (salesBox.length != _freqSalesLen) {
+      final counts = <String, int>{};
+      for (final sale in salesBox.values) {
+        for (final item in sale.items) {
+          counts[item.productId] = (counts[item.productId] ?? 0) + 1;
+        }
+      }
+      final ids = counts.keys.toList()
+        ..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+      _freqIds = ids.take(24).toList();
+      _freqSalesLen = salesBox.length;
+    }
+    final byId = {for (final p in products) p.id: p};
+    final result = <Product>[];
+    for (final id in _freqIds) {
+      final product = byId[id];
+      if (product != null && product.stock > 0) result.add(product);
+      if (result.length >= 8) break;
+    }
+    return result;
+  }
+
+  List<Widget> _quickAddSection(List<Product> products, NumberFormat cur) {
+    final frequent = _frequentProducts(products);
+    if (frequent.isEmpty) return const [];
+    return [
+      _card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Frequently Sold', Icons.bolt_outlined),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final p in frequent)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 240),
+                    child: ActionChip(
+                      tooltip: 'Add ${p.name} to the bill',
+                      avatar: const Icon(Icons.add, size: 18),
+                      label: Text(
+                        '${p.name}  ${cur.format(p.sellingPrice)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onPressed: () => _addProductToCart(p),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+    ];
+  }
+
+  Future<void> _showSaleMenu(Offset position, Sale sale) async {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final choice = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        position & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      items: const [
+        PopupMenuItem<String>(
+          value: 'print',
+          child: Row(children: [
+            Icon(Icons.print, size: 18),
+            SizedBox(width: 12),
+            Text('Print'),
+          ]),
+        ),
+        PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(children: [
+            Icon(Icons.edit, size: 18),
+            SizedBox(width: 12),
+            Text('Edit'),
+          ]),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(children: [
+            Icon(Icons.delete, size: 18),
+            SizedBox(width: 12),
+            Text('Delete'),
+          ]),
+        ),
+      ],
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case 'print':
+        await _printSale(sale);
+        break;
+      case 'edit':
+        await _editSale(sale);
+        break;
+      case 'delete':
+        await _confirmDeleteSale(sale);
+        break;
+    }
+  }
+
+  Widget _buildHistoryRow(Sale sale, NumberFormat cur) {
+    final row = Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: _cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  sale.id,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  DateFormat('MMM dd, yyyy - hh:mm a').format(sale.date),
+                  style: TextStyle(fontSize: 12, color: _cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            cur.format(sale.totalAmount),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: _cs.primary,
+              fontFeatures: _tabularFigures,
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'Print invoice',
+            icon: Icon(Icons.print, color: _cs.primary),
+            onPressed: () => _printSale(sale),
+          ),
+          IconButton(
+            tooltip: 'Edit invoice',
+            icon: Icon(Icons.edit, color: _cs.primary),
+            onPressed: () => _editSale(sale),
+          ),
+          IconButton(
+            tooltip: 'Delete invoice',
+            icon: Icon(Icons.delete, color: _cs.error),
+            onPressed: () => _confirmDeleteSale(sale),
+          ),
+        ],
+      ),
+    );
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onSecondaryTapDown: (details) =>
+          _showSaleMenu(details.globalPosition, sale),
+      child: row,
+    );
+  }
+
+  Widget _buildHistoryCard(List<Sale> recentSales, NumberFormat cur) {
+    return _card(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Invoice History', Icons.history),
+          const SizedBox(height: 12),
+          if (recentSales.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  'No recent invoices.',
+                  style: TextStyle(color: _cs.onSurfaceVariant),
+                ),
+              ),
+            )
+          else
+            ...recentSales.map((sale) => _buildHistoryRow(sale, cur)),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final products = Hive.box<Product>(Boxes.products)
         .values
@@ -396,636 +1206,118 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final invoiceIdPreview =
         '$invoicePrefix-$invoiceDatePart-${nextInvoiceNumber.toString().padLeft(5, "0")}';
 
-    // Get last 5 invoices, sorted by date and time (newest first)
-    final salesBox = Hive.box<Sale>(Boxes.sales);
-    final allSales = salesBox.values.toList();
-    allSales.sort((a, b) {
-      // Compare milliseconds since epoch to get precise date-time ordering
-      return b.date.millisecondsSinceEpoch
-          .compareTo(a.date.millisecondsSinceEpoch);
-    });
+    // Last 5 invoices, newest first.
+    final allSales = Hive.box<Sale>(Boxes.sales).values.toList()
+      ..sort((a, b) => b.date.millisecondsSinceEpoch
+          .compareTo(a.date.millisecondsSinceEpoch));
     final recentSales = allSales.take(5).toList();
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: null,
-      body: _fadeAnimation != null
-          ? FadeTransition(
-              opacity: _fadeAnimation!,
+    final body = LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= ResponsiveBreakpoints.desktop;
+
+        if (wide) {
+          // Two panes: products + cart on the left; customer, options and a
+          // pinned total / Complete Sale panel on the right.
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _shortcutHint(),
+                      const SizedBox(height: 12),
+                      _buildScanCard(),
+                      const SizedBox(height: 16),
+                      ..._quickAddSection(products, cur),
+                      _buildCartSection(products),
+                      const SizedBox(height: 24),
+                      _buildHistoryCard(recentSales, cur),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 400,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+                        child: Column(
+                          children: [
+                            _buildCustomerCard(),
+                            if (items.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _buildOptionsCard(),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 16, 16),
+                      child: _buildSummaryCard(cur, invoiceIdPreview,
+                          showButton: true),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Narrow: single column with a pinned total bar.
+        return Column(
+          children: [
+            Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Customer Details Section
-                    Card(
-                      elevation: 0,
-                      color: _cardColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionHeader(
-                                'Customer Information', Icons.person_outline),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _customerName,
-                              decoration: _getInputDecoration(
-                                label: 'Customer Name',
-                                icon: Icons.person_outline,
-                                hint: 'Optional',
-                              ),
-                              onChanged: (value) {
-                                _cartService.updateCustomerInfo(
-                                    value, _customerPhone.text);
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _customerPhone,
-                              keyboardType: TextInputType.phone,
-                              decoration: _getInputDecoration(
-                                label: 'Phone Number',
-                                icon: Icons.phone_outlined,
-                                hint: 'Optional',
-                              ),
-                              onChanged: (value) {
-                                _cartService.updateCustomerInfo(
-                                    _customerName.text, value);
-                              },
-                            ),
-                            const SizedBox(height: 20),
-                            _buildSectionHeader(
-                                'Payment Method', Icons.payment_outlined),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildPaymentMethodTile(
-                                    PaymentMethod.cash,
-                                    'Cash',
-                                    Icons.payments_outlined,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildPaymentMethodTile(
-                                    PaymentMethod.card,
-                                    'Card',
-                                    Icons.credit_card_outlined,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildPaymentMethodTile(
-                                    PaymentMethod.upi,
-                                    'UPI',
-                                    Icons.qr_code_outlined,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
+                    _buildCustomerCard(),
                     const SizedBox(height: 16),
-
-                    // Barcode input: camera or external scanner in keyboard-wedge mode.
-                    Card(
-                      elevation: 0,
-                      color: _cardColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionHeader(
-                                'Barcode Scanner', Icons.qr_code_scanner),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _barcodeInputController,
-                                    textInputAction: TextInputAction.done,
-                                    onSubmitted: _handleScannedBarcode,
-                                    decoration: _getInputDecoration(
-                                      label: 'Scan or enter barcode',
-                                      icon: Icons.qr_code_2,
-                                      hint:
-                                          'External scanner works like a keyboard',
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton.filled(
-                                  tooltip: 'Scan with camera',
-                                  onPressed: _openCameraBarcodeScanner,
-                                  icon: const Icon(Icons.camera_alt),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'For USB/Bluetooth scanners, focus this field and scan. Most scanners submit the code with Enter.',
-                              style: TextStyle(
-                                  fontSize: 12, color: _textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _buildScanCard(),
                     const SizedBox(height: 16),
-
-                    // Add Product and Shopping Cart Section
-                    ShoppingCartSection(
-                      items: items,
-                      products: products,
-                      onClearAll: () {
-                        _cartService.clearCart();
-                        _customerName.clear();
-                        _customerPhone.clear();
-                        _discountController.clear();
-                        _customerGstin.clear();
-                        _applyGst = false;
-                        _interstateSale = false;
-                      },
-                      onAddProduct: (product) {
-                        // Logic to add product using CartService
-                        final increment = (product.unit == UnitType.kg ||
-                                product.unit == UnitType.sqft)
-                            ? 0.5
-                            : 1.0;
-
-                        if (_canAddToCart(product, increment)) {
-                          final item = SaleItem()
-                            ..productId = product.id
-                            ..qty = increment
-                            ..sellingPrice = product.sellingPrice
-                            ..costPrice = product.costPrice
-                            ..subtotal = product.sellingPrice * increment
-                            ..unitLabel = product.unit.name;
-                          _cartService.addItem(item);
-                        } else {
-                          _showStockLimitMessage(
-                              product.name, _getAvailableStock(product));
-                        }
-                      },
-                      onUpdateCartItem: (item, product, index) {
-                        // Update item through CartService
-                        item.subtotal = item.qty * item.sellingPrice;
-                        _cartService.updateItem(index, item);
-                      },
-                      onRemoveCartItem: (item, product, index) {
-                        _cartService.removeItem(index);
-                      },
-                    ),
-
+                    ..._quickAddSection(products, cur),
+                    _buildCartSection(products),
                     const SizedBox(height: 16),
-
-                    // Checkout Section
-                    if (items.isNotEmpty)
-                      Card(
-                        elevation: 0,
-                        color: _cardColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSectionHeader(
-                                  'Order Summary', Icons.receipt_long_outlined),
-                              const SizedBox(height: 16),
-                              TextField(
-                                controller: _discountController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                decoration: _getInputDecoration(
-                                  label: 'Discount Amount',
-                                  icon: Icons.discount_outlined,
-                                  hint: 'Enter discount amount (optional)',
-                                ),
-                                onChanged: (value) {
-                                  final discount =
-                                      double.tryParse(value) ?? 0.0;
-                                  final clampedDiscount =
-                                      discount.clamp(0.0, _subtotal);
-                                  _cartService.updateDiscount(clampedDiscount);
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              if (_gstAvailable) ...[
-                                SwitchListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: const Text('Apply GST'),
-                                  subtitle: const Text(
-                                      'Tax is calculated after discount.'),
-                                  value: _applyGst,
-                                  onChanged: (value) => setState(() {
-                                    _applyGst = value;
-                                    if (value) {
-                                      _gstInclusive =
-                                          Hive.box<dynamic>('app_settings').get(
-                                              'gst_price_inclusive',
-                                              defaultValue: false) as bool;
-                                    }
-                                  }),
-                                ),
-                                if (_applyGst) ...[
-                                  CheckboxListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: const Text('Interstate sale (IGST)'),
-                                    subtitle: const Text(
-                                        'Leave unchecked for CGST + SGST.'),
-                                    value: _interstateSale,
-                                    onChanged: (value) => setState(
-                                        () => _interstateSale = value ?? false),
-                                  ),
-                                  CheckboxListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: const Text(
-                                        'Prices already include GST'),
-                                    subtitle: const Text(
-                                        'If enabled, GST is extracted from the listed price instead of added on top.'),
-                                    value: _gstInclusive,
-                                    onChanged: (value) => setState(
-                                        () => _gstInclusive = value ?? false),
-                                  ),
-                                  TextField(
-                                    controller: _customerGstin,
-                                    textCapitalization:
-                                        TextCapitalization.characters,
-                                    decoration: _getInputDecoration(
-                                      label: 'Customer GSTIN (optional)',
-                                      icon: Icons.verified_outlined,
-                                      hint: 'For B2B invoices',
-                                    ),
-                                  ),
-                                ],
-                              ] else
-                                Text(
-                                  'GST is disabled. An admin can configure it in Invoice & GST Settings.',
-                                  style: TextStyle(
-                                      fontSize: 12, color: _textSecondary),
-                                ),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: _surfaceColor,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Invoice ID',
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              color: _textSecondary),
-                                        ),
-                                        Text(
-                                          invoiceIdPreview,
-                                          style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Subtotal',
-                                          style: TextStyle(
-                                            color: _textSecondary,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        Text(
-                                          cur.format(_subtotal),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Estimated Profit',
-                                          style: TextStyle(
-                                            color: _textSecondary,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        Text(
-                                          cur.format(_estimatedProfit),
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: _successColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (_discount > 0)
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text('Discount'),
-                                          Text('-${cur.format(_discount)}'),
-                                        ],
-                                      ),
-                                    if (_applyGst) ...[
-                                      const SizedBox(height: 6),
-                                      Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            const Text('Taxable value'),
-                                            Text(cur.format(_taxableAmount))
-                                          ]),
-                                      if (!_interstateSale) ...[
-                                        Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Text('CGST'),
-                                              Text(cur.format(_cgstAmount))
-                                            ]),
-                                        Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Text('SGST'),
-                                              Text(cur.format(_sgstAmount))
-                                            ]),
-                                      ] else
-                                        Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Text('IGST'),
-                                              Text(cur.format(_igstAmount))
-                                            ]),
-                                    ],
-                                    const Divider(height: 24),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text(
-                                          'Total Amount',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        Text(
-                                          cur.format(_grandTotal),
-                                          style: TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.w700,
-                                            color: _primaryColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text(
-                                          'Balance',
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                        Text(
-                                          cur.format(_grandTotal),
-                                          style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w700,
-                                              color: _primaryColor),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _primaryColor,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  onPressed: _handleCheckout,
-                                  icon: const Icon(Icons.check_circle_outline),
-                                  label: const Text(
-                                    'Complete Sale',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                    const SizedBox(height: 32),
-
-                    // Invoice Management Section
-                    Card(
-                      elevation: 0,
-                      color: _cardColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionHeader(
-                                'Invoice History', Icons.history),
-                            const SizedBox(height: 16),
-                            if (recentSales.isEmpty)
-                              const Center(child: Text('No recent invoices.'))
-                            else
-                              ...recentSales.map((sale) {
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  elevation: 0,
-                                  color: _surfaceColor,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8)),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text('Invoice ID: ${sale.id}',
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600)),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                            DateFormat('MMM dd, yyyy - hh:mm a')
-                                                .format(sale.date),
-                                            style: TextStyle(
-                                                color: _textSecondary)),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              cur.format(sale.totalAmount),
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                  color: _primaryColor),
-                                            ),
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                IconButton(
-                                                  icon: Icon(Icons.print,
-                                                      color: _primaryColor),
-                                                  onPressed: () async {
-                                                    final printOption =
-                                                        await showPrintOptionDialog(
-                                                            context, sale);
-                                                    if (printOption != null) {
-                                                      await _handlePrintInvoice(
-                                                          sale, printOption);
-                                                    }
-                                                  },
-                                                  tooltip: 'Print Invoice',
-                                                ),
-                                                IconButton(
-                                                  icon: Icon(Icons.edit,
-                                                      color: _primaryColor),
-                                                  onPressed: () async {
-                                                    final result =
-                                                        await Navigator.of(
-                                                                context)
-                                                            .push(
-                                                      MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            EditInvoiceScreen(
-                                                                sale: sale),
-                                                      ),
-                                                    );
-                                                    if (result == true) {
-                                                      setState(() {});
-                                                    }
-                                                  },
-                                                  tooltip: 'Edit Invoice',
-                                                ),
-                                                IconButton(
-                                                  icon: Icon(Icons.delete,
-                                                      color: _errorColor),
-                                                  onPressed: () async {
-                                                    final confirm =
-                                                        await showDialog<bool>(
-                                                              context: context,
-                                                              builder: (ctx) =>
-                                                                  AlertDialog(
-                                                                title: const Text(
-                                                                    'Delete Invoice?'),
-                                                                content: Text(
-                                                                    'Are you sure you want to delete invoice ${sale.id}?'),
-                                                                actions: [
-                                                                  TextButton(
-                                                                      onPressed: () =>
-                                                                          Navigator.pop(
-                                                                              ctx,
-                                                                              false),
-                                                                      child: const Text(
-                                                                          'Cancel')),
-                                                                  ElevatedButton(
-                                                                      onPressed: () =>
-                                                                          Navigator.pop(
-                                                                              ctx,
-                                                                              true),
-                                                                      child: const Text(
-                                                                          'Delete')),
-                                                                ],
-                                                              ),
-                                                            ) ??
-                                                            false;
-                                                    if (confirm) {
-                                                      await _deleteInvoice(
-                                                          sale);
-                                                    }
-                                                  },
-                                                  tooltip: 'Delete Invoice',
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }),
-                          ],
-                        ),
-                      ),
-                    ),
-
+                    if (items.isNotEmpty) ...[
+                      _buildOptionsCard(),
+                      const SizedBox(height: 16),
+                      _buildSummaryCard(cur, invoiceIdPreview,
+                          showButton: false),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(height: 16),
+                    _buildHistoryCard(recentSales, cur),
                     const SizedBox(height: 16),
                   ],
                 ),
               ),
-            )
+            ),
+            if (items.isNotEmpty) _buildCompactCheckoutBar(cur),
+          ],
+        );
+      },
+    );
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: null,
+      body: _fadeAnimation != null
+          ? FadeTransition(opacity: _fadeAnimation!, child: body)
           : const Center(child: CircularProgressIndicator()),
     );
   }
 
   Future<void> _handleCheckout() async {
+    if (_processing || items.isEmpty) return;
+    setState(() => _processing = true);
     // Show loading dialog
     showDialog(
       context: context,
@@ -1123,6 +1415,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         _customerName.clear();
         _customerPhone.clear();
         _discountController.clear();
+        _customerGstin.clear();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1161,6 +1454,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _processing = false);
     }
   }
 

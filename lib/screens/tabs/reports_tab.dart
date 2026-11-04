@@ -71,6 +71,57 @@ class _ReportsTabState extends State<ReportsTab>
     }
   }
 
+  bool _sameAsAnchor(DateTime d) {
+    final a = _currentAnchor;
+    switch (_tab.index) {
+      case 0:
+        return a.year == d.year && a.month == d.month && a.day == d.day;
+      case 1:
+        return a.year == d.year && a.month == d.month;
+      default:
+        return a.year == d.year;
+    }
+  }
+
+  /// One-tap shortcuts for the most common periods.
+  Widget _buildPresetChips() {
+    final now = DateTime.now();
+    final List<MapEntry<String, DateTime>> presets;
+    switch (_tab.index) {
+      case 0:
+        presets = [
+          MapEntry('Today', now),
+          MapEntry('Yesterday', now.subtract(const Duration(days: 1))),
+        ];
+        break;
+      case 1:
+        presets = [
+          MapEntry('This month', now),
+          MapEntry('Last month', DateTime(now.year, now.month - 1, 1)),
+        ];
+        break;
+      default:
+        presets = [
+          MapEntry('This year', now),
+          MapEntry('Last year', DateTime(now.year - 1, 1, 1)),
+        ];
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 8,
+        children: [
+          for (final preset in presets)
+            ChoiceChip(
+              label: Text(preset.key),
+              selected: _sameAsAnchor(preset.value),
+              onSelected: (_) => _updateCurrentAnchor(preset.value),
+            ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _printSale(Sale sale) async {
     if (_printingSaleIds.contains(sale.id)) return;
 
@@ -200,6 +251,10 @@ class _ReportsTabState extends State<ReportsTab>
                       ),
                     ],
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: _buildPresetChips(),
                 ),
                 // Professional Tab Bar
                 Container(

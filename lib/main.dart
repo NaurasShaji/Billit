@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart' as pp;
 import 'models/models.dart';
 import 'services/boxes.dart';
 import 'services/auth_service.dart';
+import 'services/desktop_window_service.dart';
 import 'services/drive_sync_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -93,6 +94,12 @@ Future<void> main() async {
   final driveSync = DriveSyncService.instance;
   await driveSync.init();
   await driveSync.tryAutoSignIn();
+
+  // Desktop window: title, minimum size and remembered size (no-op elsewhere).
+  await DesktopWindowService.instance.init(
+    settings,
+    title: settings.get('app_name', defaultValue: 'Billit').toString(),
+  );
 
   runApp(const MyApp());
 }

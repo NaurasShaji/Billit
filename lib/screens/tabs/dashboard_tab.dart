@@ -1,3 +1,5 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
@@ -104,6 +106,12 @@ class DashboardTab extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 18),
+                  _SetupChecklist(
+                    hasProducts: activeProducts.isNotEmpty,
+                    hasSales: allSales.isNotEmpty,
+                    onOpenProducts: onOpenProducts,
+                    onOpenBilling: onOpenBilling,
+                  ),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final columns = constraints.maxWidth >= 1000
@@ -397,6 +405,127 @@ class DashboardTab extends StatelessWidget {
   }
 }
 
+
+/// First-run checklist shown on the dashboard until the basics are done (or
+/// the user dismisses it).
+class _SetupChecklist extends StatefulWidget {
+  final bool hasProducts;
+  final bool hasSales;
+  final VoidCallback onOpenProducts;
+  final VoidCallback onOpenBilling;
+
+  const _SetupChecklist({
+    required this.hasProducts,
+    required this.hasSales,
+    required this.onOpenProducts,
+    required this.onOpenBilling,
+  });
+
+  @override
+  State<_SetupChecklist> createState() => _SetupChecklistState();
+}
+
+class _SetupChecklistState extends State<_SetupChecklist> {
+  static const _dismissedKey = 'setup_checklist_dismissed';
+
+  bool get _dismissed =>
+      Hive.box<dynamic>('app_settings').get(_dismissedKey, defaultValue: false)
+          as bool;
+
+  bool get _hasBusinessDetails {
+    final settings = Hive.box<dynamic>('app_settings');
+    return settings.get('business_name', defaultValue: '').toString().trim().isNotEmpty;
+  }
+
+  Future<void> _dismiss() async {
+    await Hive.box<dynamic>('app_settings').put(_dismissedKey, true);
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBusiness = _hasBusinessDetails;
+    final done = hasBusiness && widget.hasProducts && widget.hasSales;
+    if (_dismissed || done) return const SizedBox.shrink();
+
+    final cs = Theme.of(context).colorScheme;
+    Widget step(bool complete, String title, String hint, {VoidCallback? onTap}) {
+      return ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(
+          complete ? Icons.check_circle : Icons.radio_button_unchecked,
+          color: complete ? cs.primary : cs.outline,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            decoration: complete ? TextDecoration.lineThrough : null,
+            color: complete ? cs.onSurfaceVariant : cs.onSurface,
+          ),
+        ),
+        subtitle: Text(hint),
+        trailing: (!complete && onTap != null)
+            ? const Icon(Icons.chevron_right)
+            : null,
+        onTap: complete ? null : onTap,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Card(
+        elevation: 0,
+        color: cs.primaryContainer.withValues(alpha: 0.35),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Finish setting up',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Hide checklist',
+                    icon: const Icon(Icons.close),
+                    onPressed: _dismiss,
+                  ),
+                ],
+              ),
+              step(
+                hasBusiness,
+                'Add your business details',
+                'Settings > Invoice & GST: name, address, phone.',
+              ),
+              step(
+                widget.hasProducts,
+                'Add your first product',
+                'Tap to open Products.',
+                onTap: widget.onOpenProducts,
+              ),
+              step(
+                widget.hasSales,
+                'Make your first sale',
+                'Tap to open Billing.',
+                onTap: widget.onOpenBilling,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DayRevenue {
   final DateTime day;
   final double revenue;
@@ -449,8 +578,9 @@ class _MetricCard extends StatelessWidget {
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 5),
             Text(value,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    fontFeatures: const [FontFeature.tabularFigures()]),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
             const SizedBox(height: 4),
