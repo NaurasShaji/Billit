@@ -178,7 +178,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                 child: Column(
                   children: [
                     DropdownButtonFormField<String>(
-                      value: _registrationType,
+                      initialValue: _registrationType,
                       decoration: _decoration('GST registration type', Icons.business_outlined),
                       items: const [
                         DropdownMenuItem(value: 'regular', child: Text('Regular GST taxpayer')),
@@ -195,7 +195,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     ),
                     const SizedBox(height: 14),
                     DropdownButtonFormField<String>(
-                      value: _stateCode,
+                      initialValue: _stateCode,
                       decoration: _decoration('Business state / UT', Icons.location_on_outlined),
                       items: _states.entries.map((entry) => DropdownMenuItem(
                         value: entry.key, child: Text('${entry.key} — ${entry.value}'),
