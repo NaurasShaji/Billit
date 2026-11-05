@@ -86,7 +86,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   Future<void> _scanProductBarcode() async {
     if (!isCameraScannerSupported) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Camera scanning is not available on this platform. Type or scan the barcode into the field.'),
+        content: Text('Camera unavailable. Enter or scan the barcode manually.'),
         behavior: SnackBarBehavior.floating,
       ));
       return;
@@ -118,7 +118,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text(
-                'GST rate must be between 0 and 100, or left blank to use the default.')),
+                'Enter 0–100, or leave blank for the default.')),
       );
       return;
     }
@@ -438,7 +438,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                     decoration: InputDecoration(
                       labelText: 'Barcode / SKU',
                       hintText:
-                          'Scan with camera or external scanner, or enter manually',
+                          'Scan or enter the barcode.',
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
                       prefixIcon: const Icon(Icons.qr_code_2),
@@ -473,7 +473,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                         decoration: InputDecoration(
                           labelText: 'Product GST rate (%)',
                           helperText:
-                              'Leave blank to use default GST. Enter 0 for a zero-rated product.',
+                              'Blank = default GST; 0 = zero-rated.',
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12)),
                           prefixIcon: const Icon(Icons.percent),
