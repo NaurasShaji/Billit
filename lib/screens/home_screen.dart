@@ -90,31 +90,31 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildHelpOption(
                 Icons.receipt_long,
                 'Billing Guide',
-                'Learn how to create, edit, and manage bills efficiently',
+                'Create and manage bills',
               ),
               const SizedBox(height: 12),
               _buildHelpOption(
                 Icons.inventory_2_outlined,
                 'Product Management',
-                'Understand how to add, edit, and track your inventory',
+                'Add products and track stock',
               ),
               const SizedBox(height: 12),
               _buildHelpOption(
                 Icons.bar_chart,
                 'Reports & Analytics',
-                'Get insights on generating and understanding sales reports',
+                'View and export reports',
               ),
               const SizedBox(height: 12),
               _buildHelpOption(
                 Icons.settings,
                 'System Settings',
-                'Configure app settings, manage users, and handle backups',
+                'Settings, users and backups',
               ),
               const SizedBox(height: 12),
               _buildHelpOption(
                 Icons.contact_support,
                 'Technical Support',
-                'Contact our support team for technical assistance',
+                'Get technical help',
               ),
               const SizedBox(height: 16),
               const Divider(),
@@ -125,11 +125,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                '• Use keyboard shortcuts (e.g., Enter to confirm)\n'
-                '• Regular backups are recommended\n'
-                '• Check stock levels regularly\n'
-                '• Generate reports at day end\n'
-                '• Contact admin for user permissions',
+                '• Use Enter to confirm\n'
+                '• Back up data regularly\n'
+                '• Review stock levels\n'
+                '• Review reports daily\n'
+                '• Ask an admin for access',
                 style: TextStyle(fontSize: 13),
               ),
             ],
@@ -216,42 +216,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       _buildFaqItem(
                         'How do I create a new bill?',
-                        'Go to the Billing tab, select products from the list, add quantities, choose payment method, and click "Generate Bill".',
+                        'Billing: add products, set quantities and generate the bill.',
                       ),
                       const SizedBox(height: 16),
                       _buildFaqItem(
                         'How do I add or edit products?',
-                        'Navigate to the Products tab, click "Add Product" to create new ones, or click on an existing product to edit its details.',
+                        'Products: select Add Product or open an item to edit.',
                       ),
                       const SizedBox(height: 16),
                       _buildFaqItem(
                         'How do I view sales reports?',
-                        'Use the Reports tab to view daily, monthly, and yearly sales reports. You can also filter by date ranges and export reports.',
+                        'Reports: choose a period to view or export sales.',
                       ),
                       const SizedBox(height: 16),
                       _buildFaqItem(
                         'How do I manage inventory?',
-                        'In the Products tab, you can track stock levels. The system automatically updates inventory when bills are generated.',
+                        'Stock updates automatically when bills are generated.',
                       ),
                       const SizedBox(height: 16),
                       _buildFaqItem(
                         'Can I edit or void a bill?',
-                        'Yes, in the Billing tab, you can find recent bills and edit them. Only admin users can void bills from the archive.',
+                        'Edit bills in Billing. Only admins can void bills.',
                       ),
                       const SizedBox(height: 16),
                       _buildFaqItem(
                         'How do I handle product units (pcs/kg)?',
-                        'When adding products, you can specify the unit type. The billing system will automatically handle calculations based on the unit.',
+                        'Set each product's unit; billing uses it automatically.',
                       ),
                       const SizedBox(height: 16),
                       _buildFaqItem(
                         'How do I change my password?',
-                        'Go to Settings > Change Password and enter your current password followed by your new password.',
+                        'Settings > Change Password.',
                       ),
                       const SizedBox(height: 16),
                       _buildFaqItem(
                         'How do I backup my data?',
-                        'Admin users can access backup options in the Archive tab. Regular backups are recommended to prevent data loss.',
+                        'Admins: Archive > Backup & Restore.',
                       ),
                     ],
                   ),
