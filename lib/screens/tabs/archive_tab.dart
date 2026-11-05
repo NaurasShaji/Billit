@@ -144,6 +144,14 @@ class ArchiveTab extends StatelessWidget {
       ];
 
   void _openCategory(BuildContext context, _ArchiveCategory category) {
+    if (category.title == 'Reports & Statements' &&
+        category.items.length == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: category.items.single.builder),
+      );
+      return;
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ArchiveCategoryScreen(
