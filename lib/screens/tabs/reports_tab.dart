@@ -7,6 +7,8 @@ import '../../services/auth_service.dart';
 import '../../services/boxes.dart';
 import '../../services/invoice_service.dart';
 import '../../services/invoice_template_service.dart';
+import '../../services/whatsapp_service.dart';
+import '../../widgets/whatsapp_icon.dart';
 import '../edit_invoice_screen.dart';
 
 class ReportsTab extends StatefulWidget {
@@ -543,6 +545,12 @@ class _ReportsTabState extends State<ReportsTab>
                             fontSize: 16,
                             color: Theme.of(context).colorScheme.primary,
                           ),
+                        ),
+                        IconButton(
+                          tooltip: 'Send on WhatsApp',
+                          visualDensity: VisualDensity.compact,
+                          icon: const WhatsAppIcon(size: 24),
+                          onPressed: () => WhatsAppService.sendInvoice(context, sale),
                         ),
                         IconButton(
                           tooltip: 'Print invoice',
