@@ -462,38 +462,16 @@ class _DashboardTabState extends State<DashboardTab> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Business overview',
-                                style: theme.textTheme.headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.w800)),
-                            const SizedBox(height: 4),
-                            Text(
-                                '${_greeting(now)} · ${DateFormat('EEEE, d MMMM yyyy').format(now)}',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      FilledButton.icon(
-                        onPressed: widget.onOpenBilling,
-                        icon: const Icon(Icons.add_shopping_cart),
-                        label: const Text('New bill'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Chip(label: Text(_Period.today.label)),
+                    child: Text(
+                      '${_greeting(now)} · ${DateFormat('EEEE, d MMMM yyyy').format(now)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   _SetupChecklist(
                     hasProducts: activeProducts.isNotEmpty,
                     hasSales: allSales.isNotEmpty,
