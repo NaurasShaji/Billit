@@ -21,7 +21,7 @@ class ArchiveTab extends StatelessWidget {
           title: 'Financial Management',
           subtitle: 'Expenses and cost tracking',
           description:
-              'Record business expenses and review your expense history.',
+              'Record and review expenses.',
           icon: Icons.account_balance_wallet_outlined,
           color: Colors.green,
           items: [
@@ -42,7 +42,7 @@ class ArchiveTab extends StatelessWidget {
         _ArchiveCategory(
           title: 'Human Resources',
           subtitle: 'Employees and payroll',
-          description: 'Manage employees and handle daily or monthly payments.',
+          description: 'Employees and payroll.',
           icon: Icons.groups_outlined,
           color: Colors.blue,
           items: [
@@ -70,7 +70,7 @@ class ArchiveTab extends StatelessWidget {
           title: 'Product Management',
           subtitle: 'Bulk product import',
           description:
-              'Add multiple products to your inventory from an Excel file.',
+              'Import products from Excel.',
           icon: Icons.inventory_2_outlined,
           color: Colors.teal,
           items: [
@@ -86,7 +86,7 @@ class ArchiveTab extends StatelessWidget {
           title: 'Reports & Statements',
           subtitle: 'Sales statements and GST exports',
           description:
-              'Download day-wise or date-range sales statements, GST registers and expense exports.',
+              'Export sales, GST and expense reports.',
           icon: Icons.assessment_outlined,
           color: Colors.deepOrange,
           items: [
@@ -102,7 +102,7 @@ class ArchiveTab extends StatelessWidget {
         _ArchiveCategory(
           title: 'Data Management',
           subtitle: 'Backup and restore',
-          description: 'Create backups and restore your business data.',
+          description: 'Back up or restore data.',
           icon: Icons.cloud_sync_outlined,
           color: Colors.orange,
           items: [
@@ -117,14 +117,14 @@ class ArchiveTab extends StatelessWidget {
         _ArchiveCategory(
           title: 'Account & Settings',
           subtitle: 'Account tools and customer search',
-          description: 'Manage account security and look up customer details.',
+          description: 'Security and customer search.',
           icon: Icons.settings_outlined,
           color: Colors.deepPurple,
           items: [
             ArchiveCategoryItem(
               icon: Icons.security_outlined,
               title: 'Security Question',
-              subtitle: 'Change the admin password recovery question and answer',
+              subtitle: 'Update recovery question.',
               builder: (_) => const SecurityQuestionSettingsScreen(),
             ),
             ArchiveCategoryItem(
