@@ -1017,32 +1017,94 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   List<Widget> _quickAddSection(List<Product> products, NumberFormat cur) {
     final frequent = _frequentProducts(products);
     if (frequent.isEmpty) return const [];
+
     return [
       _card(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader('Frequently Sold', Icons.bolt_outlined),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final p in frequent)
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 240),
-                    child: ActionChip(
-                      tooltip: 'Add ${p.name} to the bill',
-                      avatar: const Icon(Icons.add, size: 18),
-                      label: Text(
-                        '${p.name}  ${cur.format(p.sellingPrice)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 104,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: frequent.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final product = frequent[index];
+                  return SizedBox(
+                    width: 184,
+                    child: Material(
+                      color: _cs.surfaceContainerHighest.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _addProductToCart(product),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                product.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      cur.format(product.sellingPrice),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: _cs.primary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: _cs.primary,
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                    child: Icon(
+                                      Icons.add,
+                                      size: 19,
+                                      color: _cs.onPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      onPressed: () => _addProductToCart(p),
                     ),
-                  ),
-              ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Swipe to see more',
+              style: TextStyle(
+                fontSize: 11,
+                color: _cs.onSurfaceVariant,
+              ),
             ),
           ],
         ),
