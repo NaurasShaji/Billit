@@ -293,7 +293,7 @@ class _InvoiceCustomisationScreenState
                 ],
               ),
               const Text(
-                  'Each paper size has its own saved template. This controls invoice layout; pair or select the physical printer separately in Printer Settings.')
+                  'Templates are saved per paper size. Select the printer in Printer Settings.')
             ]),
             section('Header', [
               field('headerTitle', 'Invoice heading'),
@@ -321,7 +321,7 @@ class _InvoiceCustomisationScreenState
             ]),
             section('Table columns', [
               const Text(
-                  'Enable the columns you need. The selected order is used in the invoice.'),
+                  'Select and reorder invoice columns.'),
               for (final col in InvoiceTemplateService.columns)
                 CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
@@ -429,7 +429,7 @@ class _InvoiceCustomisationScreenState
                     onChanged: (v) => setValue('marginMm', v))
               ] else
                 const Text(
-                    'Direct ESC/POS printing uses the printer native font and non-printable margins. The preview and PDF output use the selected layout dimensions.'),
+                    'Thermal printers use native fonts and margins. PDFs use this layout.'),
               DropdownButtonFormField<String>(
                   initialValue: value['accent'],
                   decoration: const InputDecoration(

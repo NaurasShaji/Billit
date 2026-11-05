@@ -217,7 +217,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
     return [
       _SettingsSection(
         title: 'Accent colour',
-        subtitle: 'Used for navigation, buttons and highlights.',
+        subtitle: 'Navigation and highlight colour.',
         trailing: _PillLabel(_paletteNames[s.theme] ?? 'Classic Green'),
         child: Wrap(
           spacing: 8,
@@ -235,7 +235,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Light or dark',
-        subtitle: 'Follow your device, or set a mode manually.',
+        subtitle: 'System, light or dark mode.',
         child: _FullWidthSegments<String>(
           value: s.themeMode,
           onChanged: (v) => _save('theme_mode', v),
@@ -257,7 +257,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Page background',
-        subtitle: 'The canvas behind cards and content.',
+        subtitle: 'Background colour.',
         child: _FullWidthSegments<String>(
           value: s.background,
           onChanged: (v) => _save('background_style', v),
@@ -275,7 +275,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Top bar',
-        subtitle: 'A quiet surface header or a bold brand-colour header.',
+        subtitle: 'Choose a subtle or brand-colour header.',
         child: _OptionGrid<String>(
           value: s.appBar,
           onChanged: (v) => _save('app_bar_style', v),
@@ -300,7 +300,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
     return [
       _SettingsSection(
         title: 'Corner style',
-        subtitle: 'How round cards, buttons and fields are.',
+        subtitle: 'Corner radius.',
         child: _OptionGrid<double>(
           value: s.radius,
           onChanged: (v) => _save('corner_radius', v),
@@ -314,7 +314,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Cards and panels',
-        subtitle: 'Depth and borders used across the interface.',
+        subtitle: 'Shadows and borders.',
         child: _OptionGrid<String>(
           value: s.surface,
           onChanged: (v) => _save('surface_style', v),
@@ -334,7 +334,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Buttons',
-        subtitle: 'Emphasis of the main action buttons.',
+        subtitle: 'Primary button style.',
         child: _OptionGrid<String>(
           value: s.button,
           onChanged: (v) => _save('button_style', v),
@@ -354,7 +354,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Input fields',
-        subtitle: 'Filled fields or a cleaner outlined look.',
+        subtitle: 'Field style.',
         child: _OptionGrid<String>(
           value: s.input,
           onChanged: (v) => _save('input_style', v),
@@ -367,7 +367,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Typography',
-        subtitle: 'The typeface used throughout the app.',
+        subtitle: 'App font.',
         child: _OptionGrid<String>(
           value: s.font,
           onChanged: (v) => _save('font_style', v),
@@ -401,7 +401,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
     return [
       _SettingsSection(
         title: 'Navigation bar style',
-        subtitle: 'How the main navigation looks on phones and tablets.',
+        subtitle: 'Navigation layout.',
         child: _OptionGrid<String>(
           value: s.navStyle,
           onChanged: (v) => _save('navigation_style', v),
@@ -421,7 +421,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Icon style',
-        subtitle: 'One icon family for all navigation destinations.',
+        subtitle: 'Use one icon style.',
         child: _OptionGrid<String>(
           value: s.navIconStyle,
           onChanged: (v) => _save('navigation_icon_style', v),
@@ -438,7 +438,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Individual icons',
-        subtitle: 'Pick a different icon for each destination.',
+        subtitle: 'Customise each navigation icon.',
         trailing: TextButton.icon(
           onPressed: () =>
               _save('navigation_icon_overrides', <String, String>{}),
@@ -553,7 +553,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
       _SettingsSection(
         title: 'Low-stock alert',
-        subtitle: 'Flag products at or below this stock level.',
+        subtitle: 'Low-stock alert threshold.',
         trailing: _PillLabel('${s.lowStock.round()} units'),
         child: Slider(
           min: 1,

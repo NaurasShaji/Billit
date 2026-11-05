@@ -185,7 +185,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                         secondary: const Icon(Icons.bluetooth),
                         title: const Text('Bluetooth'),
                         subtitle: const Text(
-                            'Wireless connection to a paired thermal printer'),
+                            'Connect to a paired Bluetooth printer.'),
                       ),
                       const Divider(height: 1),
                       RadioListTile<String>(
@@ -197,7 +197,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                         secondary: const Icon(Icons.usb),
                         title: const Text('Wired USB (OTG)'),
                         subtitle: const Text(
-                            'Connect the printer directly to this Android device using a USB OTG adapter'),
+                            'Connect by USB OTG.'),
                       ),
                     ],
                   ),
@@ -213,7 +213,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     child: Padding(
                       padding: EdgeInsets.all(12),
                       child: Text(
-                        'Connect the printer with a USB OTG adapter and switch it on before scanning. Android may ask for USB permission when you connect or print for the first time.',
+                        'Connect and power on the USB printer before scanning.',
                       ),
                     ),
                   ),
@@ -222,7 +222,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     padding: EdgeInsets.symmetric(vertical: 28),
                     child: Center(
                       child: Text(
-                        'No USB printer detected. Check OTG support, cable connection and printer power, then refresh.',
+                        'No USB printer found. Check OTG, cable and power.',
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -232,7 +232,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     padding: EdgeInsets.symmetric(vertical: 28),
                     child: Center(
                       child: Text(
-                        'No paired Bluetooth printers found. Pair your printer in Android Bluetooth settings first.',
+                        'No paired printer. Pair it in Android settings.',
                         textAlign: TextAlign.center,
                       ),
                     ),

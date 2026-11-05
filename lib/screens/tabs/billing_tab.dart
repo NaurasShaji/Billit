@@ -662,7 +662,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 8),
           Text(
-            'USB scanners type the code and press Enter. A name with one match is added straight away; several matches open the product list.',
+            'USB scanner: press Enter. One match adds automatically; multiple matches show results.',
             style: TextStyle(fontSize: 12, color: _textSecondary),
           ),
         ],
@@ -815,7 +815,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Prices already include GST'),
                 subtitle: const Text(
-                    'If enabled, GST is extracted from the listed price instead of added on top.'),
+                    'GST is included in the listed price.'),
                 value: _gstInclusive,
                 onChanged: (value) =>
                     setState(() => _gstInclusive = value ?? false),
@@ -832,7 +832,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
             ],
           ] else
             Text(
-              'GST is disabled. An admin can configure it in Invoice & GST Settings.',
+              'GST is off. An admin can enable it in settings.',
               style: TextStyle(fontSize: 12, color: _textSecondary),
             ),
         ],
@@ -1652,7 +1652,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
             builder: (dialogContext) => AlertDialog(
               title: const Text('Choose PDF type'),
               content: const Text(
-                  'Choose whether to generate a normal invoice or a GST tax invoice.'),
+                  'Choose invoice type.'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),

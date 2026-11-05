@@ -480,7 +480,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                   _settingsTab([
                     SettingsSection(
                       title: 'Business details',
-                      subtitle: 'These details appear on invoices and receipts.',
+                      subtitle: 'Shown on invoices and receipts.',
                       child: Column(children: [
                         TextFormField(controller: _name, decoration: _decoration('Business / shop name', Icons.store),
                           validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter business name' : null),
@@ -503,7 +503,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                   _settingsTab([
                     SettingsSection(
                       title: 'Invoice design',
-                      subtitle: 'Configure the visual identity of your invoices.',
+                      subtitle: 'Invoice branding.',
                       child: Column(children: [
                         DropdownButtonFormField<String>(
                           initialValue: _invoiceAccent,
@@ -527,7 +527,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                     const SizedBox(height: 12),
                     _imageSetting(
                       title: 'Invoice / bill logo',
-                      description: 'Used on PDF invoices and thermal receipts.',
+                      description: 'Used on PDFs and receipts.',
                       key: 'invoice', bytes: _invoiceLogoBytes, placeholderIcon: Icons.receipt_long,
                     ),
                     const SizedBox(height: 12),
@@ -554,7 +554,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                   _settingsTab([
                     SettingsSection(
                       title: 'Dynamic UPI payment QR',
-                      subtitle: 'Each bill can generate a QR containing its invoice ID and exact bill total.',
+                      subtitle: 'QR includes the invoice ID and exact total.',
                       child: Column(children: [
                         TextFormField(controller: _upiId,
                           decoration: _decoration('UPI ID / VPA (e.g. shop@bank)', Icons.account_balance_wallet_outlined),
@@ -568,33 +568,33 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                         const SizedBox(height: 12),
                         TextFormField(controller: _upiNotePrefix, maxLength: 30, decoration: _decoration('Payment note prefix', Icons.notes_outlined)),
                         const SizedBox(height: 8),
-                        Text('The QR is generated locally. Billit does not process payments; verify payment completion in your UPI app or bank.',
+                        Text('Generated locally. Verify payment in your UPI app; Billit does not process payments.',
                           style: Theme.of(context).textTheme.bodySmall),
                       ]),
                     ),
                     const SizedBox(height: 12),
                     _imageSetting(
                       title: 'Static payment QR fallback',
-                      description: 'Optional fallback used only when no UPI ID is configured.',
+                      description: 'Used only when no UPI ID is set.',
                       key: 'qr', bytes: _paymentQrBytes, placeholderIcon: Icons.qr_code_2,
                     ),
                   ]),
                   _settingsTab([
                     SettingsSection(
                       title: 'Application identity',
-                      subtitle: 'Customise the name and logo shown inside the app.',
+                      subtitle: 'App name and logo.',
                       child: Column(children: [
                         TextFormField(controller: _appName, decoration: _decoration('App name', Icons.apps),
                           validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an app name' : null),
                         const SizedBox(height: 8),
-                        Text('Changing the Android launcher label may require a new app build.',
+                        Text('Launcher name changes require a new build.',
                           style: Theme.of(context).textTheme.bodySmall),
                       ]),
                     ),
                     const SizedBox(height: 12),
                     _imageSetting(
                       title: 'Application logo',
-                      description: 'Logo shown in the app UI. Separate from the invoice logo.',
+                      description: 'App logo; separate from the invoice logo.',
                       key: 'app', bytes: _appLogoBytes, placeholderIcon: Icons.apps,
                     ),
                   ]),
@@ -621,7 +621,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final scheme = Theme.of(context).colorScheme;
     return SettingsSection(
       title: 'WhatsApp invoice message',
-      subtitle: 'This message opens in the customer\'s WhatsApp chat. Attach the saved PDF manually.',
+      subtitle: 'Opens the customer's chat. Attach the saved PDF manually.',
       trailing: const WhatsAppIcon(size: 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -631,7 +631,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             keyboardType: TextInputType.number,
             maxLength: 4,
             decoration: _decoration('Default country code', Icons.public).copyWith(
-              helperText: 'Added to 10-digit customer numbers. India: 91.',
+              helperText: 'Country code for 10-digit numbers.',
             ),
           ),
           const SizedBox(height: 8),
@@ -640,7 +640,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             maxLines: 4,
             maxLength: 500,
             decoration: _decoration('WhatsApp message', Icons.chat_outlined).copyWith(
-              helperText: 'Placeholders: {name}, {shop}, {invoice}, {total}, {date}.',
+              helperText: 'Tags: {name}, {shop}, {invoice}, {total}, {date}.',
               alignLabelWithHint: true,
             ),
           ),
@@ -679,7 +679,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Preview only. Billit opens the customer chat with this message; attach the PDF manually from Downloads.',
+            'Attach the saved PDF in WhatsApp.',
             style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
         ],
@@ -696,7 +696,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final invoiceNo = '${_invoicePrefix.text.trim().isEmpty ? 'INV' : _invoicePrefix.text.trim().toUpperCase()}-${_nextInvoiceNumber.text.trim().isEmpty ? '1' : _nextInvoiceNumber.text.trim()}';
     return SettingsSection(
       title: 'Live invoice preview',
-      subtitle: 'A sample preview of the details and accent currently selected.',
+      subtitle: 'Sample preview.',
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
