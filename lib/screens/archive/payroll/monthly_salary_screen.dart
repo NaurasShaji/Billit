@@ -59,7 +59,7 @@ class MonthlySalaryScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Add monthly salary employees to manage their payments',
+                        'Manage monthly salary payments.',
                         style: TextStyle(
                           fontSize: 14,
                           color: theme.colorScheme.onSurface
