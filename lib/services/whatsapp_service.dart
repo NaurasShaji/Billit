@@ -94,10 +94,21 @@ class WhatsAppService {
       ));
     }
 
-    final phone = normalizePhone(sale.customerPhone);
+    var phone = normalizePhone(sale.customerPhone);
     if (phone == null) {
-      showMessage('Add a valid customer phone number with country code before sharing.');
-      return;
+      final entered = await _askForPhone(context, sale);
+      if (entered == null || !context.mounted) return;
+      phone = normalizePhone(entered);
+      if (phone == null) {
+        showMessage('Enter a valid phone number. Use +countrycode for international numbers.');
+        return;
+      }
+      sale.customerPhone = entered.trim();
+      try {
+        await sale.save();
+      } catch (_) {
+        // Continue with this number even if the invoice phone cannot be persisted.
+      }
     }
 
     try {
@@ -138,4 +149,44 @@ class WhatsAppService {
       }
     }
   }
+
+  static Future<String?> _askForPhone(BuildContext context, Sale sale) {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Customer's WhatsApp number"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Invoice ${sale.id} has no valid phone number.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                labelText: 'Phone number',
+                hintText: '+$countryCode 98765 43210',
+                prefixIcon: const Icon(Icons.phone_outlined),
+              ),
+              onSubmitted: (value) => Navigator.pop(dialogContext, value),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
 }
