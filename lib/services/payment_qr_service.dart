@@ -67,21 +67,14 @@ class PaymentQrService {
     return Uint8List.fromList(img.encodePng(canvas));
   }
 
-  /// Returns a configured uploaded QR image, or the bundled legacy image.
+  /// Returns only a QR image explicitly uploaded in invoice settings.
+  /// No bundled/default QR is shown when the user has not added one.
   static Future<Uint8List?> loadStaticQrFallback() async {
     final settings = Hive.box<dynamic>('app_settings');
-    if (settings.containsKey('payment_qr_base64')) {
-      final saved = settings.get('payment_qr_base64') as String?;
-      if (saved == null || saved.isEmpty) return null;
-      try {
-        return base64Decode(saved);
-      } catch (_) {
-        return null;
-      }
-    }
+    final saved = settings.get('payment_qr_base64')?.toString().trim() ?? '';
+    if (saved.isEmpty) return null;
     try {
-      final data = await rootBundle.load('assets/tap_and_pay_qr.png');
-      return data.buffer.asUint8List();
+      return base64Decode(saved);
     } catch (_) {
       return null;
     }
