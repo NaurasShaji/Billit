@@ -81,6 +81,12 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           sales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
       final totalDiscount =
           sales.fold<double>(0, (sum, sale) => sum + sale.discount);
+      final paymentTotals = <PaymentMethod, double>{PaymentMethod.cash: 0, PaymentMethod.card: 0, PaymentMethod.upi: 0};
+      final paymentCounts = <PaymentMethod, int>{PaymentMethod.cash: 0, PaymentMethod.card: 0, PaymentMethod.upi: 0};
+      for (final sale in sales) {
+        paymentTotals[sale.payment] = (paymentTotals[sale.payment] ?? 0) + sale.totalAmount;
+        paymentCounts[sale.payment] = (paymentCounts[sale.payment] ?? 0) + 1;
+      }
       final totalTax = sales.fold<double>(
         0,
         (sum, sale) =>
@@ -95,6 +101,12 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
         ['Total Sales', totalSales.toStringAsFixed(2)],
         ['Total Discounts', totalDiscount.toStringAsFixed(2)],
         ['Total GST', totalTax.toStringAsFixed(2)],
+        ['PAYMENT METHOD SUMMARY', '', ''],
+        ['Payment Method', 'Transactions', 'Amount'],
+        ['Cash', paymentCounts[PaymentMethod.cash].toString(), (paymentTotals[PaymentMethod.cash] ?? 0).toStringAsFixed(2)],
+        ['Card', paymentCounts[PaymentMethod.card].toString(), (paymentTotals[PaymentMethod.card] ?? 0).toStringAsFixed(2)],
+        ['UPI', paymentCounts[PaymentMethod.upi].toString(), (paymentTotals[PaymentMethod.upi] ?? 0).toStringAsFixed(2)],
+        ['Total Collected', sales.length.toString(), totalSales.toStringAsFixed(2)],
         [
           'Invoice No',
           'Date & Time',
@@ -201,6 +213,12 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           sales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
       final totalDiscount =
           sales.fold<double>(0, (sum, sale) => sum + sale.discount);
+      final paymentTotals = <PaymentMethod, double>{PaymentMethod.cash: 0, PaymentMethod.card: 0, PaymentMethod.upi: 0};
+      final paymentCounts = <PaymentMethod, int>{PaymentMethod.cash: 0, PaymentMethod.card: 0, PaymentMethod.upi: 0};
+      for (final sale in sales) {
+        paymentTotals[sale.payment] = (paymentTotals[sale.payment] ?? 0) + sale.totalAmount;
+        paymentCounts[sale.payment] = (paymentCounts[sale.payment] ?? 0) + 1;
+      }
       final totalTax = sales.fold<double>(
         0,
         (sum, sale) =>
@@ -216,6 +234,13 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
         ['Total Sales', totalSales.toStringAsFixed(2)],
         ['Total Discounts', totalDiscount.toStringAsFixed(2)],
         ['Total GST', totalTax.toStringAsFixed(2)],
+        [],
+        ['PAYMENT METHOD SUMMARY'],
+        ['Payment Method', 'Transactions', 'Amount'],
+        ['Cash', paymentCounts[PaymentMethod.cash] ?? 0, (paymentTotals[PaymentMethod.cash] ?? 0).toStringAsFixed(2)],
+        ['Card', paymentCounts[PaymentMethod.card] ?? 0, (paymentTotals[PaymentMethod.card] ?? 0).toStringAsFixed(2)],
+        ['UPI', paymentCounts[PaymentMethod.upi] ?? 0, (paymentTotals[PaymentMethod.upi] ?? 0).toStringAsFixed(2)],
+        ['Total Collected', sales.length, totalSales.toStringAsFixed(2)],
         [],
         [
           'Invoice No',
