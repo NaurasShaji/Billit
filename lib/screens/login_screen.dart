@@ -12,7 +12,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _form = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
@@ -25,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
-    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -188,32 +186,8 @@ class _LoginScreenState extends State<LoginScreen>
                                 onChanged: (UserType? newValue) {
                                   setState(() {
                                     _selectedRole = newValue!;
-                                    _usernameController.text =
-                                        _selectedRole == UserType.worker
-                                            ? 'worker'
-                                            : 'admin';
                                   });
                                 },
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Username Field
-                              TextFormField(
-                                controller: _usernameController,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.username],
-                                decoration: InputDecoration(
-                                  labelText: 'Username',
-                                  prefixIcon: const Icon(Icons.person_outline),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                  fillColor: appColors.surfaceContainerHighest,
-                                ),
-                                validator: (v) => v == null || v.isEmpty
-                                    ? 'Please enter username'
-                                    : null,
                               ),
                               const SizedBox(height: 16),
 
@@ -676,7 +650,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     final auth = context.read<AuthService>();
     final success = await auth.login(
-      _usernameController.text.trim(),
+      _selectedRole == UserType.admin ? 'admin' : 'worker',
       _passwordController.text,
       userType: _selectedRole, // Pass selected role to login
     );
@@ -690,7 +664,7 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               Icon(Icons.error_outline, color: Colors.white),
               SizedBox(width: 8),
-              Text('Invalid username or password'),
+              Text('Invalid password'),
             ],
           ),
           backgroundColor: Colors.red[600],
