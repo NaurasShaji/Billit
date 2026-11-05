@@ -69,11 +69,15 @@ class PdfService {
     bool includeFooter = true,
     bool includeGST = true,
     bool fullPage = true,
+    bool forceA4 = false,
   }) async {
     final doc = pw.Document();
     final template =
         InvoiceTemplateService.load(InvoiceTemplateService.selected);
-    final paperSize = template['paperSize'].toString();
+    // Some delivery channels (e.g. WhatsApp invoices) require a consistent
+    // full-page document regardless of the printer's configured paper size.
+    final paperSize =
+        forceA4 ? 'A4' : template['paperSize'].toString();
     final isThermal = paperSize == '50mm' || paperSize == '58mm' || paperSize == '80mm';
     final effectiveThermalSize =
         (paperSize == '50mm' || paperSize == '58mm') ? ThermalSize.mm58 : ThermalSize.mm80;
