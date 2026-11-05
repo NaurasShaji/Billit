@@ -621,7 +621,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final scheme = Theme.of(context).colorScheme;
     return SettingsSection(
       title: 'WhatsApp invoice message',
-      subtitle: 'Opens the customer's chat. Attach the saved PDF manually.',
+      subtitle: "Opens the customer's chat. Attach the saved PDF manually.",
       trailing: const WhatsAppIcon(size: 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
