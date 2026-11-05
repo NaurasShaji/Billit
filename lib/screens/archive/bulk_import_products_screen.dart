@@ -348,15 +348,15 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
                       ),
                       const SizedBox(height: 10),
                       const Text(
-                          'Choose an .xlsx workbook. The first non-empty row must contain column headers. Product Name and Selling Price are required; other columns are optional.'),
+                          'Select an .xlsx file. Product Name and Selling Price columns are required.'),
                       const SizedBox(height: 12),
                       const Text(
-                        'Supported columns: Product Name, Selling Price, Cost Price, Stock, Unit, Category, Subcategory, Barcode, HSN Code, GST Rate.',
+                        'Columns: Product Name, Selling Price, Cost Price, Stock, Unit, Category, Subcategory, Barcode, HSN Code, GST Rate.',
                         style: TextStyle(fontSize: 13),
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        'Units: pcs, kg, sqft. Missing cost and stock values default to 0. Existing names or barcodes are skipped to prevent duplicates.',
+                        'Units: pcs, kg, sqft. Cost and stock default to 0. Duplicate names or barcodes are skipped.',
                         style: TextStyle(fontSize: 13),
                       ),
                       const SizedBox(height: 18),

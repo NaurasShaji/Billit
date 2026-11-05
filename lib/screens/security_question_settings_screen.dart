@@ -75,7 +75,7 @@ class _SecurityQuestionSettingsScreenState
     if (!auth.isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Security Question')),
-        body: const Center(child: Text('Only the administrator can update the recovery question.')),
+        body: const Center(child: Text('Admin access required.')),
       );
     }
 
@@ -96,7 +96,7 @@ class _SecurityQuestionSettingsScreenState
                     Text('Account recovery', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
                   ]),
                   const SizedBox(height: 8),
-                  const Text('This question is shown when using Forgot Password on the login screen. Choose a question only you can answer.'),
+                  const Text('Used for password recovery. Choose a question only you can answer.'),
                 ],
               ),
             ),

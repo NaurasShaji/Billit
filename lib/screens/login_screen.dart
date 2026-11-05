@@ -535,7 +535,7 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(width: 6), // Reduced spacing
                         Expanded(
                           child: Text(
-                            'Answer the security question correctly to reset your admin password.',
+                            'Answer your security question to reset the admin password.',
                             style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme
