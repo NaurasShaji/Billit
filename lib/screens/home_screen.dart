@@ -29,321 +29,355 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showHelpFaqDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Help & FAQ'),
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showHelpDialog();
-                },
-                child: const Text('Help'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showFaqDialog();
-                },
-                child: const Text('FAQ'),
-              ),
-            ),
-          ],
-        ),
+    final isAdmin = _authService.isAdmin;
+    final searchController = TextEditingController();
+    final faqs = <({String category, String question, String answer})>[
+      (
+        category: 'Billing',
+        question: 'How do I create a bill?',
+        answer:
+            'Open Billing, add products to the cart, adjust quantities, apply a discount if needed, choose the payment method and complete the sale. The saved bill is available in your sales records.',
       ),
-    );
-  }
-
-  // REPLACE THIS METHOD WITH THE ENHANCED VERSION
-  void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.support_agent,
-              color: Theme.of(context).primaryColor,
-            ),
-            const SizedBox(width: 12),
-            const Text('Help & Support'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Welcome to Billit Help Center',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              _buildHelpOption(
-                Icons.receipt_long,
-                'Billing Guide',
-                'Create and manage bills',
-              ),
-              const SizedBox(height: 12),
-              _buildHelpOption(
-                Icons.inventory_2_outlined,
-                'Product Management',
-                'Add products and track stock',
-              ),
-              const SizedBox(height: 12),
-              _buildHelpOption(
-                Icons.bar_chart,
-                'Reports & Analytics',
-                'View and export reports',
-              ),
-              const SizedBox(height: 12),
-              _buildHelpOption(
-                Icons.settings,
-                'System Settings',
-                'Settings, users and backups',
-              ),
-              const SizedBox(height: 12),
-              _buildHelpOption(
-                Icons.contact_support,
-                'Technical Support',
-                'Get technical help',
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
-              const Text(
-                'Quick Tips:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '• Use Enter to confirm\n'
-                '• Back up data regularly\n'
-                '• Review stock levels\n'
-                '• Review reports daily\n'
-                '• Ask an admin for access',
-                style: TextStyle(fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _showFaqDialog();
-            },
-            child: const Text('View FAQ'),
-          ),
-        ],
+      (
+        category: 'Billing',
+        question: 'Can I change a bill after saving it?',
+        answer:
+            'Open the saved sale from the available sales records and use the edit action if it is available. Voiding a bill is restricted to admins.',
       ),
-    );
-  }
+      (
+        category: 'Billing',
+        question: 'How are GST and discounts handled?',
+        answer:
+            'Add the discount before completing the sale. Billit calculates the taxable value and applicable GST from the product tax settings. Interstate sales use IGST; eligible local sales use CGST and SGST.',
+      ),
+      (
+        category: 'Inventory',
+        question: 'How do I add or edit a product?',
+        answer:
+            'Open Inventory and choose Add Product. To update an existing item, open it and choose Edit. Set its selling price, unit, stock and applicable tax details.',
+      ),
+      (
+        category: 'Inventory',
+        question: 'Does stock update automatically?',
+        answer:
+            'Yes. Completing a bill reduces stock for the products sold. You can also open a product and use Restock / Adjust quantity to record a manual change. Positive values increase stock; negative values decrease it.',
+      ),
+      (
+        category: 'Inventory',
+        question: 'Can I use different units such as pcs and kg?',
+        answer:
+            'Yes. Set the unit while adding or editing a product. The selected unit is shown wherever that product quantity is displayed.',
+      ),
+      (
+        category: 'Inventory',
+        question: 'How do I import products in bulk?',
+        answer:
+            'Admins can open Archive > Product Management > Bulk Add Products (Excel). Use the provided import format and keep the required column names and values intact.',
+      ),
+      (
+        category: 'Reports',
+        question: 'Where can I download sales and GST reports?',
+        answer:
+            'Open Reports & Statements to choose a day or date range and export the available sales statements, GST sales registers, item registers and expense registers.',
+      ),
+      (
+        category: 'Invoices',
+        question: 'How do I customise my invoice?',
+        answer:
+            'Open Settings > Invoice Customisation to adjust the available invoice layout, content, footer and payment display options. Check the preview before saving your changes.',
+      ),
+      (
+        category: 'Invoices',
+        question: 'How do I share an invoice on WhatsApp?',
+        answer:
+            'Use the WhatsApp action on a saved sale. Billit prepares the invoice as a PDF for sharing. WhatsApp must be available on your device.',
+      ),
+      (
+        category: 'Invoices',
+        question: 'How does the UPI QR code work?',
+        answer:
+            'Configure your UPI ID in invoice settings and enable Show UPI QR when available. The invoice QR contains the sale amount and invoice reference. Customers should verify the payment in your UPI app before treating it as paid.',
+      ),
+      (
+        category: 'Account & Data',
+        question: 'How do I change my password?',
+        answer:
+            'Open Archive > Account & Settings > Change Password. Password changes are managed by the admin account.',
+      ),
+      (
+        category: 'Account & Data',
+        question: 'How do I recover the admin password?',
+        answer:
+            'Choose Forgot Password on the login screen and complete the security-question verification to set a new admin password.',
+      ),
+      (
+        category: 'Account & Data',
+        question: 'How do I back up or restore business data?',
+        answer:
+            'Admins can open Archive > Data Management > Backup & Restore and connect Google Drive. Keep a recent backup before restoring: restore replaces the current business data.',
+      ),
+      (
+        category: 'Access',
+        question: 'What can a worker account access?',
+        answer:
+            'Worker access is limited to day-to-day operations. Admin-only functions such as business settings, archive tools and detailed financial information are restricted.',
+      ),
+    ];
 
-  // REPLACE THIS METHOD WITH THE ENHANCED VERSION
-  void _showFaqDialog() {
+    final categories = ['All', ...{for (final faq in faqs) faq.category}];
+    String selectedCategory = 'All';
+    String searchQuery = '';
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          constraints: const BoxConstraints(maxHeight: 600, maxWidth: 400),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.help_outline,
-                      color: Theme.of(context).primaryColor,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Help & FAQ',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final filteredFaqs = faqs.where((faq) {
+            final matchesCategory =
+                selectedCategory == 'All' || faq.category == selectedCategory;
+            final query = searchQuery.trim().toLowerCase();
+            final matchesSearch = query.isEmpty ||
+                faq.question.toLowerCase().contains(query) ||
+                faq.answer.toLowerCase().contains(query) ||
+                faq.category.toLowerCase().contains(query);
+            return matchesCategory && matchesSearch;
+          }).toList();
+
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560, maxHeight: 760),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(22, 20, 14, 18),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.55),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(24),
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              // Subtitle
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Frequently Asked Questions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.support_agent_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 30,
                         ),
-                  ),
-                ),
-              ),
-
-              // FAQ Content
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFaqItem(
-                        'How do I create a new bill?',
-                        'Billing: add products, set quantities and generate the bill.',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFaqItem(
-                        'How do I add or edit products?',
-                        'Products: select Add Product or open an item to edit.',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFaqItem(
-                        'How do I view sales reports?',
-                        'Reports: choose a period to view or export sales.',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFaqItem(
-                        'How do I manage inventory?',
-                        'Stock updates automatically when bills are generated.',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFaqItem(
-                        'Can I edit or void a bill?',
-                        'Edit bills in Billing. Only admins can void bills.',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFaqItem(
-                        'How do I handle product units (pcs/kg)?',
-                        'Set each product's unit; billing uses it automatically.',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFaqItem(
-                        'How do I change my password?',
-                        'Settings > Change Password.',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFaqItem(
-                        'How do I backup my data?',
-                        'Admins: Archive > Backup & Restore.',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Close button
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Close',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Help Centre',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Guides and answers for using Billit',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.pop(dialogContext),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (value) =>
+                          setDialogState(() => searchQuery = value),
+                      decoration: InputDecoration(
+                        hintText: 'Search help topics',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: searchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                onPressed: () {
+                                  searchController.clear();
+                                  setDialogState(() => searchQuery = '');
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 44,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final category = categories[index];
+                        final selected = category == selectedCategory;
+                        return ChoiceChip(
+                          label: Text(category),
+                          selected: selected,
+                          onSelected: (_) => setDialogState(
+                            () => selectedCategory = category,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: filteredFaqs.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.search_off_rounded,
+                                    size: 38,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text('No matching help topics'),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Try another search or category.',
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                            children: [
+                              if (searchQuery.isEmpty &&
+                                  selectedCategory == 'All') ...[
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerLow,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.lightbulb_outline_rounded,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          isAdmin
+                                              ? 'Start with Billing and Inventory. Use Reports for exports and Archive for business tools, backups and account management.'
+                                              : 'Start with Billing and Inventory. Ask your admin if you need access to restricted settings or business tools.',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              for (final faq in filteredFaqs)
+                                Card(
+                                  elevation: 0,
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerLow,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    side: BorderSide(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outlineVariant,
+                                    ),
+                                  ),
+                                  child: ExpansionTile(
+                                    tilePadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 2,
+                                    ),
+                                    childrenPadding:
+                                        const EdgeInsets.fromLTRB(14, 0, 14, 16),
+                                    title: Text(
+                                      faq.question,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    subtitle: Text(faq.category),
+                                    children: [
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          faq.answer,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(height: 1.45),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('Close'),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
-    );
-  }
-
-  // ADD THESE HELPER METHODS AT THE END OF THE CLASS (before the build method)
-  Widget _buildFaqItem(String question, String answer) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Q: $question',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'A: $answer',
-          style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHelpOption(IconData icon, String title, String description) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon,
-            size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              Text(
-                description,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    ).whenComplete(searchController.dispose);
   }
 
   List<IconData> _navigationIcons({
