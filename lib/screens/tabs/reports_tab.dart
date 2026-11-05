@@ -476,12 +476,15 @@ class _ReportsTabState extends State<ReportsTab>
           ),
           _card('Total Revenue', cur.format(revenue), Icons.trending_up),
           _paymentBreakdown(daySales, cur),
-          _card('Gross Profit', cur.format(grossProfit),
-              Icons.account_balance_wallet),
+          if (_isAdmin) ...[
+            _card('Gross Profit', cur.format(grossProfit),
+                Icons.account_balance_wallet),
+          ],
           _card('Total Expenses', cur.format(totalExpenses),
               Icons.money_off_outlined),
-          _card('Net Profit', cur.format(netProfit), Icons.analytics,
-              isNet: true),
+          if (_isAdmin)
+            _card('Net Profit', cur.format(netProfit), Icons.analytics,
+                isNet: true),
           _card('Total Invoices', '${daySales.length}',
               Icons.receipt_long_outlined),
           if (daySales.isNotEmpty) ...[
