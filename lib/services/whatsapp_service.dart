@@ -112,7 +112,7 @@ class WhatsAppService {
     }
 
     try {
-      final pdf = await PdfService.buildInvoicePdf(sale);
+      final pdf = await PdfService.buildInvoicePdf(sale, forceA4: true);
       if (!context.mounted) return;
 
       final filename = 'Invoice_${sale.id.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}';
