@@ -567,7 +567,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Download sales statements and GST and accounting registers in the required format.',
+            'Export sales, GST and expense reports.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -582,7 +582,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Download invoice-wise sales statements as CSV or PDF for a single day or a custom date range.',
+            'Export invoice-wise sales as CSV or PDF.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -695,7 +695,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             icon: Icons.receipt_long_outlined,
             title: 'GST Sales Register',
             subtitle:
-                'Invoice-wise taxable values, GST breakup, payment and customer GSTIN.',
+                'Invoice-wise taxable value, GST and customer details.',
             onTap: _exportGstSalesRegister,
             onShare: () => _exportGstSalesRegister(share: true),
           ),
@@ -703,7 +703,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             icon: Icons.table_chart_outlined,
             title: 'GST Item Register',
             subtitle:
-                'Product-wise HSN/SAC, quantities, taxable values and tax amounts.',
+                'Product-wise HSN/SAC and tax summary.',
             onTap: _exportGstItemRegister,
             onShare: () => _exportGstItemRegister(share: true),
           ),
@@ -711,7 +711,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
             icon: Icons.account_balance_wallet_outlined,
             title: 'Expenses Register',
             subtitle:
-                'Export expense dates, categories, descriptions and amounts.',
+                'Export expense details.',
             onTap: _exportExpensesRegister,
             onShare: () => _exportExpensesRegister(share: true),
           ),
