@@ -37,14 +37,14 @@ class SettingsScreen extends StatelessWidget {
             _SettingsItem(
               icon: Icons.receipt_long_outlined,
               title: 'App & Invoice Settings',
-              subtitle: 'Business details, logo and invoice preferences',
+              subtitle: 'Business and invoice details',
               onTap: () => _open(context, const InvoiceSettingsScreen()),
             ),
             _SettingsItem(
               icon: Icons.design_services_outlined,
               title: 'Invoice Customisation',
               subtitle:
-                  'Paper sizes, invoice layout, table, header and footer templates',
+                  'Invoice layout and templates',
               onTap: () => _open(context, const InvoiceCustomisationScreen()),
             ),
             _SettingsItem(
@@ -61,13 +61,13 @@ class SettingsScreen extends StatelessWidget {
           _SettingsItem(
             icon: Icons.palette_outlined,
             title: 'Appearance & Personalisation',
-            subtitle: 'Theme, display and layout preferences',
+            subtitle: 'Theme and layout',
             onTap: () => _open(context, const AppearanceSettingsScreen()),
           ),
           _SettingsItem(
             icon: Icons.print_outlined,
             title: 'Printer Settings',
-            subtitle: 'Configure receipt printer and connection',
+            subtitle: 'Printer setup',
             onTap: () => _open(context, const PrinterSettingsScreen()),
           ),
         ],
@@ -78,7 +78,7 @@ class SettingsScreen extends StatelessWidget {
           _SettingsItem(
             icon: Icons.help_outline_rounded,
             title: 'Help & FAQ',
-            subtitle: 'Guides and frequently asked questions',
+            subtitle: 'Help and FAQs',
             onTap: onHelp,
           ),
           _SettingsItem(
@@ -112,7 +112,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Manage your business setup, app appearance and connected devices.',
+              'Business, app and device settings.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurface.withValues(alpha: 0.62),
               ),
