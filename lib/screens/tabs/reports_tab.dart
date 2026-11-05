@@ -508,72 +508,136 @@ class _ReportsTabState extends State<ReportsTab>
                           .withValues(alpha: 0.1),
                     ),
                   ),
-                  child: ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primaryContainer
-                            .withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(Icons.receipt,
-                          color: Theme.of(context).colorScheme.primary),
-                    ),
-                    title: Text(
-                      'Invoice #${sale.id}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Text(
-                      DateFormat('hh:mm a').format(sale.date),
-                      style: TextStyle(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.6)),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          cur.format(sale.totalAmount),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            color: Theme.of(context).colorScheme.primary,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 520;
+                      final colors = Theme.of(context).colorScheme;
+                      final amount = Text(
+                        cur.format(sale.totalAmount),
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: colors.primary,
+                        ),
+                      );
+                      final whatsappButton = IconButton(
+                        tooltip: 'Send on WhatsApp',
+                        visualDensity: VisualDensity.compact,
+                        constraints:
+                            const BoxConstraints.tightFor(width: 44, height: 44),
+                        icon: const WhatsAppIcon(size: 24),
+                        onPressed: () =>
+                            WhatsAppService.sendInvoice(context, sale),
+                      );
+                      final printButton = IconButton(
+                        tooltip: 'Print invoice',
+                        visualDensity: VisualDensity.compact,
+                        constraints:
+                            const BoxConstraints.tightFor(width: 44, height: 44),
+                        onPressed: _printingSaleIds.contains(sale.id)
+                            ? null
+                            : () => _printSale(sale),
+                        icon: _printingSaleIds.contains(sale.id)
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.print_outlined),
+                      );
+
+                      if (compact) {
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => EditInvoiceScreen(
+                                  sale: sale,
+                                  isViewOnly: true,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Invoice #${sale.id}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    amount,
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  DateFormat('hh:mm a').format(sale.date),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Divider(height: 1, color: colors.outlineVariant),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [whatsappButton, printButton],
+                                ),
+                              ],
+                            ),
                           ),
+                        );
+                      }
+
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colors.primaryContainer.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.receipt, color: colors.primary),
                         ),
-                        IconButton(
-                          tooltip: 'Send on WhatsApp',
-                          visualDensity: VisualDensity.compact,
-                          icon: const WhatsAppIcon(size: 24),
-                          onPressed: () => WhatsAppService.sendInvoice(context, sale),
+                        title: Text(
+                          'Invoice #${sale.id}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
-                        IconButton(
-                          tooltip: 'Print invoice',
-                          onPressed: _printingSaleIds.contains(sale.id)
-                              ? null
-                              : () => _printSale(sale),
-                          icon: _printingSaleIds.contains(sale.id)
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.print_outlined),
+                        subtitle: Text(
+                          DateFormat('hh:mm a').format(sale.date),
+                          style: TextStyle(color: colors.onSurfaceVariant),
                         ),
-                      ],
-                    ),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EditInvoiceScreen(sale: sale, isViewOnly: true),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [amount, whatsappButton, printButton],
                         ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => EditInvoiceScreen(
+                                sale: sale,
+                                isViewOnly: true,
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
