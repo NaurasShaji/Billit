@@ -1112,65 +1112,142 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   }
 
   Widget _buildHistoryRow(Sale sale, NumberFormat cur) {
-    final row = Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
-      decoration: BoxDecoration(
-        color: _cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sale.id,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  DateFormat('MMM dd, yyyy - hh:mm a').format(sale.date),
-                  style: TextStyle(fontSize: 12, color: _cs.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            cur.format(sale.totalAmount),
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: _cs.primary,
-              fontFeatures: _tabularFigures,
-            ),
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            tooltip: 'Send on WhatsApp',
-            visualDensity: VisualDensity.compact,
-            icon: const WhatsAppIcon(size: 26),
-            onPressed: () => WhatsAppService.sendInvoice(context, sale),
-          ),
-          IconButton(
-            tooltip: 'Print invoice',
-            icon: Icon(Icons.print, color: _cs.primary),
-            onPressed: () => _printSale(sale),
-          ),
-          IconButton(
-            tooltip: 'Edit invoice',
-            icon: Icon(Icons.edit, color: _cs.primary),
-            onPressed: () => _editSale(sale),
-          ),
-          IconButton(
-            tooltip: 'Delete invoice',
-            icon: Icon(Icons.delete, color: _cs.error),
-            onPressed: () => _confirmDeleteSale(sale),
-          ),
-        ],
+    final dateText = DateFormat('MMM dd, yyyy - hh:mm a').format(sale.date);
+    final amount = Text(
+      cur.format(sale.totalAmount),
+      maxLines: 1,
+      softWrap: false,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: _cs.primary,
+        fontFeatures: _tabularFigures,
       ),
     );
+
+    final whatsappAction = IconButton(
+      tooltip: 'Send on WhatsApp',
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+      icon: const WhatsAppIcon(size: 24),
+      onPressed: () => WhatsAppService.sendInvoice(context, sale),
+    );
+    final printAction = IconButton(
+      tooltip: 'Print invoice',
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+      icon: Icon(Icons.print_outlined, color: _cs.primary),
+      onPressed: () => _printSale(sale),
+    );
+    final editAction = IconButton(
+      tooltip: 'Edit invoice',
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+      icon: Icon(Icons.edit_outlined, color: _cs.primary),
+      onPressed: () => _editSale(sale),
+    );
+    final deleteAction = IconButton(
+      tooltip: 'Delete invoice',
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+      icon: Icon(Icons.delete_outline, color: _cs.error),
+      onPressed: () => _confirmDeleteSale(sale),
+    );
+
+    final row = LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 520;
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: EdgeInsets.all(compact ? 14 : 10),
+          decoration: BoxDecoration(
+            color: _cs.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            sale.id,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        amount,
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      dateText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Divider(height: 1, color: _cs.outlineVariant),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        whatsappAction,
+                        printAction,
+                        editAction,
+                        deleteAction,
+                      ],
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sale.id,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            dateText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    amount,
+                    const SizedBox(width: 8),
+                    whatsappAction,
+                    printAction,
+                    editAction,
+                    deleteAction,
+                  ],
+                ),
+        );
+      },
+    );
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onSecondaryTapDown: (details) =>
