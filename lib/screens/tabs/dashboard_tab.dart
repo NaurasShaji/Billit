@@ -73,25 +73,7 @@ class DashboardTab extends StatefulWidget {
 }
 
 class _DashboardTabState extends State<DashboardTab> {
-  static const _periodKey = 'dashboard_period';
-  late _Period _period;
-
-  @override
-  void initState() {
-    super.initState();
-    final saved = Hive.box<dynamic>('app_settings')
-        .get(_periodKey, defaultValue: 'today')
-        .toString();
-    _period = _Period.values.firstWhere(
-      (p) => p.name == saved,
-      orElse: () => _Period.today,
-    );
-  }
-
-  void _setPeriod(_Period period) {
-    setState(() => _period = period);
-    Hive.box<dynamic>('app_settings').put(_periodKey, period.name);
-  }
+  static const _Period _period = _Period.today;
 
   // Calendar-day arithmetic that is safe across daylight-saving changes.
   static DateTime _day(DateTime d, int offset) =>
@@ -507,17 +489,9 @@ class _DashboardTabState extends State<DashboardTab> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final period in _Period.values)
-                        ChoiceChip(
-                          label: Text(period.label),
-                          selected: period == _period,
-                          onSelected: (_) => _setPeriod(period),
-                        ),
-                    ],
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Chip(label: Text(_Period.today.label)),
                   ),
                   const SizedBox(height: 16),
                   _SetupChecklist(
