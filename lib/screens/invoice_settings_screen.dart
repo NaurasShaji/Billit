@@ -4,6 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
+import '../services/whatsapp_service.dart';
+import '../widgets/whatsapp_icon.dart';
 import '../widgets/responsive_page.dart';
 import '../widgets/settings_components.dart';
 import '../services/thermal_logo_service.dart';
@@ -38,6 +41,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   late final TextEditingController _upiNotePrefix;
   late String _invoiceAccent;
   late final TextEditingController _invoiceFooter;
+  late final TextEditingController _waCountryCode;
+  late final TextEditingController _waTemplate;
 
   Uint8List? _appLogoBytes;
   Uint8List? _invoiceLogoBytes;
@@ -93,6 +98,14 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             .get('invoice_footer_text',
                 defaultValue: 'Thank you for your business.')
             .toString());
+    _waCountryCode = TextEditingController(
+        text: _settings.get('whatsapp_country_code', defaultValue: '91').toString());
+    final savedWhatsAppTemplate =
+        _settings.get('whatsapp_message_template', defaultValue: '').toString();
+    _waTemplate = TextEditingController(
+        text: savedWhatsAppTemplate.trim().isEmpty
+            ? WhatsAppService.defaultTemplate
+            : savedWhatsAppTemplate);
     _appLogoBytes = _decodeImage('app_logo_base64');
     _invoiceLogoBytes = _decodeImage('business_logo_base64');
     _printLogo58Bytes = _decodeImage('business_logo_print_58_base64');
@@ -111,6 +124,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _upiPayeeName.addListener(_markDirty);
     _upiNotePrefix.addListener(_markDirty);
     _invoiceFooter.addListener(_markDirty);
+    _waCountryCode.addListener(_markDirty);
+    _waTemplate.addListener(_markDirty);
   }
 
   Uint8List? _decodeImage(String key) {
@@ -141,6 +156,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _upiPayeeName.removeListener(_markDirty);
     _upiNotePrefix.removeListener(_markDirty);
     _invoiceFooter.removeListener(_markDirty);
+    _waCountryCode.removeListener(_markDirty);
+    _waTemplate.removeListener(_markDirty);
     _appName.dispose();
     _name.dispose();
     _address.dispose();
@@ -153,6 +170,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     _upiPayeeName.dispose();
     _upiNotePrefix.dispose();
     _invoiceFooter.dispose();
+    _waCountryCode.dispose();
+    _waTemplate.dispose();
     super.dispose();
   }
 
@@ -286,6 +305,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       'app_name': _appName.text.trim(),
       'invoice_accent': _invoiceAccent,
       'invoice_footer_text': _invoiceFooter.text.trim(),
+      'whatsapp_country_code': _waCountryCode.text.replaceAll(RegExp(r'\D'), ''),
+      'whatsapp_message_template': _waTemplate.text.trim(),
       'upi_id': _upiId.text.trim(),
       'upi_payee_name': _upiPayeeName.text.trim(),
       'upi_note_prefix': _upiNotePrefix.text.trim().isEmpty
@@ -527,6 +548,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     _invoicePreview(),
+                    const SizedBox(height: 12),
+                    _whatsappSection(),
                   ]),
                   _settingsTab([
                     SettingsSection(
@@ -591,6 +614,76 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: children,
+    );
+  }
+
+  Widget _whatsappSection() {
+    final scheme = Theme.of(context).colorScheme;
+    return SettingsSection(
+      title: 'WhatsApp invoice message',
+      subtitle: 'This message opens in the customer\'s WhatsApp chat. Attach the saved PDF manually.',
+      trailing: const WhatsAppIcon(size: 26),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextFormField(
+            controller: _waCountryCode,
+            keyboardType: TextInputType.number,
+            maxLength: 4,
+            decoration: _decoration('Default country code', Icons.public).copyWith(
+              helperText: 'Added to 10-digit customer numbers. India: 91.',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _waTemplate,
+            maxLines: 4,
+            maxLength: 500,
+            decoration: _decoration('WhatsApp message', Icons.chat_outlined).copyWith(
+              helperText: 'Placeholders: {name}, {shop}, {invoice}, {total}, {date}.',
+              alignLabelWithHint: true,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _waTemplate.text = WhatsAppService.defaultTemplate,
+              icon: const Icon(Icons.restart_alt, size: 18),
+              label: const Text('Restore default'),
+            ),
+          ),
+          ListenableBuilder(
+            listenable: Listenable.merge([_waTemplate, _name, _invoicePrefix, _nextInvoiceNumber]),
+            builder: (context, _) {
+              final preview = WhatsAppService.renderTemplate(
+                _waTemplate.text.trim().isEmpty
+                    ? WhatsAppService.defaultTemplate
+                    : _waTemplate.text,
+                name: 'Priya',
+                shop: _name.text.trim().isEmpty ? 'Your shop' : _name.text.trim(),
+                invoice: '${_invoicePrefix.text.trim().isEmpty ? 'INV' : _invoicePrefix.text.trim().toUpperCase()}-00001',
+                total: '₹680.00',
+                date: DateFormat('d MMM yyyy').format(DateTime.now()),
+              );
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: WhatsAppIcon.brandGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: WhatsAppIcon.brandGreen.withValues(alpha: 0.3)),
+                ),
+                child: Text(preview, style: TextStyle(color: scheme.onSurface)),
+              );
+            },
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Preview only. Billit opens the customer chat with this message; attach the PDF manually from Downloads.',
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 

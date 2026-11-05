@@ -11,6 +11,12 @@ import './boxes.dart';
 import './payment_qr_service.dart';
 import './invoice_template_service.dart';
 
+class InvoicePdf {
+  const InvoicePdf({required this.bytes, required this.filename});
+  final Uint8List bytes;
+  final String filename;
+}
+
 class PdfService {
   // Thermal printer configurations
   static const double thermalWidth58mm = 164.0; // 58mm width
@@ -24,6 +30,45 @@ class PdfService {
     bool includeGST = true,
     bool fullPage = true,
     bool share = false,
+  }) async {
+    final pdf = await buildInvoicePdf(
+      sale,
+      thermalSize: thermalSize,
+      includeHeader: includeHeader,
+      includeFooter: includeFooter,
+      includeGST: includeGST,
+      fullPage: fullPage,
+    );
+    if (share) {
+      await Share.shareXFiles(
+        [
+          XFile.fromData(
+            pdf.bytes,
+            mimeType: 'application/pdf',
+            name: pdf.filename,
+          ),
+        ],
+        subject: pdf.filename,
+      );
+      return;
+    }
+    await FilePicker.platform.saveFile(
+      dialogTitle: 'Save invoice PDF',
+      fileName: pdf.filename,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      bytes: pdf.bytes,
+    );
+  }
+
+  /// Builds the configured invoice PDF without opening a save/share dialog.
+  static Future<InvoicePdf> buildInvoicePdf(
+    Sale sale, {
+    ThermalSize thermalSize = ThermalSize.mm80,
+    bool includeHeader = true,
+    bool includeFooter = true,
+    bool includeGST = true,
+    bool fullPage = true,
   }) async {
     final doc = pw.Document();
     final template =
@@ -105,32 +150,10 @@ class PdfService {
 
     final filename =
         '${includeGST && sale.gstEnabled ? 'gst_invoice' : 'invoice'}_${sale.id}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-    final pdfBytes = Uint8List.fromList(await doc.save());
-    if (share) {
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            pdfBytes,
-            mimeType: 'application/pdf',
-            name: filename,
-          ),
-        ],
-        subject: filename,
-      );
-      return;
-    }
-
-    final savedPath = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save invoice PDF',
-      fileName: filename,
-      type: FileType.custom,
-      allowedExtensions: const ['pdf'],
-      bytes: pdfBytes,
+    return InvoicePdf(
+      bytes: Uint8List.fromList(await doc.save()),
+      filename: filename,
     );
-    if (savedPath == null) {
-      // The user cancelled the save dialog; no share sheet is opened.
-      return;
-    }
   }
 
   static List<pw.Widget> _buildFullPageInvoice(

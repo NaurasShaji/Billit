@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../services/boxes.dart';
+import '../../services/whatsapp_service.dart';
+import '../../widgets/whatsapp_icon.dart';
 import '../../utils/platform_support.dart';
 import '../../services/auth_service.dart';
 import '../../services/cart_service.dart';
@@ -1059,6 +1061,14 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
       ),
       items: const [
         PopupMenuItem<String>(
+          value: 'whatsapp',
+          child: Row(children: [
+            WhatsAppIcon(size: 18),
+            SizedBox(width: 12),
+            Text('Send on WhatsApp'),
+          ]),
+        ),
+        PopupMenuItem<String>(
           value: 'print',
           child: Row(children: [
             Icon(Icons.print, size: 18),
@@ -1086,6 +1096,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     );
     if (!mounted) return;
     switch (choice) {
+      case 'whatsapp':
+        await WhatsAppService.sendInvoice(context, sale);
+        break;
       case 'print':
         await _printSale(sale);
         break;
@@ -1134,6 +1147,12 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'Send on WhatsApp',
+            visualDensity: VisualDensity.compact,
+            icon: const WhatsAppIcon(size: 26),
+            onPressed: () => WhatsAppService.sendInvoice(context, sale),
+          ),
           IconButton(
             tooltip: 'Print invoice',
             icon: Icon(Icons.print, color: _cs.primary),
