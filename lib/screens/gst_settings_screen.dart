@@ -117,7 +117,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text(
-                'GST collection through tax invoices is available only for regular registration.')),
+                'Tax invoices require regular GST registration.')),
       );
       return;
     }
@@ -136,7 +136,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text(
-                'GST settings saved. Review these settings with your accountant before issuing invoices.')),
+                'GST settings saved. Verify rates before invoicing.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -175,7 +175,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
             children: [
               SettingsSection(
                 title: 'Registration',
-                subtitle: 'Set the GST profile and place of business used for billing.',
+                subtitle: 'Set your GST profile and business state.',
                 child: Column(
                   children: [
                     DropdownButtonFormField<String>(
@@ -206,7 +206,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('The seller GSTIN is configured under App & Invoice Settings. Ensure its state code matches this selection.',
+                      child: Text('Seller GSTIN state code must match this state.',
                         style: Theme.of(context).textTheme.bodySmall),
                     ),
                   ],
@@ -215,7 +215,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
               const SizedBox(height: 12),
               SettingsSection(
                 title: 'Billing behaviour',
-                subtitle: 'Choose how GST is applied when creating a bill.',
+                subtitle: 'Set how GST is applied.',
                 child: Column(
                   children: [
                     SwitchListTile(
@@ -231,7 +231,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Catalogue prices include GST'),
-                      subtitle: const Text('Cashiers can override this on an individual bill.'),
+                      subtitle: const Text('Can be changed on each bill.'),
                       value: _gstInclusive,
                       onChanged: (value) => _change(() => _gstInclusive = value),
                     ),
@@ -239,7 +239,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Default to interstate sale (IGST)'),
-                      subtitle: const Text('This is only a default; verify place of supply for every transaction.'),
+                      subtitle: const Text('Default only. Check place of supply per sale.'),
                       value: _defaultInterstate,
                       onChanged: (value) => _change(() => _defaultInterstate = value),
                     ),
@@ -249,7 +249,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
               const SizedBox(height: 12),
               SettingsSection(
                 title: 'Tax defaults',
-                subtitle: 'Fallback values used only when a product has no individual GST rate.',
+                subtitle: 'Used when a product has no GST rate.',
                 child: Column(
                   children: [
                     TextFormField(
@@ -259,7 +259,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
                       decoration: _decoration('Fallback GST rate (%)', Icons.percent),
                     ),
                     const SizedBox(height: 8),
-                    Text('Product-specific GST rates and HSN codes remain authoritative. Confirm classifications and applicable rates before issuing invoices.',
+                    Text('Product GST rates and HSN codes override these defaults.',
                       style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
@@ -267,7 +267,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
               const SizedBox(height: 12),
               SettingsSection(
                 title: 'Example calculation',
-                subtitle: 'Illustrative preview using a taxable value of ₹1,000.',
+                subtitle: 'Example using ₹1,000 taxable value.',
                 child: Column(
                   children: [
                     _previewRow('Taxable value', '₹${sampleBase.toStringAsFixed(2)}'),
@@ -286,7 +286,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
               const SizedBox(height: 12),
               const SettingsSection(
                 title: 'Compliance note',
-                child: Text('Billit is a billing and record-keeping tool, not a GST compliance certification or filing service. Composition taxpayers must not collect GST separately. Verify invoice rules, HSN/SAC, rates, place of supply, e-invoicing/e-way bill applicability and return reporting with a qualified tax professional.'),
+                child: Text('Billit does not certify GST compliance or file returns. Composition taxpayers must not collect GST separately. Verify HSN/SAC, rates and filing obligations with a tax professional.'),
               ),
             ],
           ),
