@@ -168,7 +168,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    '⚠️ This action cannot be undone. Make sure you have a current backup before proceeding.',
+                    'This cannot be undone. Create a backup first.',
                     style: TextStyle(color: Colors.red, fontSize: 13),
                   ),
                 ],
@@ -375,7 +375,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Secure cloud backup for your business data',
+                          'Cloud backup for business data',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.9),
@@ -430,7 +430,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Sign in to securely backup your business data to the cloud',
+                    'Sign in to connect Google Drive.',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 14,
@@ -748,7 +748,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
             ),
             const SizedBox(height: 16),
             Text(
-              'Schedule regular backups to keep your data safe',
+              'Set an automatic backup schedule.',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
