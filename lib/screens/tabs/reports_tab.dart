@@ -406,6 +406,51 @@ class _ReportsTabState extends State<ReportsTab>
     );
   }
 
+  Widget _paymentBreakdown(List<Sale> periodSales, NumberFormat currency) {
+    final totals = <PaymentMethod, double>{PaymentMethod.cash: 0, PaymentMethod.card: 0, PaymentMethod.upi: 0};
+    final counts = <PaymentMethod, int>{PaymentMethod.cash: 0, PaymentMethod.card: 0, PaymentMethod.upi: 0};
+    for (final sale in periodSales) {
+      totals[sale.payment] = (totals[sale.payment] ?? 0) + sale.totalAmount;
+      counts[sale.payment] = (counts[sale.payment] ?? 0) + 1;
+    }
+    final total = totals.values.fold<double>(0, (sum, value) => sum + value);
+    final methods = <(PaymentMethod, String, IconData)>[
+      (PaymentMethod.cash, 'Cash', Icons.payments_outlined),
+      (PaymentMethod.card, 'Card', Icons.credit_card_outlined),
+      (PaymentMethod.upi, 'UPI', Icons.qr_code_2),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Payment Method Breakdown', subtitle: 'Collected by payment method'),
+        Card(
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(children: [
+              for (var i = 0; i < methods.length; i++) ...[
+                if (i > 0) const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(methods[i].$3),
+                  title: Text(methods[i].$2, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('${counts[methods[i].$1] ?? 0} transaction(s) · ${total > 0 ? ((totals[methods[i].$1] ?? 0) / total * 100).toStringAsFixed(1) : '0.0'}%'),
+                  trailing: Text(currency.format(totals[methods[i].$1] ?? 0), style: const TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ],
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Total collected', style: TextStyle(fontWeight: FontWeight.w700)),
+                trailing: Text(currency.format(total), style: const TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDaily(List<Sale> sales, List<Expense> expenses) {
     final cur = NumberFormat.simpleCurrency(locale: 'en_IN');
     final daySales =
@@ -428,6 +473,7 @@ class _ReportsTabState extends State<ReportsTab>
             subtitle: DateFormat('EEEE, MMMM d, yyyy').format(_dailyAnchor),
           ),
           _card('Total Revenue', cur.format(revenue), Icons.trending_up),
+          _paymentBreakdown(daySales, cur),
           _card('Gross Profit', cur.format(grossProfit),
               Icons.account_balance_wallet),
           _card('Total Expenses', cur.format(totalExpenses),
@@ -577,6 +623,7 @@ class _ReportsTabState extends State<ReportsTab>
             subtitle: DateFormat('MMMM yyyy').format(_monthlyAnchor),
           ),
           _card('Total Revenue', cur.format(revenue), Icons.trending_up),
+          _paymentBreakdown(mSales, cur),
           _card('Gross Profit', cur.format(grossProfit),
               Icons.account_balance_wallet),
           _card('Total Expenses', cur.format(totalExpenses),
@@ -775,6 +822,7 @@ class _ReportsTabState extends State<ReportsTab>
             subtitle: '${_yearlyAnchor.year}',
           ),
           _card('Total Revenue', cur.format(revenue), Icons.trending_up),
+          _paymentBreakdown(ySales, cur),
           _card('Gross Profit', cur.format(grossProfit),
               Icons.account_balance_wallet),
           _card('Total Expenses', cur.format(totalExpenses),
