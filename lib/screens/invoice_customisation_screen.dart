@@ -348,22 +348,43 @@ class _InvoiceCustomisationScreenState
                             title: Text(InvoiceTemplateService.columns
                                 .firstWhere((e) => e['id'] == id)['label']!))
                     ]),
+              if (selected.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Customise column headings',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 10),
+              ],
               for (final id in selected)
-                TextFormField(
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: TextFormField(
                     key: ValueKey('label-$size-$id'),
                     initialValue:
                         (value['columnLabels'] as Map?)?[id]?.toString() ??
                             InvoiceTemplateService.columns
                                 .firstWhere((e) => e['id'] == id)['label']!,
                     decoration: InputDecoration(
-                        labelText:
-                            'Column label - ${InvoiceTemplateService.columns.firstWhere((e) => e['id'] == id)['label']!}'),
+                      labelText:
+                          '${InvoiceTemplateService.columns.firstWhere((e) => e['id'] == id)['label']!} column label',
+                      floatingLabelBehavior: FloatingLabelBehavior.auto,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 20,
+                      ),
+                      border: const OutlineInputBorder(),
+                    ),
                     onChanged: (v) {
                       final labels = Map<String, dynamic>.from(
                           (value['columnLabels'] as Map?) ?? {});
                       labels[id] = v;
                       setValue('columnLabels', labels);
-                    }),
+                    },
+                  ),
+                ),
               toggle('showTableBorders', 'Show table borders')
             ]),
             section('Footer', [
