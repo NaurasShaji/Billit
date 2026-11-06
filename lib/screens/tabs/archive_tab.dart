@@ -144,6 +144,16 @@ class ArchiveTab extends StatelessWidget {
       ];
 
   void _openCategory(BuildContext context, _ArchiveCategory category) {
+    // Reports has a single destination, so open it directly instead of
+    // showing a second page with the same Reports & Statements heading.
+    if (category.title == 'Reports & Statements' &&
+        category.items.length == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: category.items.single.builder),
+      );
+      return;
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ArchiveCategoryScreen(
