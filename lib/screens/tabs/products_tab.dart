@@ -715,9 +715,7 @@ class _ProductsTabState extends State<ProductsTab> {
                   decimal: true, signed: true),
               decoration: const InputDecoration(
                 labelText: 'Quantity change',
-                hintText: 'e.g. 12 to restock, -2 to remove',
-                helperText:
-                    'Use a positive number to add stock or a negative number to remove it.',
+                helperText: '+ve: stock increase · -ve: stock decrease',
               ),
             ),
           ],
