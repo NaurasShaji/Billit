@@ -374,9 +374,12 @@ class ThermalPrinterService {
       if (template['showPaymentMethod'] == true) {
         bytes += generator.text('Payment: ${sale.payment.name.toUpperCase()}');
       }
-      if (template['showTableBorders'] == true) {
-        bytes += generator.text('--------------------------------');
-      }
+      // A compact boxed section heading makes the item block distinct on
+      // narrow 50/58mm rolls. Item values remain stacked for legibility.
+      bytes += generator.text('+------------------------------+');
+      bytes += generator.text('|          ITEMS               |',
+          styles: const PosStyles(bold: true));
+      bytes += generator.text('+------------------------------+');
       final receiptColumns = (template['columns'] as List).cast<String>();
       const receiptLabels = {
         'serial': '#',
@@ -592,8 +595,11 @@ class ThermalPrinterService {
       return left ? text.padRight(width) : text.padLeft(width);
     }
 
-    if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
-    bytes += generator.text([
+    // Always frame the column headings. This is independent of the
+    // optional table-borders setting so the receipt has a clear table start.
+    final headerBorder =
+        '+' + widths.map((width) => '-' * width).join('+') + '+';
+    final headerRow = '|' + [
       for (var i = 0; i < configuredColumns.length; i++)
         fitCell(
             ((template['columnLabels'] as Map?)?[configuredColumns[i]]
@@ -606,8 +612,11 @@ class ThermalPrinterService {
                 : columnLabels[configuredColumns[i]] ?? configuredColumns[i]),
             widths[i],
             left: configuredColumns[i] == 'product'),
-    ].join());
-    if (template['showTableBorders'] == true) bytes += generator.text('=' * 48);
+    ].join('|') + '|';
+    bytes += generator.text(headerBorder);
+    bytes += generator.text(headerRow,
+        styles: const PosStyles(bold: true));
+    bytes += generator.text(headerBorder);
 
     for (var itemIndex = 0; itemIndex < sale.items.length; itemIndex++) {
       final item = sale.items[itemIndex];
