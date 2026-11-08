@@ -1,4 +1,4 @@
-package com.example.floral_billing_refined
+package com.example.billit
 
 import io.flutter.embedding.android.FlutterActivity
 
