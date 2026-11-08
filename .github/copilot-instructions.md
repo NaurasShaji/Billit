@@ -1,4 +1,4 @@
-# Copilot Instructions for Floral Billing Refined
+# Copilot Instructions for Billit
 
 ## Project Overview
 - **Flutter app** for floral shop billing, inventory, and reporting.
