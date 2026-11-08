@@ -155,23 +155,45 @@ class _BulkProductImportScreenState extends State<BulkProductImportScreen> {
   }
 
   void _markDuplicates(List<_ImportRow> rows) {
-    final products = Hive.box<Product>(Boxes.products).values.toList();
-    final names = products.map((p) => p.name.trim().toLowerCase()).toSet();
-    final codes = products
-        .map((p) => (p.barcode ?? '').trim())
-        .where((s) => s.isNotEmpty)
-        .toSet();
+    // Build duplicate indexes defensively. Older/corrupt Hive records can
+    // contain null values in fields that are non-nullable in the current
+    // Product model; one such record must not abort an Excel import.
+    final names = <String>{};
+    final codes = <String>{};
+    try {
+      final products = Hive.box<Product>(Boxes.products).values;
+      for (final product in products) {
+        try {
+          final name = product.name.trim().toLowerCase();
+          if (name.isNotEmpty) names.add(name);
+        } catch (_) {
+          // Ignore malformed legacy records; they cannot participate in
+          // duplicate-name detection.
+        }
+        try {
+          final code = (product.barcode ?? '').trim();
+          if (code.isNotEmpty) codes.add(code);
+        } catch (_) {
+          // Ignore malformed legacy barcode values.
+        }
+      }
+    } catch (_) {
+      // Keep import parsing available even if the existing inventory cannot
+      // be read for duplicate detection. Imported rows are still validated
+      // against one another below.
+    }
+
     final seenNames = <String>{};
     final seenCodes = <String>{};
-    for (final r in rows) {
-      if (r.error != null) continue;
-      final name = r.name.trim().toLowerCase();
-      final code = r.barcode.trim();
+    for (final row in rows) {
+      if (row.error != null) continue;
+      final name = row.name.trim().toLowerCase();
+      final code = row.barcode.trim();
       if (names.contains(name) || !seenNames.add(name)) {
-        r.error = 'Duplicate product name';
+        row.error = 'Duplicate product name';
       } else if (code.isNotEmpty &&
           (codes.contains(code) || !seenCodes.add(code))) {
-        r.error = 'Duplicate barcode';
+        row.error = 'Duplicate barcode';
       }
     }
   }
