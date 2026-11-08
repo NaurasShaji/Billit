@@ -43,3 +43,19 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter build output and generated reports
+**/build/
+**/build/reports/
+
+# Editor-specific local configuration
+.vscode/
+
+# Local signing credentials (never commit)
+key.properties
+*.jks
+*.keystore
+
+# Local build/debug output
+build_log.txt
+sha_output.txt
