@@ -1,7 +1,7 @@
 # Copilot Instructions for Billit
 
 ## Project Overview
-- **Flutter app** for floral shop billing, inventory, and reporting.
+- **Flutter app** for retail billing, inventory, and business management.
 - Uses **Hive** for local storage; supports **web and mobile** platforms.
 - Main features: Billing, Products, Reports, Settings (with backup/restore).
 
