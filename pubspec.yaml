@@ -80,4 +80,3 @@ flutter:
 # Assets configuration
   assets:
   - assets/icon/
-  - assets/tap_and_pay_qr.png
