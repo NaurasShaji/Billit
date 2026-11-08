@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:floralbill/models/sale.dart';
-import 'package:floralbill/models/product.dart';
-import 'package:floralbill/services/boxes.dart';
+import 'package:billit/models/sale.dart';
+import 'package:billit/models/product.dart';
+import 'package:billit/services/boxes.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
