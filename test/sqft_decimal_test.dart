@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:floralbill/models/product.dart';
-import 'package:floralbill/models/sale.dart';
-import 'package:floralbill/services/cart_service.dart';
+import 'package:billit/models/product.dart';
+import 'package:billit/models/sale.dart';
+import 'package:billit/services/cart_service.dart';
 
 void main() {
   group('SQFT Decimal Quantity Tests', () {
