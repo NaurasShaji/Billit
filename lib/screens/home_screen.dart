@@ -687,7 +687,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (_) => SettingsScreen(
                     isAdmin: isAdmin,
                     onHelp: () {
-                      Navigator.of(context).pop();
+                      // Keep SettingsScreen on the navigation stack while
+                      // showing Help & FAQ. Closing the dialog then returns
+                      // directly to the Settings section instead of Home.
                       _showHelpFaqDialog();
                     },
                     onLogout: () {
