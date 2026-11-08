@@ -17,6 +17,14 @@ import '../utils/platform_support.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ThermalPrinterService {
+  // Keep raster graphics small enough for thermal-printer dot widths. Large
+  // bitmaps can saturate Bluetooth/USB print buffers and cause later receipt
+  // content (especially footer messages) to be truncated.
+  static img.Image _fitReceiptImage(img.Image source, int maxWidth) {
+    if (source.width <= maxWidth) return source;
+    return img.copyResize(source, width: maxWidth);
+  }
+
   static String _formatRupees(double value) {
     return 'Rs.${value.truncate()}';
   }
@@ -296,7 +304,12 @@ class ThermalPrinterService {
         logoBase64 != null &&
         logoBase64.isNotEmpty) {
       try {
-        invoiceLogo = img.decodeImage(base64Decode(logoBase64));
+        final decodedLogo = img.decodeImage(base64Decode(logoBase64));
+        if (decodedLogo != null) {
+          // Approx. 45% of the printable head width: a compact brand mark,
+          // rather than a full-width banner.
+          invoiceLogo = _fitReceiptImage(decodedLogo, is58mm ? 170 : 250);
+        }
       } catch (_) {
         invoiceLogo = null;
       }
@@ -410,9 +423,9 @@ class ThermalPrinterService {
           final value = rowValues[id] ?? '';
           bytes += generator.text(id == 'product' ? value : '$label: $value');
         }
-        if (template['showTableBorders'] == true) {
-          bytes += generator.text('--------------------------------');
-        }
+        // Keep product rows visually distinct on narrow receipts even when
+        // the optional full table-border setting is disabled.
+        bytes += generator.text('--------------------------------');
       }
       if (template['showTableBorders'] == true) {
         bytes += generator.text('--------------------------------');
@@ -442,22 +455,27 @@ class ThermalPrinterService {
           final qrBytes = await PaymentQrService.generateForSale(sale) ??
               await PaymentQrService.loadStaticQrFallback();
           if (qrBytes != null) {
-            final qr = img.decodeImage(qrBytes);
-            if (qr != null) {
+            final decodedQr = img.decodeImage(qrBytes);
+            if (decodedQr != null) {
+              // Preserve QR module edges while limiting its physical print size.
+              final qr = _fitReceiptImage(decodedQr, 150);
               bytes += generator.text('SCAN & PAY',
                   styles: const PosStyles(align: PosAlign.center, bold: true));
-              bytes += generator.image(qr);
+              bytes += generator.image(qr, align: PosAlign.center);
             }
           }
         } catch (e) {
           print('Error generating payment QR: $e');
         }
       }
+      final receiptTerms = template['termsText']?.toString().trim() ?? '';
+      if (footerText.trim().isNotEmpty || receiptTerms.isNotEmpty) {
+        bytes += generator.text('--------------------------------');
+      }
       if (footerText.trim().isNotEmpty) {
-        bytes += generator.text(footerText,
+        bytes += generator.text(footerText.trim(),
             styles: PosStyles(align: footerPosAlignment));
       }
-      final receiptTerms = template['termsText']?.toString() ?? '';
       if (receiptTerms.isNotEmpty) {
         bytes += generator.text(receiptTerms,
             styles: PosStyles(align: footerPosAlignment));
@@ -616,10 +634,9 @@ class ThermalPrinterService {
           fitCell(values[configuredColumns[i]] ?? '', widths[i],
               left: configuredColumns[i] == 'product'),
       ].join());
-      if (template['showTableBorders'] == true &&
-          itemIndex < sale.items.length - 1) {
-        bytes += generator.text('-' * 48);
-      }
+      // Always separate products on 80mm receipts. The table-border
+      // preference still controls the table/header rules, not row legibility.
+      bytes += generator.text('-' * 48);
     }
 
     // Totals - better alignment for 80mm paper
@@ -664,13 +681,15 @@ class ThermalPrinterService {
         final qrBytes = await PaymentQrService.generateForSale(sale) ??
             await PaymentQrService.loadStaticQrFallback();
         if (qrBytes != null) {
-          final img.Image? qrImage = img.decodeImage(qrBytes);
-          if (qrImage != null) {
+          final img.Image? decodedQr = img.decodeImage(qrBytes);
+          if (decodedQr != null) {
+            // A compact QR remains easy to scan and leaves room for the footer.
+            final qrImage = _fitReceiptImage(decodedQr, 210);
             bytes += generator.text(
               'SCAN & PAY',
               styles: const PosStyles(align: PosAlign.center, bold: true),
             );
-            bytes += generator.image(qrImage);
+            bytes += generator.image(qrImage, align: PosAlign.center);
           }
         }
       } catch (e) {
@@ -679,11 +698,14 @@ class ThermalPrinterService {
     }
 
     // Footer
+    final terms = template['termsText']?.toString().trim() ?? '';
+    if (footerText.trim().isNotEmpty || terms.isNotEmpty) {
+      bytes += generator.text('-' * 48);
+    }
     if (footerText.trim().isNotEmpty) {
-      bytes += generator.text(footerText,
+      bytes += generator.text(footerText.trim(),
           styles: PosStyles(align: footerPosAlignment));
     }
-    final terms = template['termsText']?.toString() ?? '';
     if (terms.isNotEmpty) {
       bytes +=
           generator.text(terms, styles: PosStyles(align: footerPosAlignment));
