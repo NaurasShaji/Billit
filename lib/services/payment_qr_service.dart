@@ -10,7 +10,8 @@ import '../models/sale.dart';
 /// Creates a standards-compatible UPI payment QR containing the actual sale
 /// amount and invoice reference. Returns null when no UPI ID is configured.
 class PaymentQrService {
-  static Future<Uint8List?> generateForSale(Sale sale) async {
+  /// Builds the UPI payment URI for [sale], or null when no UPI ID is set.
+  static String? paymentUriForSale(Sale sale) {
     final settings = Hive.box<dynamic>('app_settings');
     final upiId = settings.get('upi_id', defaultValue: '').toString().trim();
     if (upiId.isEmpty) return null;
@@ -23,7 +24,7 @@ class PaymentQrService {
         .trim();
     final note =
         [notePrefix, sale.id].where((part) => part.isNotEmpty).join(' ');
-    final paymentUri = Uri(
+    return Uri(
       scheme: 'upi',
       host: 'pay',
       queryParameters: <String, String>{
@@ -35,6 +36,24 @@ class PaymentQrService {
         if (note.isNotEmpty) 'tn': note,
       },
     ).toString();
+  }
+
+  /// QR module matrix (true = dark) so callers can draw the code as crisp
+  /// vector squares at any print size instead of scaling a bitmap.
+  static List<List<bool>> moduleMatrix(String data) {
+    final matrix = QrImage(QrCode.fromData(
+      data: data,
+      errorCorrectLevel: QrErrorCorrectLevel.M,
+    ));
+    return [
+      for (var row = 0; row < matrix.moduleCount; row++)
+        [for (var col = 0; col < matrix.moduleCount; col++) matrix.isDark(row, col)],
+    ];
+  }
+
+  static Future<Uint8List?> generateForSale(Sale sale) async {
+    final paymentUri = paymentUriForSale(sale);
+    if (paymentUri == null) return null;
 
     final code = QrCode.fromData(
       data: paymentUri,

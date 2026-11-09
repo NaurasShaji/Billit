@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/invoice_template_service.dart';
+import '../services/pdf_service.dart';
+import '../services/boxes.dart';
+import '../models/models.dart';
+import 'package:printing/printing.dart';
 
 class InvoiceCustomisationScreen extends StatefulWidget {
   const InvoiceCustomisationScreen({super.key});
@@ -504,530 +508,99 @@ class TemplatePreview extends StatelessWidget {
     required this.warnings,
   });
 
-  String _label(String id) {
-    final custom = (value['columnLabels'] as Map?)?[id]?.toString().trim();
-    if (custom != null && custom.isNotEmpty) return custom;
-    return InvoiceTemplateService.columns
-        .firstWhere((column) => column['id'] == id,
-            orElse: () => {'label': id})['label']!;
-  }
+  Sale _previewSale() {
+    final products = Hive.isBoxOpen(Boxes.products)
+        ? Hive.box<Product>(Boxes.products).values
+            .where((product) => product.active)
+            .take(3)
+            .toList()
+        : <Product>[];
+    const quantities = [2.0, 1.0, 3.0];
+    const fallbackPrices = [450.0, 180.0, 65.0];
+    final items = <SaleItem>[];
 
-  String _sampleCell(String id, int row) {
-    const products = ['Basmati Rice 5kg', 'Sunflower Oil 1L', 'Wheat Flour 2kg'];
-    const rates = ['₹450.00', '₹180.00', '₹65.00'];
-    const amounts = ['₹900.00', '₹180.00', '₹195.00'];
-    switch (id) {
-      case 'serial':
-        return '${row + 1}';
-      case 'product':
-        return products[row];
-      case 'hsn':
-        return ['1006', '1512', '1101'][row];
-      case 'quantity':
-        return ['2', '1', '3'][row];
-      case 'unit':
-        return ['kg', 'L', 'kg'][row];
-      case 'rate':
-        return rates[row];
-      case 'discount':
-        return '—';
-      case 'gst_rate':
-        return '5%';
-      case 'tax':
-        return ['₹45.00', '₹9.00', '₹9.75'][row];
-      case 'amount':
-        return amounts[row];
-      default:
-        return '';
+    for (var i = 0; i < 3; i++) {
+      final product = products.isEmpty ? null : products[i % products.length];
+      final quantity = quantities[i];
+      final rate = product?.sellingPrice ?? fallbackPrices[i];
+      final subtotal = rate * quantity;
+      final gstRate = product?.gstRate ?? 5.0;
+      final tax = subtotal * gstRate / 100;
+      items.add(SaleItem()
+        ..productId = product?.id ?? '__billit_preview_$i'
+        ..qty = quantity
+        ..sellingPrice = rate
+        ..costPrice = product?.costPrice ?? 0
+        ..subtotal = subtotal
+        ..unitLabel = product?.unit.name ?? 'pcs'
+        ..hsnCode = product?.hsnCode ?? ''
+        ..gstRate = gstRate
+        ..taxableAmount = subtotal
+        ..cgstAmount = tax / 2
+        ..sgstAmount = tax / 2
+        ..igstAmount = 0);
     }
-  }
 
-  Widget _thermalPreview(BuildContext context, double width) {
-    final columns = (value['columns'] as List).cast<String>();
-    final visibleColumns =
-        columns.isEmpty ? <String>['product', 'amount'] : columns;
-    final compact = size == '50mm' || size == '58mm';
-    final headerAlign = value['headerAlignment'] == 'left'
-        ? TextAlign.left
-        : value['headerAlignment'] == 'right'
-            ? TextAlign.right
-            : TextAlign.center;
-    final footerAlign = value['footerAlignment'] == 'left'
-        ? TextAlign.left
-        : value['footerAlignment'] == 'right'
-            ? TextAlign.right
-            : TextAlign.center;
-    final borderColor = Colors.black87;
-    final thermalText = TextStyle(
-      fontFamily: 'monospace',
-      fontSize: compact ? 8 : 9,
-      height: 1.15,
-      color: Colors.black,
-    );
-    Widget rule() => Container(
-          height: 1,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          color: borderColor,
-        );
-    int flexFor(String id) => id == 'product'
-        ? (compact ? 4 : 5)
-        : id == 'amount'
-            ? 2
-            : 1;
-    Widget tableLine(int row, {bool heading = false}) => Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final id in visibleColumns)
-              Expanded(
-                flex: flexFor(id),
-                child: Text(
-                  heading ? _label(id) : _sampleCell(id, row),
-                  maxLines: heading ? 2 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: id == 'product' ? TextAlign.left : TextAlign.right,
-                  style: thermalText.copyWith(
-                    fontWeight:
-                        heading ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-          ],
-        );
-
-    return Center(
-      child: Container(
-        width: width,
-        padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade400),
-          boxShadow: const [
-            BoxShadow(color: Color(0x18000000), blurRadius: 8)
-          ],
-        ),
-        child: DefaultTextStyle(
-          style: thermalText,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (value['showLogo'] == true) _thermalLogoPreview(),
-              if (value['showBusinessName'] == true)
-                Text('Your Business Name',
-                    textAlign: headerAlign,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-              if (value['showAddress'] == true)
-                Text('Your business address',
-                    textAlign: headerAlign,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 8,
-                        color: Colors.black)),
-              if (value['showPhone'] == true)
-                Text('Phone: Your phone number',
-                    textAlign: headerAlign,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 8,
-                        color: Colors.black)),
-              if (value['showEmail'] == true)
-                Text('Email: Your business email',
-                    textAlign: headerAlign,
-                    style: const TextStyle(
-                        fontFamily: 'monospace', fontSize: 8, color: Colors.black)),
-              if (value['showBusinessGstin'] == true)
-                Text('GSTIN: Your GSTIN',
-                    textAlign: headerAlign,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 8,
-                        color: Colors.black)),
-              rule(),
-              Text(value['headerTitle']?.toString() ?? 'INVOICE',
-                  textAlign: headerAlign,
-                  style: thermalText.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 3),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Invoice: INV-2026-0042\nDate: 01/11/2026  10:42 AM\nCustomer: Arun Kumar',
-                  style: thermalText,
-                ),
-              ),
-              if (value['showCustomerPhone'] == true)
-                const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Phone: +91 98470 12345',
-                        style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 9,
-                            color: Colors.black))),
-              if (value['showCustomerGstin'] == true)
-                const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Customer GSTIN: 32AAAPA1234A1Z5',
-                        style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 9,
-                            color: Colors.black))),
-              if (value['showPaymentMethod'] == true)
-                const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Payment: UPI',
-                        style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 9,
-                            color: Colors.black))),
-              rule(),
-              tableLine(0, heading: true),
-              rule(),
-              for (var row = 0; row < 3; row++) ...[
-                tableLine(row),
-                if (row != 2) const SizedBox(height: 3),
-              ],
-              rule(),
-              _thermalTotal('Subtotal', '₹1,275.00'),
-              _thermalTotal('Discount', '₹0.00'),
-              _thermalTotal('Taxable value', '₹1,275.00'),
-              _thermalTotal('CGST', '₹31.88'),
-              _thermalTotal('SGST', '₹31.87'),
-              rule(),
-              _thermalTotal('GRAND TOTAL', '₹1,338.75', bold: true),
-              if (value['showQr'] == true) ...[
-                const SizedBox(height: 7),
-                const Icon(Icons.qr_code_2, size: 44, color: Colors.black),
-                const Text('SCAN & PAY',
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-              ],
-              if ((value['footerText']?.toString().isNotEmpty ?? false))
-                Padding(
-                  padding: const EdgeInsets.only(top: 7),
-                  child: Text(value['footerText'].toString(),
-                      textAlign: footerAlign,
-                      style: thermalText.copyWith(
-                          fontWeight: FontWeight.bold)),
-                ),
-              if ((value['termsText']?.toString().isNotEmpty ?? false))
-                Text(value['termsText'].toString(),
-                    textAlign: footerAlign, style: thermalText),
-              const SizedBox(height: 5),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _thermalLogoPreview() {
-    try {
-      final settings = Hive.box<dynamic>('app_settings');
-      final key = size == '80mm'
-          ? 'business_logo_print_80_base64'
-          : 'business_logo_print_58_base64';
-      final encoded = settings.get(key)?.toString() ??
-          settings.get('business_logo_base64')?.toString() ??
-          '';
-      if (encoded.isEmpty) {
-        return const Padding(
-          padding: EdgeInsets.only(bottom: 5),
-          child: Icon(Icons.storefront, size: 34, color: Colors.black),
-        );
-      }
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 5),
-        child: Center(
-          child: Image.memory(
-            base64Decode(encoded),
-            width: size == '80mm' ? 150 : 100,
-            height: 54,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) =>
-                const Icon(Icons.storefront, size: 34, color: Colors.black),
-          ),
-        ),
-      );
-    } catch (_) {
-      return const Icon(Icons.storefront, size: 34, color: Colors.black);
-    }
-  }
-
-  Widget _thermalTotal(String label, String amount, {bool bold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label,
-                style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 9,
-                    color: Colors.black,
-                    fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
-          ),
-          Text(amount,
-              style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 9,
-                  color: Colors.black,
-                  fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-
-  Widget _pagePreview(BuildContext context, double width) {
-    final columns = (value['columns'] as List).cast<String>();
-    final visibleColumns = columns.isEmpty
-        ? <String>['serial', 'product', 'quantity', 'rate', 'amount']
-        : columns;
-    final alignment = value['headerAlignment'] == 'right'
-        ? CrossAxisAlignment.end
-        : value['headerAlignment'] == 'center'
-            ? CrossAxisAlignment.center
-            : CrossAxisAlignment.start;
-    final footerAlign = value['footerAlignment'] == 'left'
-        ? TextAlign.left
-        : value['footerAlignment'] == 'right'
-            ? TextAlign.right
-            : TextAlign.center;
-    final border = value['showTableBorders'] == true
-        ? TableBorder.all(color: Colors.grey.shade300, width: 0.7)
-        : TableBorder(
-            horizontalInside:
-                BorderSide(color: Colors.grey.shade200, width: 0.5));
-    final tableRows = <TableRow>[
-      TableRow(
-        decoration: const BoxDecoration(color: Color(0xFFE9EEF5)),
-        children: [
-          for (final id in visibleColumns)
-            Padding(
-              padding: const EdgeInsets.all(5),
-              child: Text(_label(id),
-                  style: const TextStyle(
-                      fontSize: 8, fontWeight: FontWeight.bold)),
-            ),
-        ],
-      ),
-      for (var row = 0; row < 3; row++)
-        TableRow(
-          children: [
-            for (final id in visibleColumns)
-              Padding(
-                padding: const EdgeInsets.all(5),
-                child: Text(_sampleCell(id, row),
-                    style: const TextStyle(fontSize: 8)),
-              ),
-          ],
-        ),
-    ];
-
-    return Center(
-      child: Container(
-        width: width,
-        padding: EdgeInsets.all((value['marginMm'] as num).toDouble() + 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade400),
-          boxShadow: const [
-            BoxShadow(color: Color(0x18000000), blurRadius: 8)
-          ],
-        ),
-        child: DefaultTextStyle(
-          style: const TextStyle(color: Colors.black, fontSize: 9),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: alignment,
-                      children: [
-                        if (value['showLogo'] == true)
-                          const Icon(Icons.storefront, size: 32),
-                        if (value['showBusinessName'] == true)
-                          const Text('Your Business Name',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
-                        if (value['showAddress'] == true)
-                          const Text('Your business address'),
-                        if (value['showPhone'] == true)
-                          const Text('Phone: Your phone number'),
-                        if (value['showEmail'] == true)
-                          const Text('Email: Your business email'),
-                        if (value['showBusinessGstin'] == true)
-                          const Text('GSTIN: Your GSTIN',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      border: Border.all(color: Colors.blueGrey),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(value['headerTitle']?.toString() ?? 'INVOICE',
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 5),
-                        const Text('Invoice: INV-2026-0042'),
-                        const Text('Date: 01 Nov 2026, 10:42 AM'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 22, color: Colors.black54),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('BILL TO',
-                        style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black54)),
-                    const SizedBox(height: 3),
-                    const Text('Arun Kumar',
-                        style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.bold)),
-                    if (value['showCustomerPhone'] == true)
-                      const Text('Phone: +91 98470 12345'),
-                    if (value['showCustomerGstin'] == true)
-                      const Text('Customer GSTIN: 32AAAPA1234A1Z5'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Table(border: border, children: tableRows),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (value['showPaymentMethod'] == true)
-                          const Text('Payment method: UPI'),
-                        const SizedBox(height: 10),
-                        if (value['footerText'].toString().isNotEmpty)
-                          Text(value['footerText'].toString(),
-                              textAlign: footerAlign,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                        if (value['termsText'].toString().isNotEmpty)
-                          Text(value['termsText'].toString(),
-                              textAlign: footerAlign),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 145,
-                    child: Column(
-                      children: [
-                        _pageTotal('Subtotal', '₹1,275.00'),
-                        _pageTotal('Discount', '₹0.00'),
-                        _pageTotal('Taxable value', '₹1,275.00'),
-                        _pageTotal('CGST', '₹31.88'),
-                        _pageTotal('SGST', '₹31.87'),
-                        const Divider(color: Colors.black54),
-                        _pageTotal('GRAND TOTAL', '₹1,338.75', bold: true),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (value['showQr'] == true)
-                const Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 10),
-                    child: Icon(Icons.qr_code_2, size: 52),
-                  ),
-                ),
-              if (value['showAmountInWords'] == true)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(top: 12),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300)),
-                  child: const Text(
-                    'Amount in words: One Thousand Three Hundred Thirty Eight Rupees and Seventy Five Paise Only',
-                    style: TextStyle(fontSize: 8, fontStyle: FontStyle.italic),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _pageTotal(String label, String amount, {bool bold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-              child: Text(label,
-                  style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: bold ? FontWeight.bold : FontWeight.normal))),
-          const SizedBox(width: 5),
-          Text(amount,
-              style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
-        ],
-      ),
-    );
+    final subtotal = items.fold<double>(0, (sum, item) => sum + item.subtotal);
+    final tax = items.fold<double>(
+        0, (sum, item) => sum + item.cgstAmount + item.sgstAmount);
+    return Sale()
+      ..id = 'PREVIEW-0001'
+      ..date = DateTime.now()
+      ..items = items
+      ..totalAmount = subtotal + tax
+      ..totalCost = items.fold<double>(
+          0, (sum, item) => sum + item.costPrice * item.qty)
+      ..profit = subtotal -
+          items.fold<double>(
+              0, (sum, item) => sum + item.costPrice * item.qty)
+      ..payment = PaymentMethod.upi
+      ..customerName = 'Sample Customer'
+      ..customerPhone = '9876543210'
+      ..customerGstin = '32AAAPA1234A1Z5'
+      ..discount = 0
+      ..gstEnabled = true
+      ..gstRate = 5
+      ..taxableAmount = subtotal
+      ..cgstAmount = tax / 2
+      ..sgstAmount = tax / 2
+      ..igstAmount = 0
+      ..interstateSale = false
+      ..gstInclusive = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final compact = size == '50mm' || size == '58mm' || size == '80mm';
-    final width = (size == '50mm' || size == '58mm')
-        ? 205.0
-        : size == '80mm'
-            ? 300.0
-            : size == 'A5'
-                ? 360.0
-                : 440.0;
+    final pageWidth = size == 'A5' ? 420.0 : 595.0;
+    final thermalWidth = size == '50mm' || size == '58mm' ? 164.0 : 227.0;
+    final previewWidth =
+        size == 'A4' || size == 'A5' ? pageWidth : thermalWidth;
+    final previewKey = ValueKey('$size-${jsonEncode(value)}');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Live preview - $size',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
-        compact
-            ? _thermalPreview(context, width)
-            : _pagePreview(context, width),
+        SizedBox(
+          height: 620,
+          child: PdfPreview(
+            key: previewKey,
+            build: (format) async {
+              final result = await PdfService.buildInvoicePdf(
+                _previewSale(),
+                templateOverride: Map<String, dynamic>.from(value),
+              );
+              return result.bytes;
+            },
+            canChangePageFormat: false,
+            canChangeOrientation: false,
+            allowPrinting: false,
+            allowSharing: false,
+            maxPageWidth: previewWidth,
+          ),
+        ),
         for (final warning in warnings)
           Padding(
             padding: const EdgeInsets.only(top: 8),
