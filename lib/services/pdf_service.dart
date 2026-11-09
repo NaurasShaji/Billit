@@ -70,9 +70,12 @@ class PdfService {
     bool includeGST = true,
     bool fullPage = true,
     bool forceA4 = false,
+    Map<String, dynamic>? templateOverride,
   }) async {
     final doc = pw.Document();
-    final template =
+    // The customisation screen supplies its unsaved values here so the live
+    // preview uses the exact same PDF layout as the final invoice.
+    final template = templateOverride ??
         InvoiceTemplateService.load(InvoiceTemplateService.selected);
     // Some delivery channels (e.g. WhatsApp invoices) require a consistent
     // full-page document regardless of the printer's configured paper size.
