@@ -13,7 +13,15 @@ Billit is a point-of-sale and retail management app for billing, inventory, GST,
 - Enter customer name and phone number, apply a discount, and choose Cash, Card, or UPI.
 - Calculate the sale total, product cost, and profit; completing a sale records the invoice and updates stock.
 - Browse saved invoices, edit or delete an invoice, and generate a PDF or print a receipt.
-- Look up customers by name or phone number and review their past invoices.
+- Look up customers by name, phone number or invoice number. Customers are grouped by phone number, show visits, total spent and last purchase, and can be sorted (recent, top spenders, most visits, A-Z) or filtered (repeat customers, reward ready). Tap a customer for their stats, favourite products, loyalty card and invoices.
+
+### Loyalty program
+
+- Admins switch the program on under Archive > Account & Settings > Loyalty Program and choose how many purchases earn a reward, what the reward is (percent off, flat amount off, a free product from the catalogue, or a custom gift such as free gift wrap), an optional minimum bill, and whether past purchases count.
+- Customers are tracked by phone number (the last 10 digits, so `+91 98765 43210` and `9876543210` are the same customer). Every saved invoice counts as one purchase.
+- Billing shows the customer's progress as soon as the phone number is entered. When a reward is waiting, an **Apply** button adds the discount to the bill; changing the phone number or typing a discount by hand removes it.
+- After a sale that earns a reward, an in-app message tells the cashier (with an optional WhatsApp message to the customer).
+- Progress is calculated from saved invoices, so deleting or editing an invoice corrects it automatically. Settings and used rewards live in `app_settings`, so Google Drive backups include them.
 
 ### Products and inventory
 
