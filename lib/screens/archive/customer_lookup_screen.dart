@@ -52,14 +52,18 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen> {
     switch (_sort) {
       case _CustomerSort.recent:
         list.sort((a, b) => b.lastPurchase.compareTo(a.lastPurchase));
+        break;
       case _CustomerSort.spend:
         list.sort((a, b) => b.totalSpent.compareTo(a.totalSpent));
+        break;
       case _CustomerSort.visits:
         list.sort((a, b) => b.visits.compareTo(a.visits));
+        break;
       case _CustomerSort.name:
         list.sort((a, b) => a.displayName
             .toLowerCase()
             .compareTo(b.displayName.toLowerCase()));
+        break;
     }
     return list;
   }
