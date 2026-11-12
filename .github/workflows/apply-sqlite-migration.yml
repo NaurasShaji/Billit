@@ -11,30 +11,31 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: sqlite-migration-branch
+  cancel-in-progress: false
+
 jobs:
   apply-patch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout migration branch
         uses: actions/checkout@v4
         with:
           ref: feature/sqlite-migration
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: Check patch exists
+      - name: Verify patch payload
         run: |
-          test -f billit-sqlite-migration.patch || {
-            echo "::error::Expected billit-sqlite-migration.patch in the repository root."
-            exit 1
-          }
+          test -s billit-sqlite-migration.patch
+          git status --short
+          git --version
 
       - name: Check and apply patch
         run: |
-          git apply --check billit-sqlite-migration.patch
-          git apply --index billit-sqlite-migration.patch
-
-      - name: Remove patch payload
-        run: rm billit-sqlite-migration.patch
+          git apply --check --verbose billit-sqlite-migration.patch
+          git apply --index --verbose billit-sqlite-migration.patch
 
       - name: Commit migration
         run: |
