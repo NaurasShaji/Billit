@@ -1894,8 +1894,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final salesBox = Hive.box<Sale>(Boxes.sales);
     final productsBox = Hive.box<Product>(Boxes.products);
 
-    // Remove sale from Hive
+    // Remove sale and any reward redemption tied to this invoice.
     await salesBox.delete(sale.id);
+    await LoyaltyService.removeRedemption(sale.id);
 
     // Update product stocks
     for (final item in sale.items) {
