@@ -31,7 +31,7 @@ class ArchiveCategoryScreen extends StatelessWidget {
   });
 
   void _openItem(BuildContext context, ArchiveCategoryItem item) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: item.builder),
     );
   }
