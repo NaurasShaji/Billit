@@ -1,0 +1,43 @@
+name: Apply SQLite migration patch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/sqlite-migration
+          fetch-depth: 1
+
+      - name: Check patch exists
+        run: |
+          test -f sqlite-migration.patch || {
+            echo "::error::Upload sqlite-migration.patch to the root of feature/sqlite-migration first."
+            exit 1
+          }
+
+      - name: Check and apply patch
+        run: |
+          git apply --check sqlite-migration.patch
+          git apply --index sqlite-migration.patch
+
+      - name: Remove patch payload
+        run: rm sqlite-migration.patch
+
+      - name: Commit migration
+        run: |
+          if git diff --cached --quiet; then
+            echo "Patch produced no changes."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Migrate local storage from Hive to SQLite"
+          git push origin HEAD:feature/sqlite-migration
