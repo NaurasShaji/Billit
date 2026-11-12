@@ -38,7 +38,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
         backgroundColor: Colors.blue.shade600,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -49,7 +50,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
                       color:
@@ -116,8 +117,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                           decoration: InputDecoration(
                             labelText: 'Employee Name',
                             prefixIcon: const Icon(Icons.person_outline),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6)),
                           ),
                           validator: (value) => value!.isEmpty
                               ? 'Please enter employee name'
@@ -131,8 +136,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                           decoration: InputDecoration(
                             labelText: 'Employee Type',
                             prefixIcon: const Icon(Icons.work_outline),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6)),
                           ),
                           items: const [
                             DropdownMenuItem(
@@ -155,8 +164,12 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                             labelText: 'Wage/Salary Amount',
                             prefixIcon:
                                 const Icon(Icons.currency_rupee_outlined),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6)),
                             hintText: 'Enter amount in ₹',
                           ),
                           validator: (value) => value == null || value.isEmpty
@@ -197,6 +210,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                               elevation: 0,
+        scrolledUnderElevation: 0,
                             ),
                           ),
                         ),
@@ -212,7 +226,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
                       color:
@@ -597,100 +611,186 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
   }
 
   Future<void> _editEmployee(Employee e) async {
-    String type = e.type == 'daily' ? 'Daily Wage' : 'Monthly Salary';
-    final controller = TextEditingController(text: e.wage.toStringAsFixed(2));
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => EditEmployeeScreen(employee: e)),
+    );
+    if (updated == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Employee "${e.name}" updated successfully!'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+}
 
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  Icon(Icons.edit, color: Colors.blue.shade600),
-                  const SizedBox(width: 8),
-                  Text('Edit ${e.name}'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: type,
-                    decoration: InputDecoration(
-                      labelText: 'Employee Type',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.work_outline),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                          value: 'Daily Wage', child: Text('Daily Wage')),
-                      DropdownMenuItem(
-                          value: 'Monthly Salary',
-                          child: Text('Monthly Salary')),
-                    ],
-                    onChanged: (v) => setStateDialog(() => type = v!),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: controller,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'Wage/Salary Amount',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.currency_rupee_outlined),
-                      hintText: 'Enter amount in ₹',
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    e.type = type == 'Daily Wage' ? 'daily' : 'monthly';
-                    final w = double.tryParse(controller.text.trim());
-                    if (w != null && w > 0) {
-                      e.wage = w;
-                      await e.save();
+class EditEmployeeScreen extends StatefulWidget {
+  final Employee employee;
 
-                      if (mounted) {
-                        Navigator.of(ctx).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Employee "${e.name}" updated successfully!'),
-                            backgroundColor: Colors.green.shade600,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Save Changes'),
+  const EditEmployeeScreen({super.key, required this.employee});
+
+  @override
+  State<EditEmployeeScreen> createState() => _EditEmployeeScreenState();
+}
+
+class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _wageController;
+  late String _employeeType;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.employee.name);
+    _wageController =
+        TextEditingController(text: widget.employee.wage.toStringAsFixed(2));
+    _employeeType =
+        widget.employee.type == 'daily' ? 'Daily Wage' : 'Monthly Salary';
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _wageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final wage = double.tryParse(_wageController.text.trim());
+    if (wage == null || wage <= 0) return;
+
+    setState(() => _saving = true);
+    final employee = widget.employee;
+    employee
+      ..name = _nameController.text.trim()
+      ..type = _employeeType == 'Daily Wage' ? 'daily' : 'monthly'
+      ..wage = wage;
+    await employee.save();
+
+    if (mounted) Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Employee'),
+        backgroundColor: Colors.blue.shade600,
+        foregroundColor: Colors.white,
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.edit_note_rounded,
+                        size: 36, color: Colors.blue.shade600),
+                    const SizedBox(height: 12),
+                    Text('Update employee details',
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 6),
+                    Text('Changes are saved to your employee records.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant)),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Employee Name',
+                        prefixIcon: Icon(Icons.person_outline),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => (value ?? '').trim().isEmpty
+                          ? 'Please enter employee name'
+                          : null,
+                    ),
+                    const SizedBox(height: 18),
+                    DropdownButtonFormField<String>(
+                      value: _employeeType,
+                      decoration: const InputDecoration(
+                        labelText: 'Employee Type',
+                        prefixIcon: Icon(Icons.work_outline),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'Daily Wage', child: Text('Daily Wage')),
+                        DropdownMenuItem(
+                            value: 'Monthly Salary',
+                            child: Text('Monthly Salary')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _employeeType = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    TextFormField(
+                      controller: _wageController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Wage / Salary Amount',
+                        prefixIcon: Icon(Icons.currency_rupee),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final amount =
+                            double.tryParse((value ?? '').trim());
+                        return amount == null || amount <= 0
+                            ? 'Enter a valid amount'
+                            : null;
+                      },
+                    ),
+                    const SizedBox(height: 26),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: FilledButton.icon(
+                        onPressed: _saving ? null : _save,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2),
+                              )
+                            : const Icon(Icons.save_outlined),
+                        label: Text(_saving ? 'Saving...' : 'Save Changes'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            );
-          },
-        );
-      },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
