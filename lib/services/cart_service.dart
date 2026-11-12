@@ -7,6 +7,9 @@ class CartService extends ChangeNotifier {
   CartService._internal();
 
   final List<SaleItem> _items = [];
+  // Loyalty "free product" lines. Tracked by identity so they never merge with
+  // a paid line of the same product.
+  final Set<SaleItem> _freeItems = Set<SaleItem>.identity();
   String _customerName = '';
   String _customerPhone = '';
   PaymentMethod _paymentMethod = PaymentMethod.cash;
@@ -27,8 +30,8 @@ class CartService extends ChangeNotifier {
 
   // Cart operations
   void addItem(SaleItem item) {
-    final existingIndex =
-        _items.indexWhere((i) => i.productId == item.productId);
+    final existingIndex = _items.indexWhere(
+        (i) => i.productId == item.productId && !_freeItems.contains(i));
     if (existingIndex != -1) {
       _items[existingIndex].qty += item.qty;
       _items[existingIndex].subtotal =
@@ -46,8 +49,29 @@ class CartService extends ChangeNotifier {
     }
   }
 
+  /// Adds [item] at zero price as a loyalty reward line.
+  void addFreeItem(SaleItem item) {
+    item
+      ..sellingPrice = 0
+      ..subtotal = 0;
+    _freeItems.add(item);
+    _items.add(item);
+    notifyListeners();
+  }
+
+  bool get hasFreeItem => _freeItems.isNotEmpty;
+
+  /// Removes any loyalty reward lines from the cart.
+  void removeFreeItems() {
+    if (_freeItems.isEmpty) return;
+    _items.removeWhere(_freeItems.contains);
+    _freeItems.clear();
+    notifyListeners();
+  }
+
   void removeItem(int index) {
     if (index >= 0 && index < _items.length) {
+      _freeItems.remove(_items[index]);
       _items.removeAt(index);
       notifyListeners();
     }
@@ -55,6 +79,7 @@ class CartService extends ChangeNotifier {
 
   void clearCart() {
     _items.clear();
+    _freeItems.clear();
     _customerName = '';
     _customerPhone = '';
     _paymentMethod = PaymentMethod.cash;
@@ -87,8 +112,10 @@ class CartService extends ChangeNotifier {
 
   // Get current cart quantity for a product
   double getCartQuantity(String productId) {
-    final cartItem = _items.where((item) => item.productId == productId);
-    return cartItem.isEmpty ? 0 : cartItem.first.qty;
+    // Sum every line of the product (a free reward line counts against stock).
+    return _items
+        .where((item) => item.productId == productId)
+        .fold<double>(0, (sum, item) => sum + item.qty);
   }
 
   // Get available stock for a product (stock - cart quantity)
