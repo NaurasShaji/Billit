@@ -16,13 +16,19 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Correct compileSdk for the thermal printer plugin after all projects are evaluated.
-// Its Android module currently declares API 33, but its AndroidX dependencies require API 34+.
-gradle.projectsEvaluated {
-    val thermalPrinter = findProject(":flutter_thermal_printer")
-    thermalPrinter?.extensions
-        ?.findByType<com.android.build.api.dsl.LibraryExtension>()
-        ?.compileSdk = 36
+// The thermal printer plugin declares compileSdk 33, but its AndroidX dependencies
+// require API 34+. Override it during AGP's DSL-finalization phase, before variants
+// and AAR metadata tasks are configured.
+subprojects {
+    if (name == "flutter_thermal_printer") {
+        plugins.withId("com.android.library") {
+            extensions
+                .getByType<com.android.build.api.variant.LibraryAndroidComponentsExtension>()
+                .finalizeDsl { libraryExtension ->
+                    libraryExtension.compileSdk = 36
+                }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {
