@@ -16,13 +16,15 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Apply the compile SDK override after each Android library plugin has completed
-// configuring its own Android extension. Some Flutter plugins hard-code API 33.
-subprojects {
-    afterEvaluate {
-        extensions.findByType<com.android.build.api.dsl.LibraryExtension>()?.compileSdk = 36
-    }
+// Correct compileSdk for the thermal printer plugin after all projects are evaluated.
+// Its Android module currently declares API 33, but its AndroidX dependencies require API 34+.
+gradle.projectsEvaluated {
+    val thermalPrinter = findProject(":flutter_thermal_printer")
+    thermalPrinter?.extensions
+        ?.findByType<com.android.build.api.dsl.LibraryExtension>()
+        ?.compileSdk = 36
 }
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
