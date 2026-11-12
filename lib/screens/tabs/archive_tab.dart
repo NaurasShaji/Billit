@@ -10,6 +10,7 @@ import '../archive/backup_restore_screen.dart';
 import '../archive/change_password_screen.dart';
 import '../security_question_settings_screen.dart';
 import '../archive/customer_lookup_screen.dart';
+import '../archive/loyalty_settings_screen.dart';
 import '../archive/bulk_product_import_screen.dart';
 import '../archive/gst_exports_screen.dart';
 
@@ -116,8 +117,8 @@ class ArchiveTab extends StatelessWidget {
         ),
         _ArchiveCategory(
           title: 'Account & Settings',
-          subtitle: 'Account tools and customer search',
-          description: 'Security and customer search.',
+          subtitle: 'Account tools, customers and loyalty',
+          description: 'Security, customers and loyalty rewards.',
           icon: Icons.settings_outlined,
           color: Colors.deepPurple,
           items: [
@@ -136,8 +137,14 @@ class ArchiveTab extends StatelessWidget {
             ArchiveCategoryItem(
               icon: Icons.person_search_outlined,
               title: 'Customer Lookup',
-              subtitle: 'Search customer information',
+              subtitle: 'Search customers, spending and loyalty progress',
               builder: (_) => const CustomerLookupScreen(),
+            ),
+            ArchiveCategoryItem(
+              icon: Icons.card_giftcard_outlined,
+              title: 'Loyalty Program',
+              subtitle: 'Set purchases needed and the reward',
+              builder: (_) => const LoyaltySettingsScreen(),
             ),
           ],
         ),
