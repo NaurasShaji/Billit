@@ -23,7 +23,8 @@ class DailyWageScreen extends StatelessWidget {
         backgroundColor: Colors.orange.shade600,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
       ),
       body: ValueListenableBuilder(
         valueListenable: Hive.box<Employee>(Boxes.employees).listenable(),
@@ -89,13 +90,13 @@ class DailyWageScreen extends StatelessWidget {
                     margin: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.08),
                           offset: const Offset(0, 2),
-                          blurRadius: 12,
+                          blurRadius: 18,
                         ),
                       ],
                     ),
@@ -188,13 +189,13 @@ class DailyWageScreen extends StatelessWidget {
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(22),
                             boxShadow: [
                               BoxShadow(
                                 color: theme.colorScheme.onSurface
                                     .withValues(alpha: 0.08),
                                 offset: const Offset(0, 2),
-                                blurRadius: 12,
+                                blurRadius: 18,
                               ),
                             ],
                           ),
@@ -253,7 +254,7 @@ class DailyWageScreen extends StatelessWidget {
                                         color: isPaidToday
                                             ? Colors.green.withValues(alpha: 0.18)
                                             : Colors.red.withValues(alpha: 0.18),
-                                        borderRadius: BorderRadius.circular(20),
+                                        borderRadius: BorderRadius.circular(22),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
