@@ -12,6 +12,8 @@ import '../../widgets/whatsapp_icon.dart';
 import '../../utils/platform_support.dart';
 import '../../services/auth_service.dart';
 import '../../services/cart_service.dart';
+import '../../services/loyalty_service.dart';
+import '../../widgets/loyalty_widgets.dart';
 import '../../services/pdf_service.dart'; // Import the new PDF service
 import '../../services/invoice_service.dart'; // Import for generateInvoice function
 import '../edit_invoice_screen.dart'; // Added import for EditInvoiceScreen
@@ -38,6 +40,10 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   bool _tabVisible = true;
   bool _routeCurrent = true;
   bool _processing = false;
+  // Loyalty reward currently applied to this bill (and the customer it belongs to).
+  bool _loyaltyApplied = false;
+  String? _loyaltyAppliedKey;
+  LoyaltyRewardType? _loyaltyAppliedType;
   int _freqSalesLen = -1;
   List<String> _freqIds = const [];
   bool _applyGst = false;
@@ -179,9 +185,111 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   }
 
   void _onCartChanged() {
+    if (_loyaltyApplied) _syncLoyaltyDiscount();
     if (mounted) {
       setState(() {});
     }
+  }
+
+  String _discountText(double d) =>
+      d == d.roundToDouble() ? d.toStringAsFixed(0) : d.toStringAsFixed(2);
+
+  bool get _appliedIsDiscount =>
+      _loyaltyAppliedType == LoyaltyRewardType.percent ||
+      _loyaltyAppliedType == LoyaltyRewardType.amount;
+
+  void _clearLoyaltyFlags() {
+    _loyaltyApplied = false;
+    _loyaltyAppliedKey = null;
+    _loyaltyAppliedType = null;
+  }
+
+  /// Keeps an applied loyalty reward correct as the cart changes: a percent
+  /// discount follows the subtotal, and the reward is dropped if its free item
+  /// was removed or the cart was emptied.
+  void _syncLoyaltyDiscount() {
+    if (items.isEmpty) {
+      _clearLoyaltyFlags();
+      return;
+    }
+    if (_loyaltyAppliedType == LoyaltyRewardType.freeProduct &&
+        !_cartService.hasFreeItem) {
+      _clearLoyaltyFlags();
+      return;
+    }
+    if (_appliedIsDiscount) {
+      final d = LoyaltyService.config.discountFor(_subtotal);
+      if ((d - _discount).abs() > 0.004) {
+        _discountController.text = _discountText(d);
+        _cartService.updateDiscount(d);
+      }
+    }
+  }
+
+  void _applyLoyaltyReward() {
+    final key = LoyaltyLogic.customerKey(_customerPhone.text);
+    if (key == null || items.isEmpty) return;
+    final config = LoyaltyService.config;
+
+    switch (config.rewardType) {
+      case LoyaltyRewardType.percent:
+      case LoyaltyRewardType.amount:
+        final d = config.discountFor(_subtotal);
+        _discountController.text = _discountText(d);
+        _loyaltyApplied = true;
+        _loyaltyAppliedKey = key;
+        _loyaltyAppliedType = config.rewardType;
+        _cartService.updateDiscount(d);
+        return;
+      case LoyaltyRewardType.freeProduct:
+        final product = Hive.box<Product>(Boxes.products).get(config.productId);
+        if (product == null || !product.active) {
+          _showLoyaltyMessage(
+              'The reward product is no longer available. Update it in Loyalty Program settings.');
+          return;
+        }
+        if (!_canAddToCart(product, config.productQty)) {
+          _showStockLimitMessage(product.name, _getAvailableStock(product));
+          return;
+        }
+        _loyaltyApplied = true;
+        _loyaltyAppliedKey = key;
+        _loyaltyAppliedType = config.rewardType;
+        _cartService.addFreeItem(
+          SaleItem()
+            ..productId = product.id
+            ..qty = config.productQty
+            ..sellingPrice = 0
+            ..costPrice = product.costPrice
+            ..subtotal = 0
+            ..unitLabel = product.unit.name,
+        );
+        return;
+      case LoyaltyRewardType.custom:
+        _loyaltyApplied = true;
+        _loyaltyAppliedKey = key;
+        _loyaltyAppliedType = config.rewardType;
+        setState(() {});
+        return;
+    }
+  }
+
+  void _removeLoyaltyReward() {
+    final wasDiscount = _appliedIsDiscount;
+    final wasFree = _loyaltyAppliedType == LoyaltyRewardType.freeProduct;
+    _clearLoyaltyFlags();
+    if (wasFree) _cartService.removeFreeItems();
+    if (wasDiscount) {
+      _discountController.clear();
+      _cartService.updateDiscount(0.0);
+    } else {
+      setState(() {});
+    }
+  }
+
+  void _showLoyaltyMessage(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   // Get current cart quantity for a product
@@ -683,6 +791,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         setState(() {
           _applyGst = false;
           _interstateSale = false;
+          _loyaltyApplied = false;
+          _loyaltyAppliedKey = null;
+          _loyaltyAppliedType = null;
         });
       },
       onAddProduct: _addProductToCart,
@@ -727,8 +838,20 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
               hint: 'Optional',
             ),
             onChanged: (value) {
+              // A reward belongs to one customer: drop it if the number changes.
+              if (_loyaltyApplied &&
+                  LoyaltyLogic.customerKey(value) != _loyaltyAppliedKey) {
+                _removeLoyaltyReward();
+              }
               _cartService.updateCustomerInfo(_customerName.text, value);
             },
+          ),
+          LoyaltyBillingBanner(
+            phone: _customerPhone.text,
+            canApply: items.isNotEmpty,
+            applied: _loyaltyApplied,
+            onApply: _applyLoyaltyReward,
+            onRemove: _removeLoyaltyReward,
           ),
           const SizedBox(height: 20),
           _buildSectionHeader('Payment Method', Icons.payment_outlined),
@@ -782,6 +905,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
               hint: 'Enter discount amount (optional)',
             ),
             onChanged: (value) {
+              // Typing a discount by hand replaces an applied loyalty discount.
+              if (_appliedIsDiscount) _clearLoyaltyFlags();
               final discount = double.tryParse(value) ?? 0.0;
               final clampedDiscount = discount.clamp(0.0, _subtotal);
               _cartService.updateDiscount(clampedDiscount);
@@ -1527,6 +1652,19 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           '$safePrefix-$datePart-${nextNumber.toString().padLeft(5, "0")}';
       await invoiceSettings.put('next_invoice_number', nextNumber + 1);
 
+      // Loyalty: remember where the customer stood before this sale.
+      final loyaltyBefore = LoyaltyService.statusFor(_customerPhone.text);
+      final rewardDiscount = _discount;
+      final loyaltyConfig = LoyaltyService.config;
+      final rewardLabel = loyaltyConfig.rewardLabel;
+      final redeemingReward = _loyaltyApplied &&
+          (!_appliedIsDiscount || rewardDiscount > 0) &&
+          (_loyaltyAppliedType != LoyaltyRewardType.freeProduct ||
+              _cartService.hasFreeItem) &&
+          loyaltyBefore != null &&
+          loyaltyBefore.hasReward &&
+          LoyaltyLogic.customerKey(_customerPhone.text) == _loyaltyAppliedKey;
+
       final sale = Sale()
         ..id = id
         ..date = DateTime.now()
@@ -1551,6 +1689,15 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
       await salesBox.put(sale.id, sale);
 
+      // Loyalty: record a used reward, then see if this sale earned a new one.
+      if (redeemingReward) {
+        await LoyaltyService.recordRedemption(sale.id, rewardLabel);
+      }
+      final loyaltyAfter = LoyaltyService.statusFor(sale.customerPhone);
+      final rewardUnlocked = loyaltyBefore != null &&
+          loyaltyAfter != null &&
+          loyaltyAfter.earned > loyaltyBefore.earned;
+
       // Update product stock
       for (final item in items) {
         final product = productsBox.get(item.productId);
@@ -1574,7 +1721,18 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         _customerPhone.clear();
         _discountController.clear();
         _customerGstin.clear();
+        _clearLoyaltyFlags();
 
+        if (rewardUnlocked && loyaltyAfter != null && mounted) {
+          await showLoyaltyMilestoneDialog(
+            context,
+            customerName: sale.customerName,
+            customerPhone: sale.customerPhone,
+            status: loyaltyAfter,
+          );
+        }
+
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1589,6 +1747,9 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
                       const Text('Sale completed successfully!'),
                       Text('Invoice ID: $id',
                           style: const TextStyle(fontSize: 12)),
+                      if (redeemingReward)
+                        Text('Loyalty reward used: $rewardLabel',
+                            style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
