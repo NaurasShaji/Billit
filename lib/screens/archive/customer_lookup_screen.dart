@@ -65,9 +65,10 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen> {
   }
 
   Future<void> _open(CustomerSummary customer) async {
-    await Navigator.of(context).push(
+    await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-          builder: (_) => CustomerDetailScreen(customer: customer)),
+        builder: (_) => CustomerDetailScreen(customer: customer),
+      ),
     );
     if (mounted) _load();
   }
