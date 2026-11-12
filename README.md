@@ -32,7 +32,8 @@ Billit is a point-of-sale and retail management app for billing, inventory, GST,
 
 - Record business expenses with an amount, description, date, and category.
 - Use built-in expense categories such as rent, utilities, transport, supplies, maintenance, and miscellaneous, or add a category.
-- Browse expense history by day, month, or year; navigate between periods and filter salary expenses separately from other expenses.
+- Browse expenses for Today, This month, Last month, This year, All time or a custom date range, with the total, entry count and average. A category breakdown (tap a category to filter), search by note, category or amount, and sorting by date or amount are included; tap an entry for details or to delete it.
+- Export what is on screen as a CSV (opens in Excel or Google Sheets) or a PDF report with a summary, category table and full list.
 - Add employees as daily-wage or monthly-salary staff, set their pay amount, edit their pay type or amount, and delete employee records.
 - Record daily wage payments and monthly salary payments, with summaries of employees and payments for the current day or month.
 - Review payroll/expense totals by day, month, or year, including daily wages, monthly salaries, other expenses, and net expenses.

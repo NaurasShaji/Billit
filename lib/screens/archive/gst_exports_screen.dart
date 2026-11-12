@@ -335,7 +335,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
 
   Future<void> _downloadCsv(String filename, List<List<Object?>> rows) async {
     try {
-      final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\\r\\n');
+      final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\r\n');
       await _downloadFile(filename, utf8.encode(csv));
     } catch (e) {
       if (!mounted) return;
@@ -359,7 +359,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
   }
 
   Future<void> _shareCsv(String filename, List<List<Object?>> rows) async {
-    final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\\r\\n');
+    final csv = rows.map((row) => row.map(_csvCell).join(',')).join('\r\n');
     await _shareFile(filename, utf8.encode(csv), 'text/csv');
   }
 

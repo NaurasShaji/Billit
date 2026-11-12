@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
-import '../../../services/boxes.dart';
-import '../../../models/expense.dart';
-import '../../../utils/theme_colors.dart';
 
+import '../../../models/expense.dart';
+import '../../../services/boxes.dart';
+import '../../../services/expense_export_service.dart';
+import '../../../services/expense_logic.dart';
+import 'add_expense_screen.dart';
+
+enum _Sort { newest, oldest, highest, lowest }
+
+enum _ExportFormat { csv, pdf }
+
+/// Browse expenses by period, see where the money went, and export.
 class ExpensesListScreen extends StatefulWidget {
   const ExpensesListScreen({super.key});
 
@@ -12,978 +20,838 @@ class ExpensesListScreen extends StatefulWidget {
   State<ExpensesListScreen> createState() => _ExpensesListScreenState();
 }
 
-class _ExpensesListScreenState extends State<ExpensesListScreen>
-    with SingleTickerProviderStateMixin {
-  String _filter = 'all';
-  late TabController _tab;
-  DateTime _anchor = DateTime.now();
+class _ExpensesListScreenState extends State<ExpensesListScreen> {
+  final TextEditingController _search = TextEditingController();
+  ExpensePeriod _period = ExpensePeriod.thisMonth;
+  DateTimeRange? _custom;
+  String _query = '';
+  String? _category; // display label of the category being filtered
+  _Sort _sort = _Sort.newest;
+  bool _showAllCategories = false;
+  bool _exporting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 3, vsync: this);
-    _tab.addListener(() {
-      if (mounted) setState(() {});
-    });
-  }
+  static const _palette = <Color>[
+    Color(0xFF3F51B5),
+    Color(0xFF009688),
+    Color(0xFFE65100),
+    Color(0xFF8E24AA),
+    Color(0xFF2E7D32),
+    Color(0xFFC62828),
+    Color(0xFF00838F),
+    Color(0xFF6D4C41),
+  ];
 
   @override
   void dispose() {
-    _tab.dispose();
+    _search.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final currency = NumberFormat.simpleCurrency(locale: 'en_IN');
-    final dateFmt = DateFormat('dd MMM yyyy');
-    final monthFmt = DateFormat('MMMM yyyy');
+  // ---------------------------------------------------------------- helpers
 
-    return Scaffold(
-      backgroundColor:
-          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      appBar: AppBar(
-        title: const Text('Expense Records'),
-        backgroundColor: Colors.red.shade600,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(50),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TabBar(
-              controller: _tab,
-              labelStyle:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              unselectedLabelStyle:
-                  const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-              indicator: BoxDecoration(
-                color: context.panelColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              labelColor: Colors.red.shade600,
-              unselectedLabelColor: Colors.white,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'Daily'),
-                Tab(text: 'Monthly'),
-                Tab(text: 'Yearly'),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: ValueListenableBuilder(
-        valueListenable: Hive.box<Expense>(Boxes.expenses).listenable(),
-        builder: (context, Box<Expense> box, _) {
-          DateTime rangeStart;
-          DateTime rangeEnd;
-
-          if (_tab.index == 0) {
-            rangeStart = DateTime(_anchor.year, _anchor.month, _anchor.day);
-            rangeEnd = rangeStart.add(const Duration(days: 1));
-          } else if (_tab.index == 1) {
-            rangeStart = DateTime(_anchor.year, _anchor.month, 1);
-            rangeEnd = DateTime(_anchor.year, _anchor.month + 1, 1);
-          } else {
-            rangeStart = DateTime(_anchor.year, 1, 1);
-            rangeEnd = DateTime(_anchor.year + 1, 1, 1);
-          }
-
-          final all = box.values
-              .where((e) =>
-                  !e.date.isBefore(rangeStart) && e.date.isBefore(rangeEnd))
-              .toList()
-            ..sort((a, b) => b.date.compareTo(a.date));
-
-          final salaryMonthly = all
-              .where((e) => e.category == 'Salary-Monthly')
-              .fold<double>(0, (s, e) => s + e.amount);
-          final salaryDaily = all
-              .where((e) => e.category == 'Salary-Daily')
-              .fold<double>(0, (s, e) => s + e.amount);
-          final otherExpenses = all
-              .where((e) => !(e.category == 'Salary-Monthly' ||
-                  e.category == 'Salary-Daily'))
-              .fold<double>(0, (s, e) => s + e.amount);
-          final totalSalary = salaryMonthly + salaryDaily;
-          final netExpenses = totalSalary + otherExpenses;
-
-          List<Expense> filtered = all;
-          if (_filter == 'salary') {
-            filtered = all
-                .where((e) =>
-                    e.category == 'Salary-Monthly' ||
-                    e.category == 'Salary-Daily')
-                .toList();
-          } else if (_filter == 'other') {
-            filtered = all
-                .where((e) => !(e.category == 'Salary-Monthly' ||
-                    e.category == 'Salary-Daily'))
-                .toList();
-          }
-
-          return Column(
-            children: [
-              // Professional Date Navigation Header
-              Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                      offset: const Offset(0, 2),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: IconButton(
-                          tooltip: 'Previous',
-                          icon: Icon(Icons.chevron_left,
-                              color: Colors.red.shade600),
-                          onPressed: () =>
-                              setState(() => _anchor = _previous(_anchor)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: TextButton.icon(
-                            onPressed: _pickPeriod,
-                            icon: Icon(Icons.calendar_today,
-                                color: Colors.blue.shade600, size: 20),
-                            label: Text(
-                              _tab.index == 0
-                                  ? dateFmt.format(_anchor)
-                                  : _tab.index == 1
-                                      ? monthFmt.format(_anchor)
-                                      : _anchor.year.toString(),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade700.adaptive(context),
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: IconButton(
-                          tooltip: 'Next',
-                          icon: Icon(Icons.chevron_right,
-                              color: Colors.red.shade600),
-                          onPressed: () =>
-                              setState(() => _anchor = _next(_anchor)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      // Enhanced Summary Card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.08),
-                              offset: const Offset(0, 4),
-                              blurRadius: 16,
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Header
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.analytics_outlined,
-                                      color: Colors.green.shade600,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Financial Summary',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w700,
-                                            color: theme.colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Expense breakdown for selected period',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: theme.colorScheme.onSurface
-                                                .withValues(alpha: 0.6),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 24),
-
-                              // Expense Categories
-                              _buildSummaryRow(
-                                'Monthly Salaries',
-                                currency.format(salaryMonthly),
-                                Icons.payments_outlined,
-                                Colors.blue,
-                              ),
-                              const SizedBox(height: 12),
-                              _buildSummaryRow(
-                                'Daily Wages',
-                                currency.format(salaryDaily),
-                                Icons.schedule_outlined,
-                                Colors.orange,
-                              ),
-                              const SizedBox(height: 12),
-                              _buildSummaryRow(
-                                'Other Expenses',
-                                currency.format(otherExpenses),
-                                Icons.receipt_long_outlined,
-                                Colors.purple,
-                              ),
-
-                              const SizedBox(height: 16),
-                              Divider(
-                                  color: theme.colorScheme.outline
-                                      .withValues(alpha: 0.2)),
-                              const SizedBox(height: 16),
-
-                              // Total
-                              _buildSummaryRow(
-                                'Total Expenses',
-                                currency.format(netExpenses),
-                                Icons.account_balance_wallet_outlined,
-                                Colors.red,
-                                isBold: true,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Enhanced Filter Chips
-                      Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.08),
-                              offset: const Offset(0, 2),
-                              blurRadius: 12,
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.filter_list_outlined,
-                                    color: theme.colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Filter by Category',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 8,
-                                children: [
-                                  _buildFilterChip('All Expenses', 'all',
-                                      Icons.list_alt_outlined),
-                                  _buildFilterChip('Salary Only', 'salary',
-                                      Icons.payments_outlined),
-                                  _buildFilterChip('Other Only', 'other',
-                                      Icons.receipt_outlined),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Enhanced Expenses List
-                      Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.08),
-                              offset: const Offset(0, 4),
-                              blurRadius: 16,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // List Header
-                            Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.indigo.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(
-                                      Icons.receipt_long_outlined,
-                                      color: Colors.indigo.shade600,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Expense Records (${filtered.length})',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: theme.colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // List Content
-                            if (filtered.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.all(32),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.inbox_outlined,
-                                      size: 48,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.3),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No expense records found',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: theme.colorScheme.onSurface
-                                            .withValues(alpha: 0.6),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Expenses will appear here once recorded',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: theme.colorScheme.onSurface
-                                            .withValues(alpha: 0.5),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              Column(
-                                children: filtered.asMap().entries.map((entry) {
-                                  final index = entry.key;
-                                  final expense = entry.value;
-                                  final isLast = index == filtered.length - 1;
-
-                                  return Column(
-                                    children: [
-                                      _buildExpenseItem(
-                                          expense, currency, dateFmt, theme),
-                                      if (!isLast)
-                                        Divider(
-                                          height: 1,
-                                          thickness: 0.5,
-                                          color: theme.colorScheme.outline
-                                              .withValues(alpha: 0.2),
-                                          indent: 56,
-                                          endIndent: 20,
-                                        ),
-                                    ],
-                                  );
-                                }).toList(),
-                              ),
-
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  ({DateTime start, DateTime end})? get _range {
+    if (_period == ExpensePeriod.custom && _custom != null) {
+      final e = _custom!.end;
+      return (
+        start: DateTime(_custom!.start.year, _custom!.start.month,
+            _custom!.start.day),
+        end: DateTime(e.year, e.month, e.day + 1),
+      );
+    }
+    return ExpenseLogic.rangeFor(_period, DateTime.now());
   }
 
-  Widget _buildSummaryRow(
-      String title, String value, IconData icon, MaterialColor color,
-      {bool isBold = false}) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.shade50,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            color: color.shade600,
-            size: 18,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: isBold ? 16 : 15,
-              fontWeight: isBold ? FontWeight.w600 : FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isBold ? 16 : 15,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-            color: isBold
-                ? color.shade700
-                : Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterChip(String label, String value, IconData icon) {
-    final isSelected = _filter == value;
-    final theme = Theme.of(context);
-
-    return Material(
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => setState(() => _filter = value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outline.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected
-                    ? Colors.white
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: isSelected
-                      ? Colors.white
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpenseItem(Expense expense, NumberFormat currency,
-      DateFormat dateFmt, ThemeData theme) {
-    final isSalary = expense.category == 'Salary-Monthly' ||
-        expense.category == 'Salary-Daily';
-    final color = isSalary ? Colors.blue : Colors.orange;
-    final icon = isSalary ? Icons.payments_outlined : Icons.receipt_outlined;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.shade50,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              icon,
-              color: color.shade600,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  expense.description.isNotEmpty
-                      ? expense.description
-                      : expense.category,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      expense.category,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: color.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      ' • ${dateFmt.format(expense.date)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                currency.format(expense.amount),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.red.shade600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: IconButton(
-                  onPressed: () => _deleteExpense(expense),
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: Colors.red.shade600,
-                    size: 18,
-                  ),
-                  padding: const EdgeInsets.all(6),
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  tooltip: 'Delete expense',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  DateTime _previous(DateTime d) {
-    if (_tab.index == 0) {
-      return d.subtract(const Duration(days: 1));
-    } else if (_tab.index == 1) {
-      final y = d.year;
-      final m = d.month == 1 ? 12 : d.month - 1;
-      final ny = d.month == 1 ? y - 1 : y;
-      return DateTime(ny, m, 1);
-    } else {
-      return DateTime(d.year - 1, 1, 1);
+  String get _periodLabel {
+    final now = DateTime.now();
+    switch (_period) {
+      case ExpensePeriod.today:
+        return DateFormat('EEEE, d MMM yyyy').format(now);
+      case ExpensePeriod.thisMonth:
+        return DateFormat('MMMM yyyy').format(now);
+      case ExpensePeriod.lastMonth:
+        return DateFormat('MMMM yyyy')
+            .format(DateTime(now.year, now.month - 1, 1));
+      case ExpensePeriod.thisYear:
+        return '${now.year}';
+      case ExpensePeriod.all:
+        return 'All time';
+      case ExpensePeriod.custom:
+        final c = _custom;
+        if (c == null) return 'Custom range';
+        final f = DateFormat('d MMM yyyy');
+        return '${f.format(c.start)} - ${f.format(c.end)}';
     }
   }
 
-  DateTime _next(DateTime d) {
-    if (_tab.index == 0) {
-      return d.add(const Duration(days: 1));
-    } else if (_tab.index == 1) {
-      final y = d.year;
-      final m = d.month == 12 ? 1 : d.month + 1;
-      final ny = d.month == 12 ? y + 1 : y;
-      return DateTime(ny, m, 1);
-    } else {
-      return DateTime(d.year + 1, 1, 1);
+  String get _fileTag {
+    final now = DateTime.now();
+    switch (_period) {
+      case ExpensePeriod.today:
+        return DateFormat('yyyyMMdd').format(now);
+      case ExpensePeriod.thisMonth:
+        return DateFormat('yyyy-MM').format(now);
+      case ExpensePeriod.lastMonth:
+        return DateFormat('yyyy-MM')
+            .format(DateTime(now.year, now.month - 1, 1));
+      case ExpensePeriod.thisYear:
+        return '${now.year}';
+      case ExpensePeriod.all:
+        return 'all';
+      case ExpensePeriod.custom:
+        final c = _custom;
+        if (c == null) return 'custom';
+        final f = DateFormat('yyyyMMdd');
+        return '${f.format(c.start)}_to_${f.format(c.end)}';
     }
   }
 
-  Future<void> _pickPeriod() async {
-    if (_tab.index == 0) {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: _anchor,
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2100),
-      );
-      if (picked != null) setState(() => _anchor = picked);
-    } else if (_tab.index == 1) {
-      final picked = await _showMonthYearPicker(
-        context: context,
-        initialYear: _anchor.year,
-        initialMonth: _anchor.month,
-      );
-      if (picked != null) setState(() => _anchor = picked);
-    } else {
-      final selected = await showDialog<int>(
-        context: context,
-        builder: (ctx) {
-          return AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Select Year'),
-            content: SizedBox(
-              width: 300,
-              height: 300,
-              child: YearPicker(
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-                initialDate: DateTime(_anchor.year),
-                selectedDate: DateTime(_anchor.year),
-                onChanged: (date) => Navigator.of(ctx).pop(date.year),
-              ),
-            ),
-          );
-        },
-      );
-      if (selected != null) setState(() => _anchor = DateTime(selected, 1, 1));
-    }
+  String _money(double v) {
+    final whole = v == v.roundToDouble();
+    return NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '\u20B9',
+      decimalDigits: whole ? 0 : 2,
+    ).format(v);
   }
 
-  Future<void> _deleteExpense(Expense expense) async {
-    final confirmed = await showDialog<bool>(
+  Color _colorFor(String label) {
+    var h = 0;
+    for (final u in label.codeUnits) {
+      h = (h * 31 + u) & 0x7fffffff;
+    }
+    return _palette[h % _palette.length];
+  }
+
+  IconData _iconFor(String label) {
+    final l = label.toLowerCase();
+    bool has(List<String> words) => words.any(l.contains);
+    if (has(['rent', 'lease'])) return Icons.home_work_outlined;
+    if (has(['salary', 'wage', 'staff', 'payroll'])) return Icons.badge_outlined;
+    if (has(['electric', 'power'])) return Icons.bolt_outlined;
+    if (has(['transport', 'fuel', 'petrol', 'diesel', 'delivery', 'travel'])) {
+      return Icons.local_shipping_outlined;
+    }
+    if (has(['tea', 'food', 'snack', 'lunch', 'meal', 'coffee'])) {
+      return Icons.restaurant_outlined;
+    }
+    if (has(['repair', 'maintenance', 'service'])) return Icons.build_outlined;
+    if (has(['market', 'advert', 'promo'])) return Icons.campaign_outlined;
+    if (has(['stock', 'purchase', 'inventory'])) return Icons.inventory_2_outlined;
+    if (has(['tax', 'gst', 'licence', 'license'])) return Icons.receipt_long_outlined;
+    if (has(['water', 'internet', 'phone', 'bill'])) return Icons.water_drop_outlined;
+    return Icons.payments_outlined;
+  }
+
+  String _dayLabel(DateTime day) {
+    final today = DateTime.now();
+    final d0 = DateTime(today.year, today.month, today.day);
+    if (day == d0) return 'Today';
+    if (day == DateTime(d0.year, d0.month, d0.day - 1)) return 'Yesterday';
+    return DateFormat('EEE, d MMM yyyy').format(day);
+  }
+
+  ExpenseLine _line(Expense e) => ExpenseLine(
+        id: e.id,
+        date: e.date,
+        category: e.category,
+        amount: e.amount,
+        description: e.description,
+      );
+
+  String get _shopName => Hive.box<dynamic>('app_settings')
+      .get('business_name', defaultValue: '')
+      .toString()
+      .trim();
+
+  void _snack(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  // ---------------------------------------------------------------- actions
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_amber_outlined,
-              color: Colors.orange.shade600,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            const Text('Delete Expense'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to delete this expense?',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    expense.description.isNotEmpty
-                        ? expense.description
-                        : expense.category,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${expense.category} • ${NumberFormat.simpleCurrency(locale: 'en_IN').format(expense.amount)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.red.shade700.adaptive(context),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'This action cannot be undone.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.red.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      initialDateRange: _custom,
+    );
+    if (picked != null) {
+      setState(() {
+        _custom = picked;
+        _period = ExpensePeriod.custom;
+        _category = null;
+      });
+    }
+  }
+
+  Future<void> _confirmDelete(Expense expense) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete expense?'),
+        content: Text(
+            '${_money(expense.amount)} - ${ExpenseLogic.categoryLabel(expense.category)}'
+            '${expense.description.isEmpty ? '' : '\n${expense.description}'}'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
-
-    if (confirmed == true) {
-      try {
-        await expense.delete();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Text('Expense deleted successfully'),
-                ],
-              ),
-              backgroundColor: Colors.green.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text('Failed to delete expense: $e'),
-                ],
-              ),
-              backgroundColor: Colors.red.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
+    if (ok == true) {
+      await expense.delete();
+      _snack('Expense deleted');
     }
   }
 
-  Future<DateTime?> _showMonthYearPicker({
-    required BuildContext context,
-    required int initialYear,
-    required int initialMonth,
-  }) async {
-    return showDialog<DateTime>(
+  void _showDetails(Expense expense) {
+    final theme = Theme.of(context);
+    final label = ExpenseLogic.categoryLabel(expense.category);
+    final color = _colorFor(label);
+    showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) {
-        int selectedYear = initialYear;
-        int selectedMonth = initialMonth;
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: const Text('Select Month and Year'),
-              content: SizedBox(
-                width: 360,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      height: 200,
-                      child: YearPicker(
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                        initialDate: DateTime(selectedYear),
-                        selectedDate: DateTime(selectedYear),
-                        onChanged: (date) {
-                          setStateDialog(() {
-                            selectedYear = date.year;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: List.generate(12, (i) {
-                        final m = i + 1;
-                        final isSelected = m == selectedMonth;
-                        return ChoiceChip(
-                          label: Text(
-                              DateFormat('MMM').format(DateTime(2000, m, 1))),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setStateDialog(() {
-                              selectedMonth = m;
-                            });
-                          },
-                        );
-                      }),
-                    ),
-                  ],
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: color.withValues(alpha: 0.15),
+                    child: Icon(_iconFor(label), color: color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(label,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                  Text(_money(expense.amount),
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _detailRow('Date',
+                  DateFormat('EEEE, d MMM yyyy').format(expense.date)),
+              _detailRow(
+                  'Note',
+                  expense.description.trim().isEmpty
+                      ? 'No description'
+                      : expense.description.trim()),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Delete expense'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _confirmDelete(expense);
+                  },
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(ctx)
-                        .pop(DateTime(selectedYear, selectedMonth, 1));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Select'),
-                ),
-              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 64,
+              child: Text(label,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ),
+            Expanded(child: Text(value)),
+          ],
+        ),
+      );
+
+  Future<void> _export(
+    _ExportFormat format,
+    List<ExpenseLine> lines, {
+    required bool share,
+  }) async {
+    if (lines.isEmpty) {
+      _snack('Nothing to export for this view');
+      return;
+    }
+    setState(() => _exporting = true);
+    try {
+      final isCsv = format == _ExportFormat.csv;
+      final name = 'expenses_$_fileTag.${isCsv ? 'csv' : 'pdf'}';
+      final List<int> bytes = isCsv
+          ? ExpenseExportService.csvBytes(lines)
+          : await ExpenseExportService.pdfBytes(
+              lines: lines,
+              periodLabel: _periodLabel,
+              shopName: _shopName,
             );
-          },
+      if (share) {
+        await ExpenseExportService.share(
+            name, bytes, isCsv ? 'text/csv' : 'application/pdf');
+      } else {
+        final saved = await ExpenseExportService.save(name, bytes);
+        _snack(saved ? 'Saved $name' : 'Export cancelled');
+      }
+    } catch (e) {
+      _snack('Could not export: $e');
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  void _showExportSheet(List<ExpenseLine> lines) {
+    final theme = Theme.of(context);
+    Widget option(_ExportFormat f, IconData icon, String title, String sub) {
+      return ListTile(
+        leading: Icon(icon),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(sub),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Share',
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () {
+                Navigator.pop(context);
+                _export(f, lines, share: true);
+              },
+            ),
+            IconButton(
+              tooltip: 'Save to device',
+              icon: const Icon(Icons.file_download_outlined),
+              onPressed: () {
+                Navigator.pop(context);
+                _export(f, lines, share: false);
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Export ${lines.length} ${lines.length == 1 ? 'expense' : 'expenses'}'
+                  ' (${_money(ExpenseLogic.total(lines))})\n$_periodLabel',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ),
+            option(_ExportFormat.csv, Icons.table_chart_outlined,
+                'Spreadsheet (CSV)', 'Opens in Excel or Google Sheets'),
+            option(_ExportFormat.pdf, Icons.picture_as_pdf_outlined,
+                'PDF report', 'Summary, categories and full list'),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------- UI
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Box<Expense>>(
+      valueListenable: Hive.box<Expense>(Boxes.expenses).listenable(),
+      builder: (context, box, _) => _buildScaffold(context, box),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, Box<Expense> box) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final range = _range;
+    final inPeriod = box.values.where((e) {
+      if (range == null) return true;
+      return !e.date.isBefore(range.start) && e.date.isBefore(range.end);
+    }).toList();
+    final periodLines = inPeriod.map(_line).toList();
+    final categories = ExpenseLogic.categoryTotals(periodLines);
+
+    // A category filter from a previous period may no longer exist.
+    final activeCategory =
+        categories.any((c) => c.category == _category) ? _category : null;
+
+    final byId = {for (final e in inPeriod) e.id: e};
+    final visible = periodLines.where((l) {
+      if (activeCategory != null &&
+          ExpenseLogic.categoryLabel(l.category) != activeCategory) {
+        return false;
+      }
+      return ExpenseLogic.matches(l, _query);
+    }).toList();
+
+    final filtered = activeCategory != null || _query.trim().isNotEmpty;
+    final periodTotal = ExpenseLogic.total(periodLines);
+    final visibleTotal = ExpenseLogic.total(visible);
+
+    // Rows: day headers + entries (date sorts) or a flat list (amount sorts).
+    final rows = <Object>[]; // DayGroup header marker or ExpenseLine
+    if (_sort == _Sort.newest || _sort == _Sort.oldest) {
+      var groups = ExpenseLogic.groupByDay(visible);
+      if (_sort == _Sort.oldest) groups = groups.reversed.toList();
+      for (final g in groups) {
+        rows.add(g);
+        final entries = [...g.entries]..sort((a, b) => _sort == _Sort.newest
+            ? b.date.compareTo(a.date)
+            : a.date.compareTo(b.date));
+        rows.addAll(entries);
+      }
+    } else {
+      final sorted = [...visible]..sort((a, b) => _sort == _Sort.highest
+          ? b.amount.compareTo(a.amount)
+          : a.amount.compareTo(b.amount));
+      rows.addAll(sorted);
+    }
+
+    final top = <Widget>[
+      _periodChips(),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+        child: Text(_periodLabel,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: scheme.onSurfaceVariant)),
+      ),
+      _summaryCard(
+        theme,
+        total: filtered ? visibleTotal : periodTotal,
+        count: visible.length,
+        filtered: filtered,
+        periodTotal: periodTotal,
+        periodCount: periodLines.length,
+      ),
+      if (categories.isNotEmpty) _categoryCard(theme, categories, activeCategory),
+      _searchRow(theme),
+      if (activeCategory != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: InputChip(
+              label: Text(activeCategory),
+              onDeleted: () => setState(() => _category = null),
+            ),
+          ),
+        ),
+    ];
+
+    Widget body;
+    if (periodLines.isEmpty) {
+      body = ListView(children: [
+        ...top.take(2),
+        _emptyState(theme, noData: true),
+      ]);
+    } else {
+      body = ListView.builder(
+        padding: const EdgeInsets.only(bottom: 96),
+        itemCount: top.length + (rows.isEmpty ? 1 : rows.length),
+        itemBuilder: (context, i) {
+          if (i < top.length) return top[i];
+          if (rows.isEmpty) return _emptyState(theme, noData: false);
+          final row = rows[i - top.length];
+          if (row is DayGroup) return _dayHeader(theme, row);
+          final line = row as ExpenseLine;
+          return _entryTile(theme, line, byId[line.id]);
+        },
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Expenses'),
+        actions: [
+          if (_exporting)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+          else
+            IconButton(
+              tooltip: 'Export',
+              icon: const Icon(Icons.ios_share_outlined),
+              onPressed: visible.isEmpty ? null : () => _showExportSheet(visible),
+            ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
+        ),
+        icon: const Icon(Icons.add),
+        label: const Text('Add expense'),
+      ),
+      body: body,
+    );
+  }
+
+  Widget _periodChips() {
+    Widget chip(ExpensePeriod p, String label) => Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ChoiceChip(
+            label: Text(label),
+            selected: _period == p,
+            onSelected: (_) {
+              if (p == ExpensePeriod.custom) {
+                _pickCustomRange();
+              } else {
+                setState(() {
+                  _period = p;
+                  _category = null;
+                });
+              }
+            },
+          ),
         );
-      },
+    return SizedBox(
+      height: 52,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 4),
+        children: [
+          chip(ExpensePeriod.today, 'Today'),
+          chip(ExpensePeriod.thisMonth, 'This month'),
+          chip(ExpensePeriod.lastMonth, 'Last month'),
+          chip(ExpensePeriod.thisYear, 'This year'),
+          chip(ExpensePeriod.all, 'All time'),
+          chip(ExpensePeriod.custom, 'Custom'),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryCard(
+    ThemeData theme, {
+    required double total,
+    required int count,
+    required bool filtered,
+    required double periodTotal,
+    required int periodCount,
+  }) {
+    final scheme = theme.colorScheme;
+    final avg = count == 0 ? 0.0 : total / count;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(filtered ? 'Matching expenses' : 'Total spent',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: scheme.onPrimaryContainer)),
+            const SizedBox(height: 4),
+            Text(_money(total),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.onPrimaryContainer)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 20,
+              runSpacing: 4,
+              children: [
+                _miniStat(theme, 'Entries', '$count'),
+                _miniStat(theme, 'Average', _money(avg)),
+                if (filtered)
+                  _miniStat(theme, 'Whole period',
+                      '${_money(periodTotal)} ($periodCount)'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStat(ThemeData theme, String label, String value) {
+    final c = theme.colorScheme.onPrimaryContainer;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: c.withValues(alpha: 0.75))),
+        Text(value,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700, color: c)),
+      ],
+    );
+  }
+
+  Widget _categoryCard(
+      ThemeData theme, List<CategoryTotal> categories, String? active) {
+    final scheme = theme.colorScheme;
+    final shown =
+        _showAllCategories ? categories : categories.take(5).toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: scheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Where the money went',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            for (final c in shown)
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => setState(
+                    () => _category = active == c.category ? null : c.category),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Opacity(
+                    opacity: active == null || active == c.category ? 1 : 0.45,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(c.category,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium),
+                            ),
+                            Text(
+                                '${_money(c.total)}  \u2022  ${(c.share * 100).toStringAsFixed(0)}%',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: c.share,
+                            minHeight: 7,
+                            color: _colorFor(c.category),
+                            backgroundColor: scheme.surfaceContainerHighest,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (categories.length > 5)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () =>
+                      setState(() => _showAllCategories = !_showAllCategories),
+                  child: Text(_showAllCategories
+                      ? 'Show less'
+                      : 'Show all ${categories.length}'),
+                ),
+              )
+            else
+              const SizedBox(height: 4),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _searchRow(ThemeData theme) {
+    const labels = {
+      _Sort.newest: 'Newest first',
+      _Sort.oldest: 'Oldest first',
+      _Sort.highest: 'Highest amount',
+      _Sort.lowest: 'Lowest amount',
+    };
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _search,
+              onChanged: (v) => setState(() => _query = v),
+              decoration: InputDecoration(
+                hintText: 'Search note, category or amount',
+                prefixIcon: const Icon(Icons.search),
+                isDense: true,
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _search.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+          PopupMenuButton<_Sort>(
+            tooltip: 'Sort',
+            icon: const Icon(Icons.sort),
+            initialValue: _sort,
+            onSelected: (s) => setState(() => _sort = s),
+            itemBuilder: (_) => [
+              for (final e in labels.entries)
+                PopupMenuItem(value: e.key, child: Text(e.value)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dayHeader(ThemeData theme, DayGroup g) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(_dayLabel(g.day),
+                style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700)),
+          ),
+          Text(_money(g.total),
+              style: theme.textTheme.labelLarge
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+
+  Widget _entryTile(ThemeData theme, ExpenseLine line, Expense? expense) {
+    final scheme = theme.colorScheme;
+    final label = ExpenseLogic.categoryLabel(line.category);
+    final color = _colorFor(label);
+    final hasNote = line.description.trim().isNotEmpty;
+    final showDate = _sort == _Sort.highest || _sort == _Sort.lowest;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+      child: Material(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: expense == null ? null : () => _showDetails(expense),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.15),
+                  child: Icon(_iconFor(label), color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(hasNote ? line.description.trim() : label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyLarge
+                              ?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        hasNote
+                            ? '$label${showDate ? ' \u2022 ${DateFormat('d MMM').format(line.date)}' : ''}'
+                            : (showDate
+                                ? DateFormat('d MMM yyyy').format(line.date)
+                                : ' '),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(_money(line.amount),
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState(ThemeData theme, {required bool noData}) {
+    final scheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Icon(noData ? Icons.receipt_long_outlined : Icons.search_off,
+              size: 60, color: scheme.outline),
+          const SizedBox(height: 12),
+          Text(
+              noData
+                  ? 'No expenses in this period'
+                  : 'Nothing matches your search',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 6),
+          Text(
+              noData
+                  ? 'Pick another period above, or tap Add expense.'
+                  : 'Try a different word or clear the category filter.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant)),
+        ],
+      ),
     );
   }
 }
