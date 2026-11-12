@@ -135,6 +135,14 @@ class LoyaltyService {
     await _settings.put(_kRedemptions, jsonEncode(map));
   }
 
+  /// Removes redemption metadata when its invoice is deleted.
+  static Future<void> removeRedemption(String invoiceId) async {
+    final map = redeemedLabels();
+    if (!map.containsKey(invoiceId)) return;
+    map.remove(invoiceId);
+    await _settings.put(_kRedemptions, jsonEncode(map));
+  }
+
   // ---------------------------------------------------------------- status
 
   static Iterable<LoyaltyPurchase> _purchases(Iterable<Sale> sales) =>
