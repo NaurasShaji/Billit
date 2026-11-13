@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/test_database.dart';
 void main(){
  late Directory hiveDir;
- setUpAll(generateLegacyHiveFixtures);
+
  setUp(() {hiveDir=Directory.systemTemp.createTempSync('billit_legacy_hive');openInMemoryDatabase();});
  tearDown(() {Db.close();hiveDir.deleteSync(recursive:true);});
  void copyFixtures({Set<String>? only}){for(final file in Directory('test/fixtures/legacy_hive').listSync().whereType<File>()){final name=file.uri.pathSegments.last;if(only!=null&&!only.contains(name))continue;file.copySync('${hiveDir.path}/$name');}}
