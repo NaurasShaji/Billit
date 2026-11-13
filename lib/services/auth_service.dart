@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
 import '../models/models.dart';
-import 'boxes.dart';
+import '../data/database.dart';
 
 class AuthService extends ChangeNotifier {
   User? currentUser;
@@ -9,7 +8,7 @@ class AuthService extends ChangeNotifier {
   static const String _sessionUserIdKey = 'user_id';
 
   Future<void> ensureSeedUsers() async {
-    final usersBox = Hive.box<User>(Boxes.users);
+    final usersBox = Db.users;
 
     // Create admin user if not exists
     if (usersBox.values.where((u) => u.userType == UserType.admin).isEmpty) {
@@ -34,10 +33,10 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> restoreSessionIfAny() async {
-    final session = Hive.box(_sessionBoxName);
+    final session = Db.session;
     final userId = session.get(_sessionUserIdKey) as String?;
     if (userId == null) return;
-    final usersBox = Hive.box<User>(Boxes.users);
+    final usersBox = Db.users;
     final user = usersBox.get(userId);
     if (user != null) {
       currentUser = user;
@@ -47,7 +46,7 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> login(String username, String password,
       {UserType? userType}) async {
-    final usersBox = Hive.box<User>(Boxes.users);
+    final usersBox = Db.users;
     try {
       final user = usersBox.values.firstWhere(
         (u) =>
@@ -56,7 +55,7 @@ class AuthService extends ChangeNotifier {
       );
       if (user.password == User.hash(password)) {
         currentUser = user;
-        final session = Hive.box(_sessionBoxName);
+        final session = Db.session;
         await session.put(_sessionUserIdKey, user.id);
         notifyListeners();
         return true;
@@ -69,7 +68,7 @@ class AuthService extends ChangeNotifier {
 
   void logout() {
     currentUser = null;
-    final session = Hive.box(_sessionBoxName);
+    final session = Db.session;
     session.delete(_sessionUserIdKey);
     notifyListeners();
   }
@@ -100,7 +99,7 @@ class AuthService extends ChangeNotifier {
           'Password can only contain letters and numbers (no special characters)');
     }
 
-    final usersBox = Hive.box<User>(Boxes.users);
+    final usersBox = Db.users;
     final userToChangeId = targetUserId ?? currentUser!.id;
     final user = usersBox.get(userToChangeId);
 
@@ -136,12 +135,12 @@ class AuthService extends ChangeNotifier {
       return [];
     }
 
-    final usersBox = Hive.box<User>(Boxes.users);
+    final usersBox = Db.users;
     return usersBox.values.toList();
   }
 
   String getAdminSecurityQuestion() {
-    final usersBox = Hive.box<User>(Boxes.users);
+    final usersBox = Db.users;
     final admin = usersBox.values.firstWhere(
       (user) => user.userType == UserType.admin,
       orElse: () => throw Exception('Admin account not found'),
