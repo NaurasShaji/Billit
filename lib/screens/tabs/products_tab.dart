@@ -425,7 +425,7 @@ class _ProductsTabState extends State<ProductsTab> {
           (context, index) {
             if (index.isOdd) return const SizedBox(height: 12);
             final product = products[index ~/ 2];
-            final threshold = (Hive.box<dynamic>('app_settings')
+            final threshold = (Db.settings
                     .get('low_stock_threshold', defaultValue: 10) as num)
                 .toDouble();
             return _buildListCard(product, product.stock <= threshold);
@@ -565,7 +565,7 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   void _showProductDetails(Product product) {
-    final threshold = (Hive.box<dynamic>('app_settings')
+    final threshold = (Db.settings
             .get('low_stock_threshold', defaultValue: 10) as num)
         .toDouble();
     final isLowStock = product.stock <= threshold;
@@ -753,7 +753,7 @@ class _ProductsTabState extends State<ProductsTab> {
     product.stock += delta;
     await product.save();
 
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final history = (settings
             .get('inventory_adjustments', defaultValue: <dynamic>[]) as List)
         .map((entry) => Map<String, dynamic>.from(entry as Map))
@@ -781,7 +781,7 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   Future<void> _showStockHistory(Product product) async {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final history = (settings
             .get('inventory_adjustments', defaultValue: <dynamic>[]) as List)
         .map((entry) => Map<String, dynamic>.from(entry as Map))
