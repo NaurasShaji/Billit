@@ -1,11 +1,10 @@
 import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../models/models.dart';
-import '../../services/boxes.dart';
 import '../../utils/theme_colors.dart';
+import '../../data/database.dart';
 
 /// Time window shown on the overview.
 enum _Period {
@@ -169,20 +168,20 @@ class _DashboardTabState extends State<DashboardTab> {
     final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final threshold =
         (settings.get('low_stock_threshold', defaultValue: 10) as num)
             .toDouble();
     final financial = widget.showFinancials;
 
     return Scaffold(
-      body: ValueListenableBuilder<Box<Sale>>(
-        valueListenable: Hive.box<Sale>(Boxes.sales).listenable(),
-        builder: (context, salesBox, _) => ValueListenableBuilder<Box<Product>>(
-          valueListenable: Hive.box<Product>(Boxes.products).listenable(),
+      body: ValueListenableBuilder<EntityStore<Sale>>(
+        valueListenable: Db.sales.listenable(),
+        builder: (context, salesBox, _) => ValueListenableBuilder<EntityStore<Product>>(
+          valueListenable: Db.products.listenable(),
           builder: (context, productsBox, __) =>
-              ValueListenableBuilder<Box<Expense>>(
-            valueListenable: Hive.box<Expense>(Boxes.expenses).listenable(),
+              ValueListenableBuilder<EntityStore<Expense>>(
+            valueListenable: Db.expenses.listenable(),
             builder: (context, expensesBox, ___) {
               final allSales = salesBox.values.toList()
                 ..sort((a, b) => b.date.compareTo(a.date));
@@ -1066,16 +1065,16 @@ class _SetupChecklistState extends State<_SetupChecklist> {
   static const _dismissedKey = 'setup_checklist_dismissed';
 
   bool get _dismissed =>
-      Hive.box<dynamic>('app_settings').get(_dismissedKey, defaultValue: false)
+      Db.settings.get(_dismissedKey, defaultValue: false)
           as bool;
 
   bool get _hasBusinessDetails {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     return settings.get('business_name', defaultValue: '').toString().trim().isNotEmpty;
   }
 
   Future<void> _dismiss() async {
-    await Hive.box<dynamic>('app_settings').put(_dismissedKey, true);
+    await Db.settings.put(_dismissedKey, true);
     if (mounted) setState(() {});
   }
 
