@@ -2,11 +2,9 @@ import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
-import '../../services/boxes.dart';
 import '../../services/whatsapp_service.dart';
 import '../../widgets/whatsapp_icon.dart';
 import '../../utils/platform_support.dart';
@@ -20,6 +18,7 @@ import '../../widgets/print_option_dialog.dart';
 import '../../widgets/responsive_page.dart';
 import '../product_selection_screen.dart';
 import '../barcode_scanner_screen.dart';
+import '../../data/database.dart';
 
 class BillingTab extends StatefulWidget {
   const BillingTab({super.key});
@@ -63,7 +62,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   Color get _textSecondary => Theme.of(context).colorScheme.onSurfaceVariant;
 
   bool get _gstAvailable {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final registration = settings
         .get('gst_registration_type', defaultValue: 'regular')
         .toString();
@@ -108,7 +107,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
   double _lineGstRate(SaleItem item) {
     final productRate =
-        Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
+        Db.products.get(item.productId)?.gstRate;
     return productRate ?? _gstRate;
   }
 
@@ -512,7 +511,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   }
 
   Future<void> _printLastInvoice() async {
-    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+    final sales = Db.sales.values.toList()
       ..sort((a, b) => b.date.compareTo(a.date));
     if (sales.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -1733,7 +1732,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final salesBox = Hive.box<Sale>(Boxes.sales);
     final productsBox = Hive.box<Product>(Boxes.products);
 
-    // Remove sale from Hive
+    // Remove the sale from the database
     await salesBox.delete(sale.id);
 
     // Update product stocks
