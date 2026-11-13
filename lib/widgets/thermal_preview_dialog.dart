@@ -2,11 +2,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../models/models.dart';
-import '../services/boxes.dart';
 import '../services/invoice_template_service.dart';
 import '../services/payment_qr_service.dart';
+import '../data/database.dart';
 
 class ThermalPreviewDialog extends StatelessWidget {
   final Sale sale;
@@ -67,7 +66,7 @@ class ThermalPreviewDialog extends StatelessWidget {
   }
 
   Widget _buildReceipt(Map<String, dynamic> template, bool is58mm) {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final name = settings.get('business_name', defaultValue: '').toString().trim();
     final address = settings.get('business_address', defaultValue: '').toString().trim();
     final phone = settings.get('business_phone', defaultValue: '').toString().trim();
@@ -113,7 +112,7 @@ class ThermalPreviewDialog extends StatelessWidget {
       const SizedBox(height: 6),
       if (is58mm) ...sale.items.asMap().entries.map((entry) {
         final item = entry.value;
-        final product = Hive.box<Product>(Boxes.products).get(item.productId);
+        final product = Db.products.get(item.productId);
         final values = _itemValues(entry.key, item, product);
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -131,7 +130,7 @@ class ThermalPreviewDialog extends StatelessWidget {
         if (borders) const Divider(color: Colors.black, height: 1),
         ...sale.items.asMap().entries.map((entry) {
           final item = entry.value;
-          final product = Hive.box<Product>(Boxes.products).get(item.productId);
+          final product = Db.products.get(item.productId);
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: Text(_format80Row(columns, _itemValues(entry.key, item, product)),
