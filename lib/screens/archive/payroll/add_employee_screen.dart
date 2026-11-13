@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../../models/employee.dart';
-import '../../../services/boxes.dart';
 import '../../../utils/theme_colors.dart';
+import '../../../data/database.dart';
 
 class AddEmployeeScreen extends StatefulWidget {
   const AddEmployeeScreen({super.key});
@@ -273,8 +272,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                     // List Content
                     ValueListenableBuilder(
                       valueListenable:
-                          Hive.box<Employee>(Boxes.employees).listenable(),
-                      builder: (context, Box<Employee> box, _) {
+                          Db.employees.listenable(),
+                      builder: (context, EntityStore<Employee> box, _) {
                         final employees = box.values.toList()
                           ..sort((a, b) => a.name.compareTo(b.name));
 
@@ -481,7 +480,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       wage: double.tryParse(_wageController.text.trim()) ?? 0,
     );
 
-    final box = Hive.box<Employee>(Boxes.employees);
+    final box = Db.employees;
     await box.put(employee.id, employee);
 
     // Clear form and reset state
@@ -593,7 +592,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     );
 
     if (confirmed == true) {
-      final box = Hive.box<Employee>(Boxes.employees);
+      final box = Db.employees;
       await box.delete(employee.id);
 
       if (mounted) {
