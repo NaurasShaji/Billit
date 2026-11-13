@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../models/models.dart';
-import '../../services/boxes.dart';
 import '../edit_invoice_screen.dart';
 import '../../utils/theme_colors.dart';
+import '../../data/database.dart';
 
 class CustomerLookupScreen extends StatefulWidget {
   const CustomerLookupScreen({super.key});
@@ -75,7 +74,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
   }
 
   void _searchCustomers(String query) {
-    final salesBox = Hive.box<Sale>(Boxes.sales);
+    final salesBox = Db.sales;
     final allSales = salesBox.values.toList();
     final Set<String> uniqueCustomers = {};
     final List<Customer> customers = [];
@@ -116,7 +115,7 @@ class _CustomerLookupScreenState extends State<CustomerLookupScreen>
   }
 
   void _viewCustomerInvoices(String customerName, String customerPhone) {
-    final salesBox = Hive.box<Sale>(Boxes.sales);
+    final salesBox = Db.sales;
     final invoices = salesBox.values
         .where((sale) =>
             sale.customerName == customerName &&
