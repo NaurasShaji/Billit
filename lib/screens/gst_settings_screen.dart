@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../widgets/responsive_page.dart';
 import '../widgets/settings_components.dart';
+import '../data/database.dart';
 
 class GstSettingsScreen extends StatefulWidget {
   const GstSettingsScreen({super.key});
@@ -11,7 +11,7 @@ class GstSettingsScreen extends StatefulWidget {
 }
 
 class _GstSettingsScreenState extends State<GstSettingsScreen> {
-  late final Box<dynamic> _settings;
+  late final KeyValueStore _settings;
   late bool _gstEnabled;
   late bool _gstInclusive;
   late bool _defaultInterstate;
@@ -64,7 +64,7 @@ class _GstSettingsScreenState extends State<GstSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _settings = Hive.box<dynamic>('app_settings');
+    _settings = Db.settings;
     _registrationType = _settings
         .get('gst_registration_type', defaultValue: 'regular')
         .toString();
