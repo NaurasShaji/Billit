@@ -1,11 +1,10 @@
 import 'package:excel_community/excel_community.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/models.dart';
-import '../../services/boxes.dart';
+import '../../data/database.dart';
 
 class BulkProductImportScreen extends StatefulWidget {
   const BulkProductImportScreen({super.key});
@@ -155,13 +154,13 @@ class _BulkProductImportScreenState extends State<BulkProductImportScreen> {
   }
 
   void _markDuplicates(List<_ImportRow> rows) {
-    // Build duplicate indexes defensively. Older/corrupt Hive records can
+    // Build duplicate indexes defensively. Older/corrupt records can
     // contain null values in fields that are non-nullable in the current
     // Product model; one such record must not abort an Excel import.
     final names = <String>{};
     final codes = <String>{};
     try {
-      final products = Hive.box<Product>(Boxes.products).values;
+      final products = Db.products.values;
       for (final product in products) {
         try {
           final name = product.name.trim().toLowerCase();
@@ -220,7 +219,7 @@ class _BulkProductImportScreenState extends State<BulkProductImportScreen> {
     if (ok != true || !mounted) return;
     setState(() => _busy = true);
     try {
-      final box = Hive.box<Product>(Boxes.products);
+      final box = Db.products;
       for (final r in valid) {
         final p = Product()
           ..id = const Uuid().v4()
