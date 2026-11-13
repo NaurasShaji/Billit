@@ -1,11 +1,10 @@
 import 'package:excel_community/excel_community.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/models.dart';
-import '../../services/boxes.dart';
+import '../../data/database.dart';
 
 class BulkImportProductsScreen extends StatefulWidget {
   const BulkImportProductsScreen({super.key});
@@ -93,7 +92,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
       final gstColumn =
           _findColumn(headers, ['gstrate', 'gst', 'gstpercent', 'taxrate']);
 
-      final productBox = Hive.box<Product>(Boxes.products);
+      final productBox = Db.products;
       final existingNames = productBox.values
           .map((p) => p.name.trim().toLowerCase())
           .where((v) => v.isNotEmpty)
@@ -249,7 +248,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
 
     setState(() => _isImporting = true);
     try {
-      final box = Hive.box<Product>(Boxes.products);
+      final box = Db.products;
       final products = <String, Product>{};
       for (final row in rowsToImport) {
         final product = Product()
