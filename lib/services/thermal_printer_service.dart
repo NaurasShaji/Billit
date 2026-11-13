@@ -2,8 +2,6 @@ import 'dart:convert';
 
 import 'package:billit/models/sale.dart';
 import 'package:billit/models/product.dart';
-import 'package:billit/services/boxes.dart';
-import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
@@ -15,6 +13,7 @@ import 'invoice_template_service.dart';
 import '../utils/platform_support.dart';
 
 import 'package:permission_handler/permission_handler.dart';
+import '../data/database.dart';
 
 class ThermalPrinterService {
   // Keep raster graphics small enough for thermal-printer dot widths. Large
@@ -109,7 +108,7 @@ class ThermalPrinterService {
 
   Future<bool> printInvoice(Sale sale) async {
     try {
-      final settings = Hive.box<dynamic>('app_settings');
+      final settings = Db.settings;
       final connectionType =
           settings.get('printer_connection_type', defaultValue: 'bluetooth');
       if (connectionType == 'usb') {
@@ -123,7 +122,7 @@ class ThermalPrinterService {
   }
 
   Future<bool> _printToUsb(Sale sale) async {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final vendorId = settings.get('usb_printer_vendor_id')?.toString();
     final productId = settings.get('usb_printer_product_id')?.toString();
     if (vendorId == null || productId == null) {
@@ -172,18 +171,17 @@ class ThermalPrinterService {
     }
   }
 
-  // Settings box key
-  static const String _settingsBoxName = 'settings';
+  // Per-device settings key
   static const String _printerMacKey = 'printer_mac_address';
 
   Future<void> savePrinter(String macAddress) async {
-    final box = await Hive.openBox(_settingsBoxName);
+    final box = Db.deviceSettings;
     await box.put(_printerMacKey, macAddress);
     print('Saved printer MAC: $macAddress');
   }
 
   Future<String?> getSavedPrinter() async {
-    final box = await Hive.openBox(_settingsBoxName);
+    final box = Db.deviceSettings;
     return box.get(_printerMacKey);
   }
 
@@ -281,7 +279,7 @@ class ThermalPrinterService {
 
     bytes += generator.reset();
 
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final businessName =
         settings.get('business_name', defaultValue: 'Business Name').toString();
     final businessAddress =
@@ -395,7 +393,7 @@ class ThermalPrinterService {
       };
       for (var i = 0; i < sale.items.length; i++) {
         final item = sale.items[i];
-        final product = Hive.box<Product>(Boxes.products).get(item.productId);
+        final product = Db.products.get(item.productId);
         final rowValues = <String, String>{
           'serial': '${i + 1}',
           'product': product?.name ?? 'Unknown Product',
@@ -620,7 +618,7 @@ class ThermalPrinterService {
 
     for (var itemIndex = 0; itemIndex < sale.items.length; itemIndex++) {
       final item = sale.items[itemIndex];
-      final product = Hive.box<Product>(Boxes.products).get(item.productId);
+      final product = Db.products.get(item.productId);
       final values = <String, String>{
         'serial': '${itemIndex + 1}',
         'product': product?.name ?? 'Unknown Product',
