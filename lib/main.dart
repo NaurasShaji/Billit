@@ -1,44 +1,94 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:path_provider/path_provider.dart' as pp;
 
 import 'models/models.dart';
-import 'services/boxes.dart';
 import 'services/auth_service.dart';
 import 'services/desktop_window_service.dart';
 import 'services/drive_sync_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'data/database.dart';
+import 'data/legacy_hive_import.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb) {
-    await Hive.initFlutter();
-  } else {
-    final dir = await pp.getApplicationDocumentsDirectory();
-    await Hive.initFlutter(dir.path);
+  await Db.open();
+  try {
+    await importLegacyHiveData();
+  } catch (error) {
+    // Never open an empty shop silently when the old data could not be read.
+    runApp(_LegacyImportFailedApp(error: error));
+    return;
   }
+  await _startApp();
+}
 
-  Hive.registerAdapter(UserAdapter());
-  Hive.registerAdapter(UserTypeAdapter());
-  Hive.registerAdapter(UnitTypeAdapter());
-  Hive.registerAdapter(ProductAdapter());
-  Hive.registerAdapter(PaymentMethodAdapter());
-  Hive.registerAdapter(SaleItemAdapter());
-  Hive.registerAdapter(SaleAdapter());
-  Hive.registerAdapter(ExpenseAdapter()); // typeId 8
-  Hive.registerAdapter(EmployeeAdapter()); // typeId 9
+Future<void> _startApp() async {
+  await prepareAppData();
+  final settings = Db.settings;
 
-  await Hive.openBox<User>(Boxes.users);
-  await Hive.openBox<Product>(Boxes.products);
-  await Hive.openBox<Sale>(Boxes.sales);
-  await Hive.openBox<Expense>(Boxes.expenses);
-  await Hive.openBox<Employee>(Boxes.employees);
-  await Hive.openBox('session');
-  final settings = await Hive.openBox<dynamic>('app_settings');
+  // Initialize Drive sync service and attempt auto sign-in
+  final driveSync = DriveSyncService.instance;
+  await driveSync.init();
+  await driveSync.tryAutoSignIn();
+
+  // Desktop window: title, minimum size and remembered size (no-op elsewhere).
+  await DesktopWindowService.instance.init(
+    settings,
+    title: settings.get('app_name', defaultValue: 'Billit').toString(),
+  );
+
+  runApp(const MyApp());
+}
+
+class _LegacyImportFailedApp extends StatelessWidget {
+  const _LegacyImportFailedApp({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Billit could not move your existing data to the new '
+                  'database. Nothing has been changed or deleted.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text('$error', textAlign: TextAlign.center),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: main,
+                  child: const Text('Try again'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await Db.meta.put(legacyImportKey, {'skipped': '$error'});
+                    await _startApp();
+                  },
+                  child: const Text('Start without the old data'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fills in default settings and the default accounts on an opened database.
+Future<void> prepareAppData() async {
+  final settings = Db.settings;
   Future<void> setDefaultSetting(String key, dynamic value) async {
     if (!settings.containsKey(key)) await settings.put(key, value);
   }
@@ -86,22 +136,7 @@ Future<void> main() async {
   await setDefaultSetting('invoice_prefix', 'INV');
   await setDefaultSetting('next_invoice_number', 1);
 
-  // Initialize services
-  final auth = AuthService();
-  await auth.ensureSeedUsers();
-
-  // Initialize Drive sync service and attempt auto sign-in
-  final driveSync = DriveSyncService.instance;
-  await driveSync.init();
-  await driveSync.tryAutoSignIn();
-
-  // Desktop window: title, minimum size and remembered size (no-op elsewhere).
-  await DesktopWindowService.instance.init(
-    settings,
-    title: settings.get('app_name', defaultValue: 'Billit').toString(),
-  );
-
-  runApp(const MyApp());
+  await AuthService().ensureSeedUsers();
 }
 
 Color _themeSeedColor(String theme) {
@@ -130,7 +165,7 @@ Color _themeSeedColor(String theme) {
   }
 }
 
-ThemeData _buildAppTheme(Box<dynamic> settings, Brightness brightness) {
+ThemeData _buildAppTheme(KeyValueStore settings, Brightness brightness) {
   final themeName = settings.get('app_theme', defaultValue: 'green').toString();
   final radius =
       (settings.get('corner_radius', defaultValue: 16.0) as num).toDouble();
@@ -447,8 +482,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
             create: (_) => AuthService()..restoreSessionIfAny())
       ],
-      child: ValueListenableBuilder<Box<dynamic>>(
-        valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+      child: ValueListenableBuilder<KeyValueStore>(
+        valueListenable: Db.settings.listenable(),
         builder: (context, settings, _) {
           final modeName =
               settings.get('theme_mode', defaultValue: 'system').toString();
