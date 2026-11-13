@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 import '../utils/theme_colors.dart';
 import '../widgets/responsive_page.dart';
+import '../data/database.dart';
 
 /// Appearance & personalisation.
 ///
@@ -58,7 +58,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
   };
 
   Future<void> _save(String key, dynamic value) async {
-    await Hive.box<dynamic>('app_settings').put(key, value);
+    await Db.settings.put(key, value);
   }
 
   Future<void> _confirmReset(BuildContext context) async {
@@ -81,7 +81,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       ),
     );
     if (ok == true) {
-      await Hive.box<dynamic>('app_settings').putAll(<String, dynamic>{
+      await Db.settings.putAll(<String, dynamic>{
         ..._defaults,
         'navigation_icon_overrides': <String, String>{},
       });
@@ -90,8 +90,8 @@ class AppearanceSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box<dynamic>>(
-      valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+    return ValueListenableBuilder<KeyValueStore>(
+      valueListenable: Db.settings.listenable(),
       builder: (context, box, _) {
         final s = _Values(box);
         return DefaultTabController(
@@ -813,7 +813,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
 
 /// Snapshot of every appearance setting, read once per rebuild.
 class _Values {
-  _Values(Box<dynamic> box)
+  _Values(KeyValueStore box)
       : theme = box.get('app_theme', defaultValue: 'green').toString(),
         themeMode = box.get('theme_mode', defaultValue: 'system').toString(),
         density =
