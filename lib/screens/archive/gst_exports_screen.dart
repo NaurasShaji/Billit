@@ -4,13 +4,12 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../models/models.dart';
-import '../../services/boxes.dart';
+import '../../data/database.dart';
 
 class GstExportsScreen extends StatefulWidget {
   const GstExportsScreen({super.key});
@@ -61,7 +60,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     final endDate =
         _dateOnly(_singleDayStatement ? _statementStart : _statementEnd);
     final endExclusive = endDate.add(const Duration(days: 1));
-    final sales = Hive.box<Sale>(Boxes.sales).values.where((sale) {
+    final sales = Db.sales.values.where((sale) {
       final date = sale.date.toLocal();
       return !date.isBefore(startDate) && date.isBefore(endExclusive);
     }).toList()
@@ -193,7 +192,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
     final end =
         _dateOnly(_singleDayStatement ? _statementStart : _statementEnd);
     final endExclusive = end.add(const Duration(days: 1));
-    final sales = Hive.box<Sale>(Boxes.sales).values.where((sale) {
+    final sales = Db.sales.values.where((sale) {
       final date = sale.date.toLocal();
       return !date.isBefore(start) && date.isBefore(endExclusive);
     }).toList()
@@ -364,7 +363,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
   }
 
   Future<void> _exportGstSalesRegister({bool share = false}) async {
-    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+    final sales = Db.sales.values.toList()
       ..sort((a, b) => a.date.compareTo(b.date));
     final rows = <List<Object?>>[
       [
@@ -433,9 +432,9 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
   }
 
   Future<void> _exportGstItemRegister({bool share = false}) async {
-    final sales = Hive.box<Sale>(Boxes.sales).values.toList()
+    final sales = Db.sales.values.toList()
       ..sort((a, b) => a.date.compareTo(b.date));
-    final products = Hive.box<Product>(Boxes.products);
+    final products = Db.products;
     final rows = <List<Object?>>[
       [
         'Invoice No',
@@ -487,7 +486,7 @@ class _GstExportsScreenState extends State<GstExportsScreen> {
   }
 
   Future<void> _exportExpensesRegister({bool share = false}) async {
-    final expenses = Hive.box<Expense>(Boxes.expenses).values.toList()
+    final expenses = Db.expenses.values.toList()
       ..sort((a, b) => a.date.compareTo(b.date));
     final rows = <List<Object?>>[
       ['Expense ID', 'Date', 'Category', 'Description', 'Amount'],
