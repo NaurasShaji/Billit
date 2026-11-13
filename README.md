@@ -1,6 +1,6 @@
 # Billit
 
-Billit is a point-of-sale and retail management app for billing, inventory, GST, reporting, backups, and printer workflows. It uses Hive for local data storage and includes billing, inventory, reporting, backup, and printer workflows.
+Billit is a point-of-sale and retail management app for billing, inventory, GST, reporting, backups, and printer workflows. It uses SQLite for local data storage and includes billing, inventory, reporting, backup, and printer workflows.
 
 ![Billit app logo](assets/icon/billit_logo.svg)
 
@@ -92,11 +92,9 @@ These are default credentials for a new local installation. Change the admin pas
 
 ## Development
 
-Hive adapters are checked into `lib/models/`. After changing a Hive model, regenerate the adapters:
+Data is stored in SQLite through `lib/data/`: `schema.dart` defines the tables and `database.dart` exposes them as `Db.products`, `Db.sales`, `Db.settings` and so on. There is no code generation. After changing a model, update its table in `schema.dart` (add a migration and bump `schemaVersion`) and its row mapping in `entity_stores.dart`.
 
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
+On the web the database runs on `web/sqlite3.wasm`, which must match the `sqlite3` version in `pubspec.yaml`; download it from the [sqlite3.dart releases](https://github.com/simolus3/sqlite3.dart/releases) when upgrading the package.
 
 Run the test suite with:
 
@@ -108,7 +106,8 @@ flutter test
 
 ```text
 lib/
-  models/       Hive data models and generated adapters
+  models/       Data models
+  data/         SQLite schema, stores, and the one-time Hive import
   screens/      App screens and feature tabs
   services/     Authentication, billing, backups, PDFs, and printing
   widgets/      Reusable UI components
@@ -119,7 +118,7 @@ assets/         App icons and other bundled assets
 
 ## Data and backups
 
-The app stores business data locally with Hive. Export backups regularly and store them somewhere safe. Google Drive backup requires signing in to a Google account and an available Google Sign-In configuration for the target platform.
+The app stores business data locally in a SQLite database (`billit.db` in the app's support directory; IndexedDB on the web). Installations that used the earlier Hive storage are copied into SQLite automatically on the first launch after updating; the old Hive files are left in place. Export backups regularly and store them somewhere safe. Google Drive backup requires signing in to a Google account and an available Google Sign-In configuration for the target platform.
 
 ## Android launcher icon
 
