@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../../../models/employee.dart';
-import '../../../services/boxes.dart';
+import '../../../data/database.dart';
 
 class EmployeesListScreen extends StatelessWidget {
   const EmployeesListScreen({super.key});
@@ -11,8 +10,8 @@ class EmployeesListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Employees List')),
       body: ValueListenableBuilder(
-        valueListenable: Hive.box<Employee>(Boxes.employees).listenable(),
-        builder: (context, Box<Employee> box, _) {
+        valueListenable: Db.employees.listenable(),
+        builder: (context, EntityStore<Employee> box, _) {
           if (box.isEmpty) {
             return const Center(child: Text('No employees yet'));
           }
@@ -47,7 +46,7 @@ class EmployeesListScreen extends StatelessWidget {
   }
 
   void _showDeleteDialog(
-      BuildContext context, Box<Employee> box, Employee employee) {
+      BuildContext context, EntityStore<Employee> box, Employee employee) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -79,7 +78,7 @@ class EmployeesListScreen extends StatelessWidget {
     );
   }
 
-  void _deleteEmployee(Box<Employee> box, Employee employee) {
+  void _deleteEmployee(EntityStore<Employee> box, Employee employee) {
     // Find the key of the employee and delete it
     for (var key in box.keys) {
       if (box.get(key) == employee) {
