@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:ui' show Size;
 
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:window_manager/window_manager.dart';
+import '../data/database.dart';
 
 /// Sets up the desktop window: title, minimum size, and remembers the last
 /// window size / maximised state between launches.
@@ -20,7 +20,7 @@ class DesktopWindowService with WindowListener {
   static const _kHeight = 'window_height';
   static const _kMaximized = 'window_maximized';
 
-  Box<dynamic>? _settings;
+  KeyValueStore? _settings;
   Timer? _saveDebounce;
 
   static bool get isDesktop =>
@@ -29,7 +29,7 @@ class DesktopWindowService with WindowListener {
           defaultTargetPlatform == TargetPlatform.linux ||
           defaultTargetPlatform == TargetPlatform.macOS);
 
-  Future<void> init(Box<dynamic> settings, {required String title}) async {
+  Future<void> init(KeyValueStore settings, {required String title}) async {
     if (!isDesktop) return;
     _settings = settings;
 
