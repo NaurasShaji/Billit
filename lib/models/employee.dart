@@ -1,20 +1,18 @@
-import 'package:hive/hive.dart';
+import '../data/database.dart';
 
-part 'employee.g.dart';
 
-@HiveType(typeId: 9)
-class Employee extends HiveObject {
-  @HiveField(0)
+class Employee {
+  /// Writes this record to the database.
+  Future<void> save() => Db.employees.put(id, this);
+
+  /// Removes this record from the database.
+  Future<void> delete() => Db.employees.delete(id);
+
   String id;
-  @HiveField(1)
   String name;
-  @HiveField(2)
   String type; // 'daily' or 'monthly'
-  @HiveField(3)
   double wage;
-  @HiveField(4)
   int attendance; // For daily wages
-  @HiveField(5)
   bool salaryPaid; // For monthly salary
 
   Employee({
