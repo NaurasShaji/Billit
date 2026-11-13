@@ -24,7 +24,7 @@
 - **Install dependencies**: `flutter pub get`
 - **Run app (web)**: `flutter run -d chrome`
 - **Run app (android)**: `flutter run -d emulator-5554`
-- **Testing**: Tests in `test/`.
+- **Testing**: Tests in `test/` (e.g., `widget_test.dart`).
 
 ## Conventions & Patterns
 - **Product units**: Support for both `pcs` and `kg` in product models and UI.

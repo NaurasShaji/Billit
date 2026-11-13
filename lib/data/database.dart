@@ -209,58 +209,53 @@ class _StoreListenable<S> implements ValueListenable<S> {
       _notifier.removeListener(listener);
 }
 
-/// Synchronous, identity-preserving access to a table of model objects.
-abstract class EntityStore<T> extends _Store implements Iterable<T> {
-  EntityStore._(super.owner, super.table, List<String> columns)
-      : _columns = columns,
-        _upsertSql = '''
-          INSERT INTO ${super.table} (id, ${columns.join(', ')})
-          VALUES (${List.filled(columns.length + 1, '?').join(', ')})
-          ON CONFLICT (id) DO UPDATE SET
-          ${columns.map((c) => '$c = excluded.$c').join(', ')}
-        ''';
+/// One table of records keyed by their `id`. Iteration is in `id` order.
+abstract class EntityStore<T> extends _Store {
+  EntityStore._(super.owner, super.table, this._columns);
 
+  /// Column names after `id`, in the order [_toRow] returns their values.
   final List<String> _columns;
-  final String _upsertSql;
-  final Map<String, T> _cache = <String, T>{};
+  final SplayTreeMap<String, T> _cache = SplayTreeMap<String, T>();
   late final ValueListenable<EntityStore<T>> _listenable =
       _StoreListenable<EntityStore<T>>(this, _notifier);
-
-  T? getById(String id) => _cache[id];
-  bool containsId(String id) => _cache.containsKey(id);
-  int get length => _cache.length;
-  bool get isEmpty => _cache.isEmpty;
-  bool get isNotEmpty => _cache.isNotEmpty;
-
-  /// Rebuilds whenever this table changes.
-  ValueListenable<EntityStore<T>> listenable() => _listenable;
 
   String _idOf(T value);
   List<Object?> _toRow(T value);
   T _fromRow(Row row);
 
-  Future<void> put(T value) async {
-    final id = _idOf(value);
-    _owner._write(() => _writeRow(id, value));
-    _cache[id] = value;
+  late final String _upsertSql = 'INSERT INTO $table '
+      '(id, ${_columns.join(', ')}) '
+      'VALUES (?${', ?' * _columns.length}) '
+      'ON CONFLICT (id) DO UPDATE SET '
+      '${_columns.map((c) => '$c = excluded.$c').join(', ')}';
+
+  Iterable<T> get values => _cache.values;
+  Iterable<String> get keys => _cache.keys;
+  int get length => _cache.length;
+  bool get isEmpty => _cache.isEmpty;
+  bool get isNotEmpty => _cache.isNotEmpty;
+  bool containsKey(Object? id) => _cache.containsKey(id);
+  T? get(Object? id) => id is String ? _cache[id] : null;
+  Map<String, T> toMap() => Map<String, T>.of(_cache);
+
+  /// Rebuilds whenever a record in this store is added, changed or removed.
+  ValueListenable<EntityStore<T>> listenable() => _listenable;
+
+  Future<void> put(String id, T value) => putAll({id: value});
+
+  Future<void> putAll(Map<String, T> entries) async {
+    if (entries.isEmpty) return;
+    _owner._write(() {
+      entries.forEach(_writeRow);
+    });
+    _cache.addAll(entries);
     _changed();
     await _owner._flush();
   }
 
-  Future<void> putAll(Iterable<T> values) async {
-    final items = values.toList(growable: false);
-    if (items.isEmpty) return;
-    _owner._write(() {
-      for (final value in items) {
-        _writeRow(_idOf(value), value);
-      }
-    });
-    for (final value in items) {
-      _cache[_idOf(value)] = value;
-    }
-    _changed();
-    await _owner._flush();
-  }
+  /// Stores each record under its own `id`.
+  Future<void> addAll(Iterable<T> records) =>
+      putAll({for (final record in records) _idOf(record): record});
 
   Future<void> delete(Object? id) async {
     if (id is! String || !_cache.containsKey(id)) return;
@@ -293,71 +288,10 @@ abstract class EntityStore<T> extends _Store implements Iterable<T> {
       _cache[row['id'] as String] = _fromRow(row);
     }
   }
-
-  @override
-  Iterator<T> get iterator => _cache.values.iterator;
-
-  @override
-  T elementAt(int index) => _cache.values.elementAt(index);
-
-  @override
-  bool contains(Object? element) => _cache.values.contains(element);
-
-  @override
-  T firstWhere(bool Function(T) test, {T Function()? orElse}) =>
-      _cache.values.firstWhere(test, orElse: orElse);
-
-  @override
-  T? get firstOrNull => _cache.values.firstOrNull;
-
-  @override
-  T get first => _cache.values.first;
-
-  @override
-  T get last => _cache.values.last;
-
-  @override
-  Iterable<T> where(bool Function(T) test) => _cache.values.where(test);
-
-  @override
-  Iterable<R> map<R>(R Function(T) convert) => _cache.values.map(convert);
-
-  @override
-  Iterable<T> whereType<R>() => _cache.values.whereType<R>();
-
-  @override
-  Iterable<T> take(int count) => _cache.values.take(count);
-
-  @override
-  Iterable<T> skip(int count) => _cache.values.skip(count);
-
-  @override
-  List<T> toList({bool growable = true}) =>
-      _cache.values.toList(growable: growable);
-
-  @override
-  Set<T> toSet() => _cache.values.toSet();
-
-  @override
-  void forEach(void Function(T) action) => _cache.values.forEach(action);
-
-  @override
-  bool any(bool Function(T) test) => _cache.values.any(test);
-
-  @override
-  bool every(bool Function(T) test) => _cache.values.every(test);
-
-  @override
-  T reduce(T Function(T, T) combine) => _cache.values.reduce(combine);
-
-  @override
-  R fold<R>(R initialValue, R Function(R, T) combine) =>
-      _cache.values.fold<R>(initialValue, combine);
-
-  @override
-  String toString() => _cache.values.toString();
 }
 
+/// A table of named values (settings, session). Values may be anything JSON
+/// can hold, plus `DateTime` and `Uint8List`.
 class KeyValueStore extends _Store {
   KeyValueStore._(super.owner, super.table);
 
@@ -438,9 +372,9 @@ const String _typeTag = r'$type';
 
 /// Encodes a setting value as JSON text, tagging the types JSON lacks.
 ///
-/// The value is converted before jsonEncode sees it: Uint8List is a List<int>,
-/// so jsonEncode would write it as a plain number array and never offer it to
-/// a toEncodable hook.
+/// The value is converted before `jsonEncode` sees it: `Uint8List` is a
+/// `List<int>`, so `jsonEncode` would write it as a plain number array and
+/// never offer it to a `toEncodable` hook.
 String encodeStoredValue(dynamic value) => jsonEncode(_toJsonValue(value));
 
 Object? _toJsonValue(Object? v) {

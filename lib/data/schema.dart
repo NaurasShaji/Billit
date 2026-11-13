@@ -100,7 +100,7 @@ final List<String> _schemaV1 = [
     'CREATE TABLE $table (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)',
 ];
 
-/// Creates or upgrades the schema. PRAGMA user_version tracks the version.
+/// Creates or upgrades the schema. `PRAGMA user_version` tracks the version.
 void migrateSchema(CommonDatabase db) {
   db.execute('PRAGMA foreign_keys = ON');
   final current = db.select('PRAGMA user_version').first.values.first as int;

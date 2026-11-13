@@ -148,7 +148,7 @@ class _SaleStore extends EntityStore<Sale> {
         _flag(s.gstInclusive),
       ];
 
-  /// A sale's line items live in sale_items; they are rewritten with it.
+  /// A sale's line items live in `sale_items`; they are rewritten with it.
   @override
   void _writeRow(String id, Sale value) {
     super._writeRow(id, value);

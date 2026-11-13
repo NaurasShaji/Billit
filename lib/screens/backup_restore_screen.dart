@@ -148,7 +148,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     try {
       final data = await DriveBackupService.instance.downloadJson(file.id);
 
-      // One transaction: a backup that fails to import leaves current data unchanged.
+      // One transaction: a backup that fails to import leaves the current
+      // data as it was.
       await Db.transaction(() async {
         // Clear existing data
         await Db.products.clear();
