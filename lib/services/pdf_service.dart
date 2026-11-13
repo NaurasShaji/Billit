@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/models.dart';
-import './boxes.dart';
 import './payment_qr_service.dart';
 import './invoice_template_service.dart';
+import '../data/database.dart';
 
 class InvoicePdf {
   const InvoicePdf({required this.bytes, required this.filename});
@@ -171,7 +170,7 @@ class PdfService {
     String? qrData,
     required Map<String, dynamic> template,
   }) {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final businessName =
         settings.get('business_name', defaultValue: 'Business Name').toString();
     final accent =
@@ -211,7 +210,7 @@ class PdfService {
         configuredTitle.isEmpty || (configuredTitle == 'INVOICE' && displayGst)
             ? (displayGst ? 'TAX INVOICE' : 'INVOICE')
             : configuredTitle;
-    final productsBox = Hive.box<Product>(Boxes.products);
+    final productsBox = Db.products;
     final configuredColumns = (template['columns'] as List).cast<String>();
     final columnLabels = (template['columnLabels'] as Map?) ?? const {};
 
@@ -933,7 +932,7 @@ class PdfService {
     final double amountWidth = is58mm ? 30 : 46;
     final double fontSize = is58mm ? 6.5 : 8;
     final subtotal = sale.items.fold(0.0, (sum, item) => sum + item.subtotal);
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final businessName =
         settings.get('business_name', defaultValue: 'Business Name').toString();
     final footerText = settings
@@ -989,7 +988,7 @@ class PdfService {
       ...sale.items.asMap().entries.expand((entry) {
         final itemNumber = entry.key + 1;
         final item = entry.value;
-        final product = Hive.box<Product>(Boxes.products).get(item.productId);
+        final product = Db.products.get(item.productId);
         final productName = _truncateText(
             '$itemNumber. ${product?.name ?? 'Unknown Product'}',
             is58mm ? 15 : 24);
@@ -1177,13 +1176,13 @@ class PdfService {
                     mainAxisAlignment: pw.MainAxisAlignment.center,
                     children: [
                       pw.Text(
-                        Hive.box<dynamic>('app_settings')
+                        Db.settings
                             .get('business_name', defaultValue: '')
                             .toString()
                             .trim()
                             .isEmpty
                             ? 'INVOICE'
-                            : Hive.box<dynamic>('app_settings')
+                            : Db.settings
                                 .get('business_name', defaultValue: '')
                                 .toString()
                                 .trim(),
@@ -1393,7 +1392,7 @@ class PdfService {
       SaleItem item, int index, ThermalSize thermalSize) {
     final bool isWide = thermalSize == ThermalSize.mm80;
     final bool is58mm = thermalSize == ThermalSize.mm58;
-    final product = Hive.box<Product>(Boxes.products).get(item.productId);
+    final product = Db.products.get(item.productId);
     final productName = product?.name ?? 'Unknown Product';
     final qty = item.qty.toStringAsFixed(product?.unit == UnitType.kg ? 1 : 0);
     final unitLabel =
