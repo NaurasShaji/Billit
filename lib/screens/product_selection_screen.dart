@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/models.dart';
-import '../../services/boxes.dart';
 import '../widgets/app_components.dart';
+import '../data/database.dart';
 
 class ProductSelectionScreen extends StatefulWidget {
   const ProductSelectionScreen({super.key, this.initialQuery});
@@ -94,7 +93,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
   void _submitSearch() {
     final q = _searchQuery.trim().toLowerCase();
     if (q.isEmpty) return;
-    final matches = _applyFilters(Hive.box<Product>(Boxes.products).values);
+    final matches = _applyFilters(Db.products.values);
     final exact = matches
         .where((p) => (p.barcode ?? '').trim().toLowerCase() == q)
         .toList();
@@ -220,7 +219,7 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
   }
 
   Widget _buildFilterSection(ThemeData theme, bool isTablet) {
-    final productsBox = Hive.box<Product>(Boxes.products);
+    final productsBox = Db.products;
     final categories = productsBox.values
         .where((p) => p.active)
         .map((p) => p.category)
@@ -446,8 +445,8 @@ class _ProductSelectionScreenState extends State<ProductSelectionScreen>
 
   Widget _buildProductsList(ThemeData theme, bool isTablet) {
     return ValueListenableBuilder(
-      valueListenable: Hive.box<Product>(Boxes.products).listenable(),
-      builder: (context, Box<Product> box, _) {
+      valueListenable: Db.products.listenable(),
+      builder: (context, EntityStore<Product> box, _) {
         final filteredProducts = _applyFilters(box.values);
 
         if (filteredProducts.isEmpty) {
