@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../services/auth_service.dart';
-import '../../services/boxes.dart';
 import '../../services/invoice_service.dart';
 import '../../services/invoice_template_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../widgets/whatsapp_icon.dart';
 import '../edit_invoice_screen.dart';
+import '../../data/database.dart';
 
 class ReportsTab extends StatefulWidget {
   const ReportsTab({super.key});
@@ -108,8 +107,8 @@ class _ReportsTabState extends State<ReportsTab>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final sales = Hive.box<Sale>(Boxes.sales).values.toList();
-    final expenses = Hive.box<Expense>(Boxes.expenses).values.toList();
+    final sales = Db.sales.values.toList();
+    final expenses = Db.expenses.values.toList();
 
     return SingleChildScrollView(
       key: const PageStorageKey<String>('reports-scroll'),
