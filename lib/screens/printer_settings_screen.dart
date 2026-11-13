@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
 import 'package:flutter_thermal_printer/utils/printer.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 import '../services/thermal_printer_service.dart';
 import '../widgets/responsive_page.dart';
+import '../data/database.dart';
 
 class PrinterSettingsScreen extends StatefulWidget {
   const PrinterSettingsScreen({super.key});
@@ -44,7 +44,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
   }
 
   Future<void> _loadData() async {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     _connectionType =
         settings.get('printer_connection_type', defaultValue: 'bluetooth');
     _savedUsbVendorId = settings.get('usb_printer_vendor_id')?.toString();
@@ -59,7 +59,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
   }
 
   Future<void> _setConnectionType(String type) async {
-    await Hive.box<dynamic>('app_settings')
+    await Db.settings
         .put('printer_connection_type', type);
     if (!mounted) return;
     setState(() {
@@ -124,7 +124,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
       _showMessage('This USB device did not provide printer identifiers.');
       return;
     }
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     await settings.put('usb_printer_vendor_id', device.vendorId);
     await settings.put('usb_printer_product_id', device.productId);
     await settings.put('usb_printer_name', device.name ?? 'USB printer');
