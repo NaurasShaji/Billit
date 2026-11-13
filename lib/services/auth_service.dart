@@ -177,7 +177,7 @@ class AuthService extends ChangeNotifier {
       throw Exception('Password must be at least 6 characters long');
     }
 
-    final usersBox = Hive.box<User>(Boxes.users);
+    final usersBox = Db.users;
 
     // Find the admin user by security answer
     final adminUser = usersBox.values.firstWhere(
