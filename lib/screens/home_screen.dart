@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'tabs/billing_tab.dart';
@@ -11,6 +10,7 @@ import 'tabs/reports_tab.dart';
 import 'tabs/archive_tab.dart';
 import 'settings_screen.dart';
 import '../widgets/responsive_page.dart';
+import '../data/database.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -581,7 +581,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? ['Overview', 'Billing', 'Inventory', 'Reports', 'Archive']
         : ['Overview', 'Billing', 'Inventory', 'Reports'];
 
-    final settingsBox = Hive.box<dynamic>('app_settings');
+    final settingsBox = Db.settings;
     final navigationIconStyle = settingsBox
         .get('navigation_icon_style', defaultValue: 'outlined')
         .toString();
@@ -625,8 +625,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: ValueListenableBuilder<Box<dynamic>>(
-          valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+        title: ValueListenableBuilder<KeyValueStore>(
+          valueListenable: Db.settings.listenable(),
           builder: (context, settings, _) {
             final appName = settings
                 .get('app_name', defaultValue: 'Billit')
@@ -706,9 +706,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= ResponsiveBreakpoints.desktop) {
-            return ValueListenableBuilder<Box<dynamic>>(
+            return ValueListenableBuilder<KeyValueStore>(
               valueListenable:
-                  Hive.box<dynamic>('app_settings').listenable(),
+                  Db.settings.listenable(),
               builder: (context, settings, _) {
                 final iconStyle = settings
                     .get('navigation_icon_style', defaultValue: 'outlined')
@@ -752,8 +752,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: MediaQuery.sizeOf(context).width <
               ResponsiveBreakpoints.desktop
-          ? ValueListenableBuilder<Box<dynamic>>(
-              valueListenable: Hive.box<dynamic>('app_settings').listenable(),
+          ? ValueListenableBuilder<KeyValueStore>(
+              valueListenable: Db.settings.listenable(),
               builder: (context, settings, _) => _buildBottomNavigation(
                 labels: labels,
                 icons: _applyCustomNavigationIcons(
