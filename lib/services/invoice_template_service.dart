@@ -1,4 +1,4 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import '../data/database.dart';
 
 class InvoiceTemplateService {
   static const storageKey = 'invoice_templates_v1';
@@ -21,7 +21,7 @@ class InvoiceTemplateService {
   static const namedStorageKey = 'invoice_named_templates_v1';
 
   static Map<String, Map<String, dynamic>> namedTemplates(String size) {
-    final raw = Hive.box<dynamic>('app_settings').get(namedStorageKey);
+    final raw = Db.settings.get(namedStorageKey);
     if (raw is! Map) return <String, Map<String, dynamic>>{};
     final bySize = raw[size];
     if (bySize is! Map) return <String, Map<String, dynamic>>{};
@@ -33,7 +33,7 @@ class InvoiceTemplateService {
 
   static Future<void> saveNamedTemplate(
       String size, String name, Map<String, dynamic> template) async {
-    final box = Hive.box<dynamic>('app_settings');
+    final box = Db.settings;
     final raw = box.get(namedStorageKey);
     final all = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final bySize = all[size] is Map
@@ -45,7 +45,7 @@ class InvoiceTemplateService {
   }
 
   static Future<void> deleteNamedTemplate(String size, String name) async {
-    final box = Hive.box<dynamic>('app_settings');
+    final box = Db.settings;
     final raw = box.get(namedStorageKey);
     if (raw is! Map || raw[size] is! Map) return;
     final all = Map<String, dynamic>.from(raw);
@@ -112,7 +112,7 @@ class InvoiceTemplateService {
   }
 
   static Map<String, dynamic> loadAll() {
-    final raw = Hive.box<dynamic>('app_settings').get(storageKey);
+    final raw = Db.settings.get(storageKey);
     final saved =
         raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     return {
@@ -130,26 +130,26 @@ class InvoiceTemplateService {
   static Map<String, dynamic> load(String size) =>
       Map<String, dynamic>.from(loadAll()[size] as Map);
   static String get selected => paperSizes
-          .contains(Hive.box<dynamic>('app_settings').get(selectedPaperKey))
-      ? Hive.box<dynamic>('app_settings').get(selectedPaperKey).toString()
+          .contains(Db.settings.get(selectedPaperKey))
+      ? Db.settings.get(selectedPaperKey).toString()
       : '80mm';
 
   static Future<void> save(String size, Map<String, dynamic> template) async {
     final all = loadAll();
     all[size] = {...defaults(size), ...template, 'paperSize': size};
-    await Hive.box<dynamic>('app_settings').put(storageKey, all);
+    await Db.settings.put(storageKey, all);
   }
 
   static Future<void> select(String size) async {
     if (paperSizes.contains(size)) {
-      await Hive.box<dynamic>('app_settings').put(selectedPaperKey, size);
+      await Db.settings.put(selectedPaperKey, size);
     }
   }
 
   static Future<void> restore(String size) async {
     final all = loadAll();
     all[size] = defaults(size);
-    await Hive.box<dynamic>('app_settings').put(storageKey, all);
+    await Db.settings.put(storageKey, all);
   }
 
   static List<String> validate(Map<String, dynamic> value) {
