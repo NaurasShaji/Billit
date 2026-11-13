@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../services/boxes.dart';
 import '../../../models/expense.dart';
 import '../../../utils/theme_colors.dart';
+import '../../../data/database.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -35,7 +34,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       'Miscellaneous',
     ];
     final existing = {
-      for (final e in Hive.box<Expense>(Boxes.expenses).values) e.category
+      for (final e in Db.expenses.values) e.category
     };
     _allCategories = {...defaults, ...existing}.toList()..sort();
   }
@@ -387,8 +386,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     // Recent Expenses List
                     ValueListenableBuilder(
                       valueListenable:
-                          Hive.box<Expense>(Boxes.expenses).listenable(),
-                      builder: (context, Box<Expense> box, _) {
+                          Db.expenses.listenable(),
+                      builder: (context, EntityStore<Expense> box, _) {
                         final recentExpenses = box.values.toList()
                           ..sort((a, b) => b.date.compareTo(a.date));
                         final displayExpenses = recentExpenses.take(5).toList();
@@ -540,7 +539,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         description: _descriptionController.text.trim(),
       );
 
-      final box = Hive.box<Expense>(Boxes.expenses);
+      final box = Db.expenses;
       await box.put(expense.id, expense);
 
       setState(() => _isLoading = false);
