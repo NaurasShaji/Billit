@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import 'pdf_service.dart';
+import '../data/database.dart';
 
 /// On an explicit WhatsApp action, create and save the invoice PDF, then
 /// open the customer's WhatsApp chat with the configured message prefilled.
@@ -16,7 +16,7 @@ class WhatsAppService {
   static const String defaultTemplate =
       'Hi {name}, thank you for purchasing with {shop}! Here is your invoice {invoice} for {total}.';
 
-  static Box<dynamic> get _settings => Hive.box<dynamic>('app_settings');
+  static KeyValueStore get _settings => Db.settings;
 
   static String get template {
     final value = _settings.get('whatsapp_message_template', defaultValue: '').toString();
