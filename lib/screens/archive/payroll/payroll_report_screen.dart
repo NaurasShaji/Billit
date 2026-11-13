@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../models/expense.dart';
-import '../../../services/boxes.dart';
+import '../../../data/database.dart';
 
 class PayrollReportScreen extends StatefulWidget {
   const PayrollReportScreen({super.key});
@@ -48,8 +47,8 @@ class _PayrollReportScreenState extends State<PayrollReportScreen>
         ),
       ),
       body: ValueListenableBuilder(
-        valueListenable: Hive.box<Expense>(Boxes.expenses).listenable(),
-        builder: (context, Box<Expense> expBox, _) {
+        valueListenable: Db.expenses.listenable(),
+        builder: (context, EntityStore<Expense> expBox, _) {
           final now = DateTime.now();
           DateTime rangeStart;
           DateTime rangeEnd;
