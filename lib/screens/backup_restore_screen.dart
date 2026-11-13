@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/adapters.dart';
 import '../services/drive_backup_service.dart';
 import '../services/drive_sync_service.dart';
-import '../services/boxes.dart';
 import '../models/models.dart';
 import '../widgets/responsive_page.dart';
+import '../data/database.dart';
 
 class BackupRestoreScreen extends StatefulWidget {
   const BackupRestoreScreen({super.key});
@@ -64,17 +63,17 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
 
       // Collect data from all boxes
       final data = {
-        'products': Hive.box<Product>(Boxes.products)
+        'products': Db.products
             .values
             .map((e) => e.toJson())
             .toList(),
         'sales':
-            Hive.box<Sale>(Boxes.sales).values.map((e) => e.toJson()).toList(),
-        'expenses': Hive.box<Expense>(Boxes.expenses)
+            Db.sales.values.map((e) => e.toJson()).toList(),
+        'expenses': Db.expenses
             .values
             .map((e) => e.toJson())
             .toList(),
-        'employees': Hive.box<Employee>(Boxes.employees)
+        'employees': Db.employees
             .values
             .map((e) => e.toJson())
             .toList(),
@@ -150,32 +149,32 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       final data = await DriveBackupService.instance.downloadJson(file.id);
 
       // Clear existing data
-      await Hive.box<Product>(Boxes.products).clear();
-      await Hive.box<Sale>(Boxes.sales).clear();
-      await Hive.box<Expense>(Boxes.expenses).clear();
-      await Hive.box<Employee>(Boxes.employees).clear();
+      await Db.products.clear();
+      await Db.sales.clear();
+      await Db.expenses.clear();
+      await Db.employees.clear();
 
       // Restore data
       if (data['products'] != null) {
-        await Hive.box<Product>(Boxes.products).addAll(
+        await Db.products.addAll(
           (data['products'] as List)
               .map((e) => Product.fromJson(e as Map<String, dynamic>)),
         );
       }
       if (data['sales'] != null) {
-        await Hive.box<Sale>(Boxes.sales).addAll(
+        await Db.sales.addAll(
           (data['sales'] as List)
               .map((e) => Sale.fromJson(e as Map<String, dynamic>)),
         );
       }
       if (data['expenses'] != null) {
-        await Hive.box<Expense>(Boxes.expenses).addAll(
+        await Db.expenses.addAll(
           (data['expenses'] as List)
               .map((e) => Expense.fromJson(e as Map<String, dynamic>)),
         );
       }
       if (data['employees'] != null) {
-        await Hive.box<Employee>(Boxes.employees).addAll(
+        await Db.employees.addAll(
           (data['employees'] as List)
               .map((e) => Employee.fromJson(e as Map<String, dynamic>)),
         );
@@ -231,7 +230,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         actions: [
           if (isConnected) ...[
             ValueListenableBuilder(
-              valueListenable: Hive.box('settings').listenable(),
+              valueListenable: Db.deviceSettings.listenable(),
               builder: (context, box, child) {
                 final autoSync = DriveSyncService.instance.isAutoSyncEnabled;
                 return IconButton(
