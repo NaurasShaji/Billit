@@ -5,7 +5,6 @@ import 'package:billit/data/legacy_hive_import.dart';
 import 'package:billit/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/test_database.dart';
-import 'support/legacy_hive_fixture_builder.dart';
 void main(){
  late Directory hiveDir;
  setUpAll(generateLegacyHiveFixtures);
