@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import '../../../models/employee.dart';
 import '../../../models/expense.dart';
-import '../../../services/boxes.dart';
 import '../../../utils/theme_colors.dart';
+import '../../../data/database.dart';
 
 class DailyWageScreen extends StatelessWidget {
   const DailyWageScreen({super.key});
@@ -27,11 +26,11 @@ class DailyWageScreen extends StatelessWidget {
         centerTitle: false,
       ),
       body: ValueListenableBuilder(
-        valueListenable: Hive.box<Employee>(Boxes.employees).listenable(),
-        builder: (context, Box<Employee> empBox, _) {
+        valueListenable: Db.employees.listenable(),
+        builder: (context, EntityStore<Employee> empBox, _) {
           return ValueListenableBuilder(
-            valueListenable: Hive.box<Expense>(Boxes.expenses).listenable(),
-            builder: (context, Box<Expense> expBox, __) {
+            valueListenable: Db.expenses.listenable(),
+            builder: (context, EntityStore<Expense> expBox, __) {
               final dailyEmployees = empBox.values
                   .where((e) => e.type == 'daily')
                   .toList()
@@ -427,7 +426,7 @@ class DailyWageScreen extends StatelessWidget {
     BuildContext context,
     Employee employee,
     TextEditingController controller,
-    Box<Expense> expBox,
+    EntityStore<Expense> expBox,
     NumberFormat currency,
   ) async {
     final amount = double.tryParse(controller.text.trim());
