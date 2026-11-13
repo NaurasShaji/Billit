@@ -209,7 +209,6 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                               elevation: 0,
-        scrolledUnderElevation: 0,
                             ),
                           ),
                         ),

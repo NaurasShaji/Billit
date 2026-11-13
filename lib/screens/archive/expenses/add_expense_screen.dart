@@ -300,7 +300,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                 borderRadius: BorderRadius.circular(22),
                               ),
                               elevation: 0,
-        scrolledUnderElevation: 0,
                             ),
                             child: _isLoading
                                 ? const SizedBox(
