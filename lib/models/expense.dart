@@ -1,18 +1,17 @@
-import 'package:hive/hive.dart';
+import '../data/database.dart';
 
-part 'expense.g.dart';
 
-@HiveType(typeId: 8)
-class Expense extends HiveObject {
-  @HiveField(0)
+class Expense {
+  /// Writes this record to the database.
+  Future<void> save() => Db.expenses.put(id, this);
+
+  /// Removes this record from the database.
+  Future<void> delete() => Db.expenses.delete(id);
+
   String id;
-  @HiveField(1)
   DateTime date;
-  @HiveField(2)
   String category;
-  @HiveField(3)
   double amount;
-  @HiveField(4)
   String description;
 
   Expense({
