@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/expense.dart';
-import '../../../services/boxes.dart';
 import '../../../services/expense_export_service.dart';
 import '../../../services/expense_logic.dart';
 import 'add_expense_screen.dart';
+import '../../../data/database.dart';
 
 enum _Sort { newest, oldest, highest, lowest }
 
@@ -158,7 +157,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
         description: e.description,
       );
 
-  String get _shopName => Hive.box<dynamic>('app_settings')
+  String get _shopName => Db.settings
       .get('business_name', defaultValue: '')
       .toString()
       .trim();
@@ -389,13 +388,13 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box<Expense>>(
-      valueListenable: Hive.box<Expense>(Boxes.expenses).listenable(),
+    return ValueListenableBuilder<EntityStore<Expense>>(
+      valueListenable: Db.expenses.listenable(),
       builder: (context, box, _) => _buildScaffold(context, box),
     );
   }
 
-  Widget _buildScaffold(BuildContext context, Box<Expense> box) {
+  Widget _buildScaffold(BuildContext context, EntityStore<Expense> box) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
