@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../models/models.dart';
-import '../../services/boxes.dart';
 import '../../services/invoice_service.dart'; // Added import
 import './product_selection_screen.dart';
 import '../widgets/responsive_page.dart';
+import '../data/database.dart';
 
 class EditInvoiceScreen extends StatefulWidget {
   final Sale sale;
@@ -92,7 +91,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen>
   double _rateForItem(SaleItem item) {
     if (item.gstRate != null) return item.gstRate!;
     final productRate =
-        Hive.box<Product>(Boxes.products).get(item.productId)?.gstRate;
+        Db.products.get(item.productId)?.gstRate;
     return productRate ?? widget.sale.gstRate;
   }
 
@@ -197,7 +196,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen>
 
     try {
       for (final item in _editedItems) {
-        final product = Hive.box<Product>(Boxes.products).get(item.productId);
+        final product = Db.products.get(item.productId);
         final taxable = _taxableForItem(item);
         item
           ..hsnCode = product?.hsnCode ?? item.hsnCode
@@ -745,7 +744,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen>
   }
 
   List<Widget> _buildItemsList(NumberFormat cur, ThemeData theme) {
-    final productsBox = Hive.box<Product>(Boxes.products);
+    final productsBox = Db.products;
 
     return _editedItems.asMap().entries.map((entry) {
       final index = entry.key;
