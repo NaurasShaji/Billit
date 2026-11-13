@@ -3,13 +3,13 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../services/whatsapp_service.dart';
 import '../widgets/whatsapp_icon.dart';
 import '../widgets/responsive_page.dart';
 import '../widgets/settings_components.dart';
 import '../services/thermal_logo_service.dart';
+import '../data/database.dart';
 
 Future<List<Uint8List>> _prepareThermalLogosInBackground(Uint8List bytes) async {
   return [
@@ -27,7 +27,7 @@ class InvoiceSettingsScreen extends StatefulWidget {
 
 class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final Box<dynamic> _settings;
+  late final KeyValueStore _settings;
   late final TextEditingController _appName;
   late final TextEditingController _name;
   late final TextEditingController _address;
@@ -59,7 +59,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _settings = Hive.box<dynamic>('app_settings');
+    _settings = Db.settings;
     _appName = TextEditingController(
         text:
             _settings.get('app_name', defaultValue: 'Billit').toString());
