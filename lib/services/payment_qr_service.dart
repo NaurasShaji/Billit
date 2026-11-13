@@ -1,18 +1,18 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image/image.dart' as img;
 import 'package:qr/qr.dart';
 
 import '../models/sale.dart';
+import '../data/database.dart';
 
 /// Creates a standards-compatible UPI payment QR containing the actual sale
 /// amount and invoice reference. Returns null when no UPI ID is configured.
 class PaymentQrService {
   /// Builds the UPI payment URI for [sale], or null when no UPI ID is set.
   static String? paymentUriForSale(Sale sale) {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final upiId = settings.get('upi_id', defaultValue: '').toString().trim();
     if (upiId.isEmpty) return null;
 
@@ -89,7 +89,7 @@ class PaymentQrService {
   /// Returns only a QR image explicitly uploaded in invoice settings.
   /// No bundled/default QR is shown when the user has not added one.
   static Future<Uint8List?> loadStaticQrFallback() async {
-    final settings = Hive.box<dynamic>('app_settings');
+    final settings = Db.settings;
     final saved = settings.get('payment_qr_base64')?.toString().trim() ?? '';
     if (saved.isEmpty) return null;
     try {
