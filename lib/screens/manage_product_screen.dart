@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
-import '../services/boxes.dart';
 import '../utils/platform_support.dart';
 import 'barcode_scanner_screen.dart';
 import '../widgets/responsive_page.dart';
+import '../data/database.dart';
 
 class ManageProductScreen extends StatefulWidget {
   final Product? product;
@@ -126,7 +125,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final box = Hive.box<Product>(Boxes.products);
+      final box = Db.products;
       final barcode = _barcodeController.text.trim();
       final duplicate = barcode.isNotEmpty &&
           box.values.any((existing) =>
