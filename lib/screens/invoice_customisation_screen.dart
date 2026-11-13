@@ -1,12 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../services/invoice_template_service.dart';
 import '../services/pdf_service.dart';
-import '../services/boxes.dart';
 import '../models/models.dart';
 import 'package:printing/printing.dart';
+import '../data/database.dart';
 
 class InvoiceCustomisationScreen extends StatefulWidget {
   const InvoiceCustomisationScreen({super.key});
@@ -509,8 +508,8 @@ class TemplatePreview extends StatelessWidget {
   });
 
   Sale _previewSale() {
-    final products = Hive.isBoxOpen(Boxes.products)
-        ? Hive.box<Product>(Boxes.products).values
+    final products = Db.isOpen
+        ? Db.products.values
             .where((product) => product.active)
             .take(3)
             .toList()
