@@ -148,37 +148,40 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     try {
       final data = await DriveBackupService.instance.downloadJson(file.id);
 
-      // Clear existing data
-      await Db.products.clear();
-      await Db.sales.clear();
-      await Db.expenses.clear();
-      await Db.employees.clear();
+      // One transaction: a backup that fails to import leaves current data unchanged.
+      await Db.transaction(() async {
+        // Clear existing data
+        await Db.products.clear();
+        await Db.sales.clear();
+        await Db.expenses.clear();
+        await Db.employees.clear();
 
-      // Restore data
-      if (data['products'] != null) {
-        await Db.products.addAll(
-          (data['products'] as List)
-              .map((e) => Product.fromJson(e as Map<String, dynamic>)),
-        );
-      }
-      if (data['sales'] != null) {
-        await Db.sales.addAll(
-          (data['sales'] as List)
-              .map((e) => Sale.fromJson(e as Map<String, dynamic>)),
-        );
-      }
-      if (data['expenses'] != null) {
-        await Db.expenses.addAll(
-          (data['expenses'] as List)
-              .map((e) => Expense.fromJson(e as Map<String, dynamic>)),
-        );
-      }
-      if (data['employees'] != null) {
-        await Db.employees.addAll(
-          (data['employees'] as List)
-              .map((e) => Employee.fromJson(e as Map<String, dynamic>)),
-        );
-      }
+        // Restore data
+        if (data['products'] != null) {
+          await Db.products.addAll(
+            (data['products'] as List)
+                .map((e) => Product.fromJson(e as Map<String, dynamic>)),
+          );
+        }
+        if (data['sales'] != null) {
+          await Db.sales.addAll(
+            (data['sales'] as List)
+                .map((e) => Sale.fromJson(e as Map<String, dynamic>)),
+          );
+        }
+        if (data['expenses'] != null) {
+          await Db.expenses.addAll(
+            (data['expenses'] as List)
+                .map((e) => Expense.fromJson(e as Map<String, dynamic>)),
+          );
+        }
+        if (data['employees'] != null) {
+          await Db.employees.addAll(
+            (data['employees'] as List)
+                .map((e) => Employee.fromJson(e as Map<String, dynamic>)),
+          );
+        }
+      });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
