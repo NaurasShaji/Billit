@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../models/models.dart';
-import '../../services/boxes.dart';
 import '../manage_product_screen.dart';
 import '../../widgets/app_components.dart';
+import '../../data/database.dart';
 
 class ProductsTab extends StatefulWidget {
   const ProductsTab({super.key});
@@ -39,8 +38,8 @@ class _ProductsTabState extends State<ProductsTab> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: ValueListenableBuilder<Box<Product>>(
-        valueListenable: Hive.box<Product>(Boxes.products).listenable(),
+      body: ValueListenableBuilder<EntityStore<Product>>(
+        valueListenable: Db.products.listenable(),
         builder: (context, box, _) {
           final all = box.values.where((p) => p.active).toList();
           final categories = <String>[
@@ -87,9 +86,9 @@ class _ProductsTabState extends State<ProductsTab> {
                 count: filtered.length,
               ),
               Expanded(
-                child: ValueListenableBuilder<Box<dynamic>>(
+                child: ValueListenableBuilder<KeyValueStore>(
                   valueListenable:
-                      Hive.box<dynamic>('app_settings').listenable(),
+                      Db.settings.listenable(),
                   builder: (context, settings, _) {
                     final view = settings
                         .get('product_view', defaultValue: 'list')
@@ -326,7 +325,7 @@ class _ProductsTabState extends State<ProductsTab> {
         itemCount: products.length,
         itemBuilder: (context, index) {
           final product = products[index];
-          final threshold = (Hive.box<dynamic>('app_settings')
+          final threshold = (Db.settings
                   .get('low_stock_threshold', defaultValue: 10) as num)
               .toDouble();
           final lowStock = product.stock <= threshold;
