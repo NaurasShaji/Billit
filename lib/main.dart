@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import 'models/models.dart';
 import 'services/auth_service.dart';
 import 'services/desktop_window_service.dart';
 import 'services/drive_sync_service.dart';
