@@ -1,19 +1,18 @@
-import 'package:hive/hive.dart';
+import '../data/database.dart';
 import 'drive_backup_service.dart';
 
 class DriveSyncService {
   DriveSyncService._internal();
   static final DriveSyncService instance = DriveSyncService._internal();
 
-  static const String _settingsBoxName = 'settings';
   static const String _autoSyncKey = 'drive_auto_sync';
 
-  late final Box _settingsBox;
+  /// Per-device values live in the `device_settings` table.
+  KeyValueStore get _settingsBox => Db.deviceSettings;
   bool _initialized = false;
 
   Future<void> init() async {
     if (_initialized) return;
-    _settingsBox = await Hive.openBox(_settingsBoxName);
     _initialized = true;
   }
 
