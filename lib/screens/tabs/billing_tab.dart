@@ -71,7 +71,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   }
 
   double get _gstRate =>
-      (Hive.box<dynamic>('app_settings').get('gst_rate', defaultValue: 0.0)
+      (Db.settings.get('gst_rate', defaultValue: 0.0)
               as num)
           .toDouble();
   double _money(double value) => (value * 100).roundToDouble() / 100;
@@ -139,7 +139,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _cartService = CartService();
-    final gstSettings = Hive.box<dynamic>('app_settings');
+    final gstSettings = Db.settings;
     _gstInclusive =
         gstSettings.get('gst_price_inclusive', defaultValue: false) as bool;
     _interstateSale = gstSettings.get('gst_default_interstate_sale',
@@ -330,7 +330,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final barcode = rawValue.trim();
     if (barcode.isEmpty) return;
     final products =
-        Hive.box<Product>(Boxes.products).values.where((p) => p.active);
+        Db.products.values.where((p) => p.active);
     Product? match;
     for (final product in products) {
       if (product.barcode?.trim() == barcode) {
@@ -482,7 +482,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     final text = raw.trim();
     if (text.isEmpty) return;
     final lower = text.toLowerCase();
-    final active = Hive.box<Product>(Boxes.products)
+    final active = Db.products
         .values
         .where((p) => p.active)
         .toList();
@@ -796,7 +796,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
               onChanged: (value) => setState(() {
                 _applyGst = value;
                 if (value) {
-                  _gstInclusive = Hive.box<dynamic>('app_settings')
+                  _gstInclusive = Db.settings
                       .get('gst_price_inclusive', defaultValue: false) as bool;
                 }
               }),
@@ -990,7 +990,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
   // Frequently sold items (one-tap add) and right-click menu for invoices
   // ---------------------------------------------------------------------
   List<Product> _frequentProducts(List<Product> products) {
-    final salesBox = Hive.box<Sale>(Boxes.sales);
+    final salesBox = Db.sales;
     if (salesBox.length != _freqSalesLen) {
       final counts = <String, int>{};
       for (final sale in salesBox.values) {
@@ -1344,12 +1344,12 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final products = Hive.box<Product>(Boxes.products)
+    final products = Db.products
         .values
         .where((p) => p.active)
         .toList();
     final cur = NumberFormat.simpleCurrency(locale: 'en_IN');
-    final invoiceSettings = Hive.box<dynamic>('app_settings');
+    final invoiceSettings = Db.settings;
     final savedPrefix = invoiceSettings
         .get('invoice_prefix', defaultValue: 'INV')
         .toString()
@@ -1364,7 +1364,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
         '$invoicePrefix-$invoiceDatePart-${nextInvoiceNumber.toString().padLeft(5, "0")}';
 
     // Last 5 invoices, newest first.
-    final allSales = Hive.box<Sale>(Boxes.sales).values.toList()
+    final allSales = Db.sales.values.toList()
       ..sort((a, b) => b.date.millisecondsSinceEpoch
           .compareTo(a.date.millisecondsSinceEpoch));
     final recentSales = allSales.take(5).toList();
@@ -1497,7 +1497,7 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
     );
 
     try {
-      final productsBox = Hive.box<Product>(Boxes.products);
+      final productsBox = Db.products;
       for (final item in items) {
         final product = productsBox.get(item.productId);
         final taxable = _lineTaxableAmount(item);
@@ -1510,8 +1510,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
           ..sgstAmount = _lineSgst(item)
           ..igstAmount = _lineIgst(item);
       }
-      final salesBox = Hive.box<Sale>(Boxes.sales);
-      final invoiceSettings = Hive.box<dynamic>('app_settings');
+      final salesBox = Db.sales;
+      final invoiceSettings = Db.settings;
       final prefix = invoiceSettings
           .get('invoice_prefix', defaultValue: 'INV')
           .toString()
@@ -1729,8 +1729,8 @@ class _BillingTabState extends State<BillingTab> with TickerProviderStateMixin {
 
   // New method to delete an invoice
   Future<void> _deleteInvoice(Sale sale) async {
-    final salesBox = Hive.box<Sale>(Boxes.sales);
-    final productsBox = Hive.box<Product>(Boxes.products);
+    final salesBox = Db.sales;
+    final productsBox = Db.products;
 
     // Remove the sale from the database
     await salesBox.delete(sale.id);
