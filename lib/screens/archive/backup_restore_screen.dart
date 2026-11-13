@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:hive/hive.dart';
 
 import '../../models/models.dart';
-import '../../services/boxes.dart';
 import '../../services/drive_backup_service.dart';
 import '../../utils/theme_colors.dart';
+import '../../data/database.dart';
 
 class BackupRestoreScreen extends StatelessWidget {
   const BackupRestoreScreen({super.key});
@@ -81,7 +80,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
   }
 
   Future<void> _loadAutoBackupPreference() async {
-    final session = Hive.box('session');
+    final session = Db.session;
     setState(() {
       _autoBackupDays = (session.get('autoBackupDays') as int?) ?? 0;
     });
@@ -254,7 +253,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
   Future<void> _maybeRunAutoBackup() async {
     if (_autoBackupDays <= 0) return;
     if (!(await DriveBackupService.instance.isSignedIn())) return;
-    final session = Hive.box('session');
+    final session = Db.session;
     final lastIso = session.get('lastAutoBackupAt') as String?;
     final now = DateTime.now();
     DateTime? last;
@@ -778,7 +777,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                 onChanged: (v) async {
                   if (v == null) return;
                   setState(() => _autoBackupDays = v);
-                  final session = Hive.box('session');
+                  final session = Db.session;
                   await session.put('autoBackupDays', v);
                   if (v == 0) return;
                   await _maybeRunAutoBackup();
@@ -1019,12 +1018,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
 
   // Keep your existing data export/import methods unchanged
   Future<Map<String, dynamic>> _exportAllBoxesToJson() async {
-    final usersBox = Hive.box<User>(Boxes.users);
-    final productsBox = Hive.box<Product>(Boxes.products);
-    final salesBox = Hive.box<Sale>(Boxes.sales);
-    final expensesBox = Hive.box<Expense>(Boxes.expenses);
-    final employeesBox = Hive.box<Employee>(Boxes.employees);
-    final appSettingsBox = Hive.box<dynamic>('app_settings');
+    final usersBox = Db.users;
+    final productsBox = Db.products;
+    final salesBox = Db.sales;
+    final expensesBox = Db.expenses;
+    final employeesBox = Db.employees;
+    final appSettingsBox = Db.settings;
 
     return {
       'meta': {
@@ -1120,13 +1119,18 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     };
   }
 
-  Future<void> _importAllBoxesFromJson(Map<String, dynamic> data) async {
-    final usersBox = Hive.box<User>(Boxes.users);
-    final productsBox = Hive.box<Product>(Boxes.products);
-    final salesBox = Hive.box<Sale>(Boxes.sales);
-    final expensesBox = Hive.box<Expense>(Boxes.expenses);
-    final employeesBox = Hive.box<Employee>(Boxes.employees);
-    final appSettingsBox = Hive.box<dynamic>('app_settings');
+  /// Replaces all data with the backup's. Runs in one transaction, so a
+  /// backup that fails to import leaves the current data as it was.
+  Future<void> _importAllBoxesFromJson(Map<String, dynamic> data) =>
+      Db.transaction(() => _replaceAllData(data));
+
+  Future<void> _replaceAllData(Map<String, dynamic> data) async {
+    final usersBox = Db.users;
+    final productsBox = Db.products;
+    final salesBox = Db.sales;
+    final expensesBox = Db.expenses;
+    final employeesBox = Db.employees;
+    final appSettingsBox = Db.settings;
 
     await usersBox.clear();
     await productsBox.clear();
