@@ -47,6 +47,7 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
     setState(() { _importing = true; _importMessage = null; });
     try {
       final preview = await LocalShopDataImportService.preview(shopId: shopId);
+      auth.refreshDatabaseBindings();
       if (!mounted) return;
       if (preview.total == 0) {
         setState(() => _importMessage =
