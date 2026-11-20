@@ -5,6 +5,8 @@ import 'gst_settings_screen.dart';
 import 'invoice_settings_screen.dart';
 import 'invoice_customisation_screen.dart';
 import 'printer_settings_screen.dart';
+import 'security_question_settings_screen.dart';
+import 'archive/change_password_screen.dart';
 import '../utils/theme_colors.dart';
 import '../widgets/responsive_page.dart';
 
@@ -72,6 +74,24 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+      if (isAdmin)
+        _SettingsSection(
+          heading: 'Account & Security',
+          items: [
+            _SettingsItem(
+              icon: Icons.security_outlined,
+              title: 'Security Question',
+              subtitle: 'Update your account recovery question',
+              onTap: () => _open(context, const SecurityQuestionSettingsScreen()),
+            ),
+            _SettingsItem(
+              icon: Icons.lock_outline_rounded,
+              title: 'Change Password',
+              subtitle: 'Update your account password',
+              onTap: () => _open(context, const ChangePasswordScreen()),
+            ),
+          ],
+        ),
       _SettingsSection(
         heading: 'Support & Account',
         items: [
