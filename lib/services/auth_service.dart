@@ -319,8 +319,9 @@ class AuthService extends ChangeNotifier {
     if (!isAdmin && !(isCloudAuth && targetUserId == null)) {
       throw Exception('Permission denied: administrator access required');
     }
-    if (newPassword.length < 6) {
-      throw Exception('Password must be at least 6 characters long');
+    final minimumLength = isCloudAuth ? 8 : 6;
+    if (newPassword.length < minimumLength) {
+      throw Exception('Password must be at least $minimumLength characters long');
     }
 
     if (isCloudAuth) {
