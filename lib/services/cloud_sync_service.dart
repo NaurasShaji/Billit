@@ -512,14 +512,16 @@ class CloudSyncService {
     }
 
     Map<String, dynamic>? remoteSettings;
+    Object? remoteSettingsUpdatedAt;
     if (isAdmin) {
       final settingsRows = await SupabaseService.client
           .from('shop_settings')
-          .select('settings')
+          .select('settings,updated_at')
           .eq('shop_id', shopId)
           .limit(1);
       if (settingsRows.isNotEmpty) {
         final raw = settingsRows.first['settings'];
+        remoteSettingsUpdatedAt = settingsRows.first['updated_at'];
         if (raw is Map) remoteSettings = Map<String, dynamic>.from(raw);
       }
     }
@@ -647,6 +649,26 @@ class CloudSyncService {
         applied++;
       }
     });
+
+    // Persist the exact cloud version associated with each clean local row.
+    // Dirty rows deliberately keep their older baseline so the next upload
+    // detects a concurrent cloud edit instead of overwriting it.
+    for (final table in tables) {
+      for (final row in remote[table] ?? const <Map<String, dynamic>>[]) {
+        final id = row['id'].toString();
+        if (!Db.hasPendingSyncChange(table, id)) {
+          await _saveBaseline(table, id, row['updated_at']);
+        }
+      }
+    }
+    if (remoteSettingsUpdatedAt != null &&
+        !Db.hasPendingSyncChange('shop_settings', 'shop')) {
+      await _saveBaseline(
+        'shop_settings',
+        'shop',
+        remoteSettingsUpdatedAt,
+      );
+    }
 
     // Commit cursors only after every fetched row has been applied. If the app
     // exits earlier, the same bounded window is replayed safely next time.
