@@ -8,6 +8,7 @@ import 'services/drive_sync_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/password_recovery_screen.dart';
+import 'screens/cloud_access_pending_screen.dart';
 import 'data/database.dart';
 import 'data/legacy_hive_import.dart';
 import 'services/supabase_service.dart';
@@ -539,7 +540,9 @@ class AppWrapper extends StatelessWidget {
       child: Consumer<AuthService>(
         builder: (_, auth, __) {
           if (auth.isPasswordRecovery) return const PasswordRecoveryScreen();
-          return auth.currentUser == null ? const LoginScreen() : const HomeScreen();
+          if (auth.currentUser == null) return const LoginScreen();
+          if (auth.isCloudAuth) return const CloudAccessPendingScreen();
+          return const HomeScreen();
         },
       ),
     );
