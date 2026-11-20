@@ -407,43 +407,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ).whenComplete(searchController.dispose);
   }
 
-  List<IconData> _navigationIcons({
-    required bool isAdmin,
-    required String style,
-  }) {
-    final isFilled = style == 'filled';
-    final isRounded = style == 'rounded';
-
-    final overview = isFilled
-        ? Icons.dashboard
-        : isRounded
-            ? Icons.dashboard_rounded
-            : Icons.dashboard_outlined;
-    final billing = isFilled
-        ? Icons.receipt
-        : isRounded
-            ? Icons.receipt_rounded
-            : Icons.receipt_long_outlined;
-    final inventory = isFilled
-        ? Icons.inventory
-        : isRounded
-            ? Icons.inventory_2_rounded
-            : Icons.inventory_2_outlined;
-    final reports = isFilled
-        ? Icons.bar_chart
-        : isRounded
-            ? Icons.bar_chart_rounded
-            : Icons.bar_chart_outlined;
-    final archive = isFilled
-        ? Icons.archive
-        : isRounded
-            ? Icons.archive_rounded
-            : Icons.archive_outlined;
-
-    return isAdmin
-        ? [overview, billing, inventory, reports, archive]
-        : [overview, billing, inventory, reports];
-  }
 
   IconData _iconFromChoice(String choice, IconData fallback) {
     switch (choice) {
@@ -713,9 +676,6 @@ class _HomeScreenState extends State<HomeScreen> {
     };
     final labels = visibleKeys.map((key) => labelsByKey[key]!).toList();
     final settingsBox = Db.settings;
-    final navigationIconStyle = settingsBox
-        .get('navigation_icon_style', defaultValue: 'outlined')
-        .toString();
     final rawOverrides = settingsBox
         .get('navigation_icon_overrides', defaultValue: <String, String>{});
     final navigationOverrides =
@@ -854,9 +814,6 @@ class _HomeScreenState extends State<HomeScreen> {
               valueListenable:
                   Db.settings.listenable(),
               builder: (context, settings, _) {
-                final iconStyle = settings
-                    .get('navigation_icon_style', defaultValue: 'outlined')
-                    .toString();
                 final raw = settings.get('navigation_icon_overrides',
                     defaultValue: <String, String>{});
                 final overrides = raw is Map ? raw : <String, String>{};
