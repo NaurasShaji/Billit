@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -9,7 +11,7 @@ class AuthService extends ChangeNotifier {
   AuthService() {
     if (SupabaseService.isConfigured) {
       _authSubscription = SupabaseService.client.auth.onAuthStateChange.listen((state) {
-        if (state.event == AuthChangeEvent.passwordRecovery) {
+        if (state.event == supabase.AuthChangeEvent.passwordRecovery) {
           isPasswordRecovery = true;
           notifyListeners();
         }
@@ -19,7 +21,7 @@ class AuthService extends ChangeNotifier {
 
   User? currentUser;
   bool isPasswordRecovery = false;
-  StreamSubscription<AuthState>? _authSubscription;
+  StreamSubscription<supabase.AuthState>? _authSubscription;
 
   /// Selected tenant for the current cloud session.
   String? currentShopId;
