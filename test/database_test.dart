@@ -434,6 +434,16 @@ void main() {
     expect(Db.settings.get('business_name'), 'Remote Shop');
   });
 
+  test('resolving a cloud conflict can discard only its outbox item', () async {
+    await Db.products.put('conflict-a', _product('conflict-a'));
+    await Db.products.put('conflict-b', _product('conflict-b'));
+    await Db.discardSyncChange('products', 'conflict-a');
+
+    expect(Db.hasPendingSyncChange('products', 'conflict-a'), isFalse);
+    expect(Db.hasPendingSyncChange('products', 'conflict-b'), isTrue);
+    expect(Db.products.containsKey('conflict-a'), isTrue);
+  });
+
   test('failed sync items receive a persistent retry delay', () async {
     await Db.products.put('retry-product', _product('retry-product'));
     final change = (await Db.pendingSyncChanges()).single;
