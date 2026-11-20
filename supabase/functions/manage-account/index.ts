@@ -74,6 +74,80 @@ Deno.serve(async (req) => {
   const action = body.action;
   const isOwner = profile.is_platform_owner === true;
 
+  if (action === "list_members" || action === "disable_worker") {
+    const shopId = typeof body.shop_id === "string" ? body.shop_id : "";
+    if (!shopId) return json({ error: "shop_id is required" }, 400);
+
+    if (!isOwner) {
+      const { data: membership } = await adminClient
+        .from("shop_memberships")
+        .select("role, is_active")
+        .eq("shop_id", shopId)
+        .eq("user_id", callerId)
+        .maybeSingle();
+      if (!membership || membership.role !== "shop_admin" || !membership.is_active) {
+        return json({ error: "Shop administrator access required" }, 403);
+      }
+    }
+
+    if (action === "list_members") {
+      const { data: memberships, error } = await adminClient
+        .from("shop_memberships")
+        .select("user_id, role, is_active, permissions, created_at")
+        .eq("shop_id", shopId)
+        .order("created_at");
+      if (error) return json({ error: error.message }, 500);
+
+      const members = await Promise.all((memberships ?? []).map(async (membership) => {
+        const [authResult, profileResult] = await Promise.all([
+          adminClient.auth.admin.getUserById(membership.user_id),
+          adminClient.from("profiles")
+            .select("display_name")
+            .eq("id", membership.user_id)
+            .maybeSingle(),
+        ]);
+        return {
+          user_id: membership.user_id,
+          email: authResult.data.user?.email ?? "",
+          display_name: profileResult.data?.display_name ?? "",
+          role: membership.role,
+          is_active: membership.is_active,
+          permissions: membership.permissions ?? defaultPermissions,
+          created_at: membership.created_at,
+        };
+      }));
+      return json({ members });
+    }
+
+    const targetId = typeof body.user_id === "string" ? body.user_id : "";
+    if (!targetId) return json({ error: "user_id is required" }, 400);
+    const { data: target } = await adminClient
+      .from("shop_memberships")
+      .select("role")
+      .eq("shop_id", shopId)
+      .eq("user_id", targetId)
+      .maybeSingle();
+    if (!target || target.role !== "worker") {
+      return json({ error: "Worker membership not found" }, 404);
+    }
+
+    const disabled = await adminClient.from("shop_memberships")
+      .update({ is_active: false })
+      .eq("shop_id", shopId)
+      .eq("user_id", targetId);
+    if (disabled.error) return json({ error: disabled.error.message }, 500);
+
+    await adminClient.from("audit_logs").insert({
+      shop_id: shopId,
+      actor_user_id: callerId,
+      action: "worker.disabled",
+      target_type: "shop_membership",
+      target_id: targetId,
+      details: {},
+    });
+    return json({ user_id: targetId, is_active: false });
+  }
+
   if (action === "create_shop") {
     if (!isOwner) return json({ error: "Platform owner access required" }, 403);
     const shopName = typeof body.shop_name === "string" ? body.shop_name.trim() : "";
