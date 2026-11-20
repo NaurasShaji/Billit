@@ -70,6 +70,7 @@ class CloudSyncService {
       throw StateError('The selected shop database is not open.');
     }
     if (_running) throw StateError('A sync is already running.');
+    await Db.meta.put('active_shop_id', shopId);
     _running = true;
     var pushed = 0;
     var pulled = 0;
@@ -201,8 +202,7 @@ class CloudSyncService {
     }
 
     if (baseline == null ||
-        baseline != current['updated_at']?.toString() ||
-        false) {
+        baseline != current['updated_at']?.toString()) {
       throw StateError(
         'SYNC_CONFLICT: $table/$id changed in cloud since this device last synchronized. Local changes were kept; cloud data was not overwritten.',
       );
