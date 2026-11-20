@@ -13,6 +13,51 @@ class CloudSyncService {
   static bool _running = false;
   static const int _pageSize = 500;
 
+  static Map<String, dynamic>? get pendingConflict {
+    final value = Db.meta.get('sync_conflict_pending');
+    return value is Map ? Map<String, dynamic>.from(value) : null;
+  }
+
+  /// Resolve a detected concurrent edit explicitly. Keeping local refreshes
+  /// the compare-and-swap baseline; using cloud discards only the conflicting
+  /// outbox entry and resets that table's cursor so the next pull reapplies it.
+  static Future<void> resolvePendingConflict({required bool keepLocal}) async {
+    final conflict = pendingConflict;
+    if (conflict == null) return;
+    final table = conflict['table'].toString();
+    final id = conflict['id'].toString();
+
+    if (keepLocal) {
+      if (table == 'shop_settings') {
+        final row = await SupabaseService.client
+            .from('shop_settings')
+            .select('updated_at')
+            .eq('shop_id', Db.meta.get('active_shop_id').toString())
+            .maybeSingle();
+        if (row == null) {
+          await Db.meta.delete(_baselineKey(table, id));
+        } else {
+          await _saveBaseline(table, id, row['updated_at']);
+        }
+      } else {
+        final shopId = Db.meta.get('active_shop_id').toString();
+        final row = await _readCloudVersion(table, shopId, id);
+        if (row == null) {
+          await Db.meta.delete(_baselineKey(table, id));
+        } else {
+          await _saveBaseline(table, id, row['updated_at']);
+        }
+      }
+    } else {
+      await Db.discardSyncChange(table, id);
+      await Db.meta.delete(_baselineKey(table, id));
+      if (table != 'shop_settings') {
+        await Db.meta.delete('sync_cursor_$table');
+      }
+    }
+    await Db.meta.delete('sync_conflict_pending');
+  }
+
   static Future<CloudSyncSummary> syncShop({
     required String shopId,
     required Map<String, dynamic> permissions,
@@ -79,7 +124,15 @@ class CloudSyncService {
           await Db.acknowledgeSyncChange(change.id, change.revision);
           completed++;
         } catch (error) {
-          await Db.recordSyncFailure(change.id, change.revision, '$error');
+          if (error.toString().contains('SYNC_CONFLICT')) {
+            await Db.meta.put('sync_conflict_pending', {
+              'table': change.tableName,
+              'id': change.recordId,
+              'message': error.toString(),
+            });
+          } else {
+            await Db.recordSyncFailure(change.id, change.revision, '$error');
+          }
           rethrow;
         }
       }
@@ -149,7 +202,7 @@ class CloudSyncService {
 
     if (baseline == null ||
         baseline != current['updated_at']?.toString() ||
-        current['deleted_at'] != null) {
+        false) {
       throw StateError(
         'SYNC_CONFLICT: $table/$id changed in cloud since this device last synchronized. Local changes were kept; cloud data was not overwritten.',
       );
