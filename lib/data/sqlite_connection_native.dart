@@ -8,10 +8,12 @@ import 'sqlite_connection.dart';
 
 const String databaseFileName = 'billit.db';
 
-Future<SqliteConnection> openAppDatabase() async {
+Future<SqliteConnection> openAppDatabase({String? databaseName}) async {
   final dir = await getApplicationSupportDirectory();
   await Directory(dir.path).create(recursive: true);
-  final db = sqlite3.open(p.join(dir.path, databaseFileName));
+  final safeName = (databaseName ?? 'billit')
+      .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+  final db = sqlite3.open(p.join(dir.path, '$safeName.db'));
   db.execute('PRAGMA journal_mode = WAL');
   return SqliteConnection(db);
 }
