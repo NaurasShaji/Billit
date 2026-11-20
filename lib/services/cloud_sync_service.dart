@@ -260,16 +260,16 @@ class CloudSyncService {
       (itemsBySale[saleId] ??= []).add(item);
     }
 
-    final pending = await Db.pendingSyncChanges(limit: 500);
-    final locallyDirty = <String>{
-      for (final item in pending) '${item.tableName}:${item.recordId}',
-    };
+    // Check the outbox per record rather than using a capped snapshot:
+    // a large offline backlog must never be overwritten by a cloud pull.
+    bool isLocallyDirty(String table, String id) =>
+        Db.hasPendingSyncChange(table, id);
     var applied = 0;
 
     await Db.withoutOutbox(() async {
       for (final row in remote['products'] ?? const []) {
         final id = row['id'].toString();
-        if (locallyDirty.contains('products:$id')) continue;
+        if (isLocallyDirty('products', id)) continue;
         if (row['deleted_at'] != null) {
           await Db.products.delete(id);
         } else {
@@ -293,7 +293,7 @@ class CloudSyncService {
 
       for (final row in remote['sales'] ?? const []) {
         final id = row['id'].toString();
-        if (locallyDirty.contains('sales:$id')) continue;
+        if (isLocallyDirty('sales', id)) continue;
         if (row['deleted_at'] != null) {
           await Db.sales.delete(id);
         } else {
@@ -343,7 +343,7 @@ class CloudSyncService {
 
       for (final row in remote['expenses'] ?? const []) {
         final id = row['id'].toString();
-        if (locallyDirty.contains('expenses:$id')) continue;
+        if (isLocallyDirty('expenses', id)) continue;
         if (row['deleted_at'] != null) {
           await Db.expenses.delete(id);
         } else {
@@ -360,7 +360,7 @@ class CloudSyncService {
 
       for (final row in remote['employees'] ?? const []) {
         final id = row['id'].toString();
-        if (locallyDirty.contains('employees:$id')) continue;
+        if (isLocallyDirty('employees', id)) continue;
         if (row['deleted_at'] != null) {
           await Db.employees.delete(id);
         } else {
