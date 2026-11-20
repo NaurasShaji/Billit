@@ -141,39 +141,33 @@ class CloudSyncService {
         if (sale == null) {
           throw StateError('Queued sales record ${change.recordId} is missing locally.');
         }
-        await client.from('sales').upsert({
-          'shop_id': shopId,
-          'id': sale.id,
-          'date': sale.date.toUtc().toIso8601String(),
-          'total_amount': _finite(sale.totalAmount),
-          'total_cost': _finite(sale.totalCost),
-          'profit': _finite(sale.profit),
-          'payment': sale.payment.name,
-          'customer_name': sale.customerName,
-          'customer_phone': sale.customerPhone,
-          'discount': _finite(sale.discount),
-          'gst_enabled': sale.gstEnabled,
-          'gst_rate': _finite(sale.gstRate),
-          'taxable_amount': _finite(sale.taxableAmount),
-          'cgst_amount': _finite(sale.cgstAmount),
-          'sgst_amount': _finite(sale.sgstAmount),
-          'igst_amount': _finite(sale.igstAmount),
-          'customer_gstin': sale.customerGstin,
-          'interstate_sale': sale.interstateSale,
-          'gst_inclusive': sale.gstInclusive,
-          'deleted_at': null,
-        }, onConflict: 'shop_id,id');
-
-        // Sale items are replaced as one logical snapshot after the parent row
-        // has been written. The outbox row is acknowledged only after both steps.
-        await client.from('sale_items').delete()
-            .eq('shop_id', shopId).eq('sale_id', sale.id);
-        if (sale.items.isNotEmpty) {
-          await client.from('sale_items').insert([
+        await client.rpc('sync_sale_snapshot', params: {
+          'p_shop_id': shopId,
+          'p_sale': {
+            'id': sale.id,
+            'date': sale.date.toUtc().toIso8601String(),
+            'total_amount': _finite(sale.totalAmount),
+            'total_cost': _finite(sale.totalCost),
+            'profit': _finite(sale.profit),
+            'payment': sale.payment.name,
+            'customer_name': sale.customerName,
+            'customer_phone': sale.customerPhone,
+            'discount': _finite(sale.discount),
+            'gst_enabled': sale.gstEnabled,
+            'gst_rate': _finite(sale.gstRate),
+            'taxable_amount': _finite(sale.taxableAmount),
+            'cgst_amount': _finite(sale.cgstAmount),
+            'sgst_amount': _finite(sale.sgstAmount),
+            'igst_amount': _finite(sale.igstAmount),
+            'customer_gstin': sale.customerGstin,
+            'interstate_sale': sale.interstateSale,
+            'gst_inclusive': sale.gstInclusive,
+          },
+          'p_items': [
             for (var i = 0; i < sale.items.length; i++)
-              _saleItemRow(shopId, sale.id, i, sale.items[i]),
-          ]);
-        }
+              _saleItemRow(i, sale.items[i]),
+          ],
+        });
         break;
       case 'expenses':
         final expense = Db.expenses.get(change.recordId);
@@ -212,13 +206,9 @@ class CloudSyncService {
   }
 
   static Map<String, dynamic> _saleItemRow(
-    String shopId,
-    String saleId,
     int position,
     SaleItem item,
   ) => {
-        'shop_id': shopId,
-        'sale_id': saleId,
         'position': position,
         'product_id': item.productId,
         'qty': _finite(item.qty),
