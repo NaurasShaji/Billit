@@ -295,6 +295,7 @@ class SyncOutboxChange {
     required this.changedAt,
     required this.attempts,
     required this.revision,
+    required this.nextAttemptAt,
   });
 
   final int id;
@@ -304,6 +305,7 @@ class SyncOutboxChange {
   final DateTime changedAt;
   final int attempts;
   final int revision;
+  final int nextAttemptAt;
 }
 
 abstract class _Store {
