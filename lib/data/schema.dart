@@ -164,7 +164,7 @@ void migrateSchema(CommonDatabase db) {
         db.execute(statement);
       }
     }
-    db.execute('PRAGMA user_version = $schemaVersion');
+    if (current < 3) {\n      for (final statement in _schemaV3) {\n        db.execute(statement);\n      }\n    }\n    db.execute('PRAGMA user_version = $schemaVersion');
     db.execute('COMMIT');
   } catch (_) {
     db.execute('ROLLBACK');
