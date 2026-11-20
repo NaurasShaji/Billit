@@ -13,7 +13,7 @@ This branch starts the Supabase integration from a clean copy of `main`.
 
 ## First migration
 
-Apply `migrations/202611200001_initial_multi_tenant_schema.sql` to a new Supabase project using the Supabase SQL Editor or Supabase CLI.
+Apply both migrations in numeric order to a new Supabase project using the Supabase SQL Editor or Supabase CLI:\n1. `migrations/202611200001_initial_multi_tenant_schema.sql`\n2. `migrations/202611200002_auth_profiles_and_worker_permissions.sql`
 
 The migration creates:
 - Profiles and platform-owner flag
@@ -26,9 +26,9 @@ The migration creates:
 
 - Platform owner: centralized control over shops and user membership.
 - Shop admin: manages their shop and its workers.
-- Worker: read access to shop data in the initial policy baseline. Write permissions should be granted feature-by-feature after the app's worker permissions are mapped.
+- Worker: feature-scoped access controlled by the `permissions` JSONB on their shop membership. Defaults allow billing and inventory access, while reports, expenses and payroll are disabled. Workers can create sales when billing is enabled; product and other business-data mutations remain admin-only.
 
-The platform-owner flag must only be assigned from a trusted administrative context. Never expose an update path that lets a normal user set it.
+The platform-owner flag must only be assigned from a trusted administrative context. Never expose an update path that lets a normal user set it. The Auth trigger creates a non-privileged profile automatically; bootstrap the first owner by creating their Auth account, then setting `profiles.is_platform_owner = true` for that user's UUID in the SQL editor.
 
 ## Important setup note
 
