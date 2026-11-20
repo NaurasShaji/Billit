@@ -132,17 +132,17 @@ final List<String> _schemaV2 = [
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
     BEGIN
       INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
-      VALUES ('$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      VALUES ('$table', NEW.id, 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
       ON CONFLICT (table_name, record_id) DO UPDATE SET
-        operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
+        operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1, last_error = NULL;
     END''',
     '''CREATE TRIGGER sync_${table}_delete AFTER DELETE ON $table
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
     BEGIN
       INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
-      VALUES ('$table', OLD.id, 'DELETE', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      VALUES ('$table', OLD.id, 'DELETE', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
       ON CONFLICT (table_name, record_id) DO UPDATE SET
-        operation = 'DELETE', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
+        operation = 'DELETE', changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1, last_error = NULL;
     END''',
   ],
 ];
