@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,16 +16,51 @@ class CloudAccessPendingScreen extends StatefulWidget {
   State<CloudAccessPendingScreen> createState() => _CloudAccessPendingScreenState();
 }
 
-class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
+class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen>
+    with WidgetsBindingObserver {
+  Timer? _autoSyncTimer;
   bool _syncing = false;
   String? _syncMessage;
   bool _importing = false;
   String? _importMessage;
 
-  Future<void> _sync(AuthService auth) async {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _autoSyncTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _runAutomaticSync(),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _runAutomaticSync());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _runAutomaticSync();
+  }
+
+  @override
+  void dispose() {
+    _autoSyncTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _runAutomaticSync() {
+    if (!mounted || _syncing || _importing) return;
+    final auth = context.read<AuthService>();
+    if (auth.currentShopId == null) return;
+    unawaited(_sync(auth, showStatus: false));
+  }
+
+  Future<void> _sync(AuthService auth, {bool showStatus = true}) async {
     final shopId = auth.currentShopId;
     if (shopId == null || _syncing) return;
-    setState(() { _syncing = true; _syncMessage = null; });
+    setState(() {
+      _syncing = true;
+      if (showStatus) _syncMessage = null;
+    });
     try {
       final result = await CloudSyncService.syncShop(
         shopId: shopId,
@@ -31,11 +68,13 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
         isAdmin: auth.isAdmin,
       );
       if (!mounted) return;
-      setState(() => _syncMessage =
-          'Sync completed: ${result.pushed} local changes uploaded, ${result.pulled} cloud records downloaded.');
+      if (showStatus) {
+        setState(() => _syncMessage =
+            'Sync completed: ${result.pushed} local changes uploaded, ${result.pulled} cloud records downloaded.');
+      }
     } catch (error) {
       if (!mounted) return;
-      setState(() => _syncMessage = 'Sync failed: $error');
+      if (showStatus) setState(() => _syncMessage = 'Sync failed: $error');
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
