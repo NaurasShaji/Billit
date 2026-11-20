@@ -7,8 +7,6 @@ import '../archive/payroll/add_employee_screen.dart';
 import '../archive/payroll/daily_wage_screen.dart';
 import '../archive/payroll/monthly_salary_screen.dart';
 import '../archive/backup_restore_screen.dart';
-import '../archive/change_password_screen.dart';
-import '../security_question_settings_screen.dart';
 import '../archive/customer_lookup_screen.dart';
 import '../archive/bulk_product_import_screen.dart';
 import '../archive/gst_exports_screen.dart';
@@ -115,24 +113,12 @@ class ArchiveTab extends StatelessWidget {
           ],
         ),
         _ArchiveCategory(
-          title: 'Account & Settings',
-          subtitle: 'Account tools and customer search',
-          description: 'Security and customer search.',
-          icon: Icons.settings_outlined,
+          title: 'Customer Lookup',
+          subtitle: 'Search customer information',
+          description: 'Search customer information and view customer invoices.',
+          icon: Icons.person_search_outlined,
           color: Colors.deepPurple,
           items: [
-            ArchiveCategoryItem(
-              icon: Icons.security_outlined,
-              title: 'Security Question',
-              subtitle: 'Update recovery question.',
-              builder: (_) => const SecurityQuestionSettingsScreen(),
-            ),
-            ArchiveCategoryItem(
-              icon: Icons.lock_outline,
-              title: 'Change Password',
-              subtitle: 'Update your account password',
-              builder: (_) => const ChangePasswordScreen(),
-            ),
             ArchiveCategoryItem(
               icon: Icons.person_search_outlined,
               title: 'Customer Lookup',
@@ -144,6 +130,14 @@ class ArchiveTab extends StatelessWidget {
       ];
 
   void _openCategory(BuildContext context, _ArchiveCategory category) {
+    // Open Customer Lookup directly because it is the only destination.
+    if (category.title == 'Customer Lookup' && category.items.length == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: category.items.single.builder),
+      );
+      return;
+    }
+
     // Reports has a single destination, so open it directly instead of
     // showing a second page with the same Reports & Statements heading.
     if (category.title == 'Reports & Statements' &&
