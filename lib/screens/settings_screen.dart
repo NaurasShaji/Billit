@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'appearance_settings_screen.dart';
 import 'gst_settings_screen.dart';
@@ -8,6 +9,8 @@ import 'printer_settings_screen.dart';
 import 'security_question_settings_screen.dart';
 import 'archive/change_password_screen.dart';
 import '../utils/theme_colors.dart';
+import '../services/auth_service.dart';
+import 'cloud_management_screen.dart';
 import '../widgets/responsive_page.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -30,6 +33,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final auth = context.watch<AuthService>();
 
     final sections = <_SettingsSection>[
       if (isAdmin)
@@ -74,7 +78,7 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      if (isAdmin)
+      if (isAdmin && !auth.isCloudAuth)
         _SettingsSection(
           heading: 'Account & Security',
           items: [
@@ -89,6 +93,20 @@ class SettingsScreen extends StatelessWidget {
               title: 'Change Password',
               subtitle: 'Update your account password',
               onTap: () => _open(context, const ChangePasswordScreen()),
+            ),
+          ],
+        ),
+      if (isAdmin && auth.isCloudAuth)
+        _SettingsSection(
+          heading: 'Cloud Administration',
+          items: [
+            _SettingsItem(
+              icon: Icons.manage_accounts_outlined,
+              title: 'Account Management',
+              subtitle: auth.isPlatformOwner
+                  ? 'Create shops and shop administrators'
+                  : 'Create workers and manage access',
+              onTap: () => _open(context, const CloudManagementScreen()),
             ),
           ],
         ),
