@@ -33,10 +33,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       'Maintenance',
       'Miscellaneous',
     ];
-    final existing = {
-      for (final e in Db.expenses.values) e.category
+    final existing = <String>{
+      for (final e in Db.expenses.values) e.category,
     };
-    _allCategories = {...defaults, ...existing}.toList()..sort();
+    _allCategories = <String>{...defaults, ...existing}.toList()..sort();
   }
 
   @override
