@@ -148,6 +148,11 @@ final List<String> _schemaV2 = [
 ];
 
 final List<String> _schemaV3 = [
+  for (final table in ['products', 'sales', 'expenses', 'employees']) ...[
+    'DROP TRIGGER IF EXISTS sync_${table}_insert',
+    'DROP TRIGGER IF EXISTS sync_${table}_update',
+    'DROP TRIGGER IF EXISTS sync_${table}_delete',
+  ],
   'DROP INDEX IF EXISTS local_sync_outbox_order',
   'ALTER TABLE local_sync_outbox RENAME TO local_sync_outbox_v2',
   '''CREATE TABLE local_sync_outbox (
@@ -165,6 +170,35 @@ final List<String> _schemaV3 = [
   'INSERT INTO local_sync_outbox (id, table_name, record_id, operation, changed_at, attempts, revision, last_error) SELECT id, table_name, record_id, operation, changed_at, attempts, revision, last_error FROM local_sync_outbox_v2',
   'DROP TABLE local_sync_outbox_v2',
   'CREATE INDEX local_sync_outbox_order ON local_sync_outbox (id)',
+  for (final table in ['products', 'sales', 'expenses', 'employees']) ...[
+    '''CREATE TRIGGER sync_${table}_insert AFTER INSERT ON ${table}
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('${table}', NEW.id, 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END''',
+    '''CREATE TRIGGER sync_${table}_update AFTER UPDATE ON ${table}
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('${table}', NEW.id, 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END''',
+    '''CREATE TRIGGER sync_${table}_delete AFTER DELETE ON ${table}
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('${table}', OLD.id, 'DELETE', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'DELETE',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END''',
+  ],
   '''CREATE TRIGGER sync_app_settings_insert AFTER INSERT ON app_settings
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
     BEGIN
