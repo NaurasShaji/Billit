@@ -1,27 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/auth_service.dart';
-import '../models/models.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
-  final _form = GlobalKey<FormState>();
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscure = true;
-  bool _loading = false;
-  UserType _selectedRole = UserType.worker; // Default to worker
 
-  @override
-  void initState() {
-    super.initState();
-  }
+  bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -32,635 +27,208 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final viewInsets = MediaQuery.of(context).viewInsets;
-    final appColors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isWide = MediaQuery.sizeOf(context).width >= 760;
+
     return Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: appColors.surface,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              appColors.primaryContainer.withValues(alpha: 0.22),
-              appColors.surface,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(24, 28, 24, viewInsets.bottom + 28),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 500),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header Section
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: const BoxDecoration(
-                          color: Colors.transparent,
-                        ),
-                        child: Column(
-                          children: [
-                            // App Logo/Icon
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: appColors.surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: appColors.primary
-                                        .withValues(alpha: 0.2),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.receipt_long_rounded,
-                                size: 40,
-                                color: appColors.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Billit',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: appColors.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Retail management, simplified.',
-                              style: TextStyle(
-                                color: appColors.primary,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Login Form
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Form(
-                          key: _form,
-                          child: Column(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 980),
+                    child: isWide
+                        ? Row(
                             children: [
-                              // Role-specific welcome message
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: _selectedRole == UserType.worker
-                                      ? appColors.secondaryContainer
-                                      : appColors.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: _selectedRole == UserType.worker
-                                        ? appColors.secondary
-                                            .withValues(alpha: 0.45)
-                                        : appColors.tertiary
-                                            .withValues(alpha: 0.45),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _selectedRole == UserType.worker
-                                          ? Icons.person
-                                          : Icons.admin_panel_settings,
-                                      color: _selectedRole == UserType.worker
-                                          ? appColors.onSecondaryContainer
-                                          : appColors.onTertiaryContainer,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _selectedRole == UserType.worker
-                                            ? 'Worker Login - Access billing and inventory'
-                                            : 'Admin Login - Full system access',
-                                        style: TextStyle(
-                                          color: _selectedRole ==
-                                                  UserType.worker
-                                              ? appColors.onSecondaryContainer
-                                              : appColors.onTertiaryContainer,
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Role Dropdown
-                              DropdownButtonFormField<UserType>(
-                                initialValue: _selectedRole,
-                                decoration: InputDecoration(
-                                  labelText: 'Login As',
-                                  prefixIcon: const Icon(Icons.person_outline),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                  fillColor: appColors.surfaceContainerHighest,
-                                ),
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: UserType.worker,
-                                    child: Text('Worker'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: UserType.admin,
-                                    child: Text('Admin'),
-                                  ),
-                                ],
-                                onChanged: (UserType? newValue) {
-                                  setState(() {
-                                    _selectedRole = newValue!;
-                                    _usernameController.text =
-                                        _selectedRole == UserType.worker
-                                            ? 'worker'
-                                            : 'admin';
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Username Field
-                              TextFormField(
-                                controller: _usernameController,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.username],
-                                decoration: InputDecoration(
-                                  labelText: 'Username',
-                                  prefixIcon: const Icon(Icons.person_outline),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                  fillColor: appColors.surfaceContainerHighest,
-                                ),
-                                validator: (v) => v == null || v.isEmpty
-                                    ? 'Please enter username'
-                                    : null,
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Password Field
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscure,
-                                textInputAction: TextInputAction.done,
-                                autofillHints: const [AutofillHints.password],
-                                onFieldSubmitted: (_) {
-                                  if (!_loading) _handleLogin();
-                                },
-                                decoration: InputDecoration(
-                                  labelText: 'Password',
-                                  prefixIcon: const Icon(Icons.lock_outline),
-                                  suffixIcon: IconButton(
-                                    tooltip: _obscure
-                                        ? 'Show password'
-                                        : 'Hide password',
-                                    onPressed: () =>
-                                        setState(() => _obscure = !_obscure),
-                                    icon: Icon(
-                                      _obscure
-                                          ? Icons.visibility
-                                          : Icons.visibility_off,
-                                    ),
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                  fillColor: appColors.surfaceContainerHighest,
-                                ),
-                                validator: (v) => v == null || v.isEmpty
-                                    ? 'Please enter password'
-                                    : null,
-                              ),
-
-                              // Forgot Password Link (Admin Only)
-                              if (_selectedRole == UserType.admin)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton(
-                                      onPressed: () =>
-                                          _showForgotPasswordDialog(),
-                                      child: Text(
-                                        'Forgot Password?',
-                                        style: TextStyle(
-                                          color: appColors.tertiary,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                              const SizedBox(height: 24),
-
-                              // Login Button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 50,
-                                child: ElevatedButton(
-                                  onPressed: _loading ? null : _handleLogin,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        _selectedRole == UserType.worker
-                                            ? appColors.primary
-                                            : appColors.tertiary,
-                                    foregroundColor:
-                                        _selectedRole == UserType.worker
-                                            ? appColors.onPrimary
-                                            : appColors.onTertiary,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 2,
-                                  ),
-                                  child: _loading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                    Colors.white),
-                                          ),
-                                        )
-                                      : Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(Icons.login, size: 20),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Sign In as ${_selectedRole == UserType.worker ? 'Worker' : 'Admin'}',
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ),
+                              Expanded(child: _buildBrandPanel(context)),
+                              const SizedBox(width: 56),
+                              SizedBox(width: 390, child: _buildLoginForm(context)),
                             ],
+                          )
+                        : ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 430),
+                            child: _buildLoginForm(context),
                           ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  void _showForgotPasswordDialog() {
-    final securityQuestion = Provider.of<AuthService>(context, listen: false).getAdminSecurityQuestion();
-    final securityAnswerController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-    bool obscureNewPassword = true;
-    bool obscureConfirmPassword = true;
-    bool loading = false;
+  Widget _buildBrandPanel(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 470),
+      padding: const EdgeInsets.all(38),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer.withValues(alpha: 0.48),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _brandMark(context, size: 66),
+          const SizedBox(height: 34),
+          Text(
+            'Run your business.\nKeep it simple.',
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.08,
+                  letterSpacing: -1.4,
+                ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Billing, inventory and business insights in one place.',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.5,
+                ),
+          ),
+          const SizedBox(height: 34),
+          _featureLine(context, Icons.receipt_long_outlined, 'Fast billing'),
+          const SizedBox(height: 16),
+          _featureLine(context, Icons.inventory_2_outlined, 'Inventory control'),
+          const SizedBox(height: 16),
+          _featureLine(context, Icons.insights_outlined, 'Clear business reports'),
+        ],
+      ),
+    );
+  }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(
-                Icons.security,
-                color: Theme.of(context).colorScheme.tertiary,
-                size: 24, // Reduced size
+  Widget _buildLoginForm(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isWide = MediaQuery.sizeOf(context).width >= 760;
+
+    return Form(
+      key: _formKey,
+      child: AutofillGroup(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!isWide) ...[
+              Center(child: _brandMark(context, size: 62)),
+              const SizedBox(height: 26),
+            ],
+            Text(
+              'Welcome back',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.8,
               ),
-              const SizedBox(width: 8), // Reduced spacing
-              const Text(
-                'Security Question',
-                style: TextStyle(
-                  fontSize: 18, // Reduced font size
-                  fontWeight: FontWeight.bold,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Sign in to continue to your Billit workspace.',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
+            TextFormField(
+              controller: _usernameController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.username, AutofillHints.email],
+              decoration: const InputDecoration(
+                labelText: 'Email or username',
+                hintText: 'Enter your email or username',
+                prefixIcon: Icon(Icons.person_outline_rounded),
+              ),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter your email or username'
+                  : null,
+            ),
+            const SizedBox(height: 18),
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
+              onFieldSubmitted: (_) => _signIn(),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                hintText: 'Enter your password',
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
                 ),
               ),
-            ],
-          ),
-          content: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.85, // Responsive width
-            child: SingleChildScrollView(
-              // Added scroll capability
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Security Question - Made more compact
-                  Container(
-                    padding: const EdgeInsets.all(12), // Reduced padding
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withValues(alpha: 0.45)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.pets,
-                          color: Colors.orange[600],
-                          size: 20, // Reduced size
-                        ),
-                        const SizedBox(width: 8), // Reduced spacing
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Security Question:',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.tertiary,
-                                  fontSize: 12, // Reduced font size
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 2), // Reduced spacing
-                              Text(
-                                securityQuestion,
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onTertiaryContainer,
-                                  fontSize: 14, // Reduced font size
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16), // Reduced spacing
-
-                  // Security Answer Field - More compact
-                  TextFormField(
-                    controller: securityAnswerController,
-                    decoration: const InputDecoration(
-                      labelText: 'Your Answer',
-                      prefixIcon: Icon(Icons.edit_note),
-                      border: OutlineInputBorder(),
-                      hintText: 'Enter your answer',
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12), // Compact padding
-                      isDense: true, // Make field more compact
-                    ),
-                  ),
-                  const SizedBox(height: 16), // Reduced spacing
-
-                  // New Password Field - More compact
-                  TextFormField(
-                    controller: newPasswordController,
-                    obscureText: obscureNewPassword,
-                    decoration: InputDecoration(
-                      labelText: 'New Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        onPressed: () => setDialogState(
-                            () => obscureNewPassword = !obscureNewPassword),
-                        icon: Icon(
-                          obscureNewPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                      ),
-                      border: const OutlineInputBorder(),
-                      hintText: 'Enter new password',
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12), // Compact padding
-                      isDense: true, // Make field more compact
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter new password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12), // Reduced spacing
-
-                  // Confirm Password Field - More compact
-                  TextFormField(
-                    controller: confirmPasswordController,
-                    obscureText: obscureConfirmPassword,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm New Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        onPressed: () => setDialogState(() =>
-                            obscureConfirmPassword = !obscureConfirmPassword),
-                        icon: Icon(
-                          obscureConfirmPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                      ),
-                      border: const OutlineInputBorder(),
-                      hintText: 'Confirm new password',
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12), // Compact padding
-                      isDense: true, // Make field more compact
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm new password';
-                      }
-                      if (value != newPasswordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16), // Reduced spacing
-
-                  // Info Text - More compact
-                  Container(
-                    padding: const EdgeInsets.all(10), // Reduced padding
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .secondary
-                              .withValues(alpha: 0.45)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSecondaryContainer,
-                          size: 18, // Reduced size
-                        ),
-                        const SizedBox(width: 6), // Reduced spacing
-                        Expanded(
-                          child: Text(
-                            'Answer your security question to reset the admin password.',
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondaryContainer,
-                              fontSize: 12, // Reduced font size
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              validator: (value) => value == null || value.isEmpty
+                  ? 'Enter your password'
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _isLoading ? null : _showPasswordRecovery,
+                child: const Text('Forgot password?'),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: loading ? null : () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton.icon(
-              onPressed: loading
-                  ? null
-                  : () async {
-                      // Validate form
-                      if (securityAnswerController.text.isEmpty ||
-                          newPasswordController.text.isEmpty ||
-                          confirmPasswordController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please fill in all fields'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      if (newPasswordController.text !=
-                          confirmPasswordController.text) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Passwords do not match'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      if (newPasswordController.text.length < 6) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content:
-                                Text('Password must be at least 6 characters'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => loading = true);
-
-                      try {
-                        final auth = context.read<AuthService>();
-                        await auth.resetAdminPassword(
-                          securityAnswerController.text.trim(),
-                          newPasswordController.text,
-                        );
-
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Row(
-                                children: [
-                                  Icon(Icons.check_circle, color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Text('Admin password reset successfully!'),
-                                ],
-                              ),
-                              backgroundColor: Colors.green[600],
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          setDialogState(() => loading = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  const Icon(Icons.error_outline,
-                                      color: Colors.white),
-                                  const SizedBox(width: 8),
-                                  Text('Error: ${e.toString()}'),
-                                ],
-                              ),
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.error,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          );
-                        }
-                      }
-                    },
-              icon: loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 54,
+              child: FilledButton(
+                onPressed: _isLoading ? null : _signIn,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 21,
+                        width: 21,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Sign in',
+                        style: TextStyle(fontWeight: FontWeight.w700),
                       ),
-                    )
-                  : const Icon(Icons.lock_reset),
-              label: Text(loading ? 'Resetting...' : 'Reset Password'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange[600],
-                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 26),
+            Row(
+              children: [
+                Expanded(child: Divider(color: colors.outlineVariant)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'BILLIT',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      letterSpacing: 2,
+                      color: colors.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Expanded(child: Divider(color: colors.outlineVariant)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Secure access to your business workspace',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
               ),
             ),
           ],
@@ -669,37 +237,191 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Future<void> _handleLogin() async {
-    if (!_form.currentState!.validate()) return;
-
-    setState(() => _loading = true);
-
-    final auth = context.read<AuthService>();
-    final success = await auth.login(
-      _usernameController.text.trim(),
-      _passwordController.text,
-      userType: _selectedRole, // Pass selected role to login
+  Widget _brandMark(BuildContext context, {required double size}) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colors.primary,
+        borderRadius: BorderRadius.circular(size * 0.28),
+      ),
+      child: Icon(
+        Icons.receipt_long_rounded,
+        color: colors.onPrimary,
+        size: size * 0.55,
+      ),
     );
+  }
 
-    setState(() => _loading = false);
+  Widget _featureLine(BuildContext context, IconData icon, String label) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, color: colors.primary, size: 22),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ],
+    );
+  }
 
-    if (!success && mounted) {
+  Future<void> _signIn() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    var success = false;
+    try {
+      success = await context.read<AuthService>().login(
+            _usernameController.text.trim(),
+            _passwordController.text,
+          );
+    } catch (_) {
+      success = false;
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Invalid username or password'),
-            ],
-          ),
-          backgroundColor: Colors.red[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+        const SnackBar(
+          content: Text('Sign-in failed. Check your credentials and try again.'),
         ),
       );
     }
+  }
+
+  Future<void> _showPasswordRecovery() async {
+    final auth = context.read<AuthService>();
+    String question;
+    try {
+      question = auth.getAdminSecurityQuestion();
+    } catch (_) {
+      _showMessage('Password recovery is not available for this account.');
+      return;
+    }
+
+    final answerController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool obscureNew = true;
+    bool loading = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Reset password'),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 380,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(question, style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: answerController,
+                    decoration: const InputDecoration(
+                      labelText: 'Your answer',
+                      prefixIcon: Icon(Icons.help_outline_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: obscureNew,
+                    decoration: InputDecoration(
+                      labelText: 'New password',
+                      prefixIcon: const Icon(Icons.lock_outline_rounded),
+                      suffixIcon: IconButton(
+                        onPressed: () =>
+                            setDialogState(() => obscureNew = !obscureNew),
+                        icon: Icon(obscureNew
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: confirmController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm new password',
+                      prefixIcon: Icon(Icons.lock_reset_rounded),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: loading ? null : () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: loading
+                  ? null
+                  : () async {
+                      final newPassword = newPasswordController.text;
+                      if (answerController.text.trim().isEmpty ||
+                          newPassword.length < 6 ||
+                          newPassword != confirmController.text) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Enter the answer, use at least 6 characters, and confirm the same password.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => loading = true);
+                      try {
+                        await auth.resetAdminPassword(
+                          answerController.text.trim(),
+                          newPassword,
+                        );
+                        if (dialogContext.mounted) Navigator.pop(dialogContext);
+                        _showMessage('Password reset successfully.');
+                      } catch (error) {
+                        setDialogState(() => loading = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(error.toString())),
+                        );
+                      }
+                    },
+              child: loading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Reset password'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    answerController.dispose();
+    newPasswordController.dispose();
+    confirmController.dispose();
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }
