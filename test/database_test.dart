@@ -75,6 +75,46 @@ void main() {
     openDatabaseFile(path);
   }
 
+  test('outbox coalesces repeated writes and preserves deletion tombstones', () async {
+    final product = _product('sync-product', name: 'Initial');
+    await Db.products.put(product.id, product);
+    var changes = await Db.pendingSyncChanges();
+    expect(changes, hasLength(1));
+    expect(changes.single.tableName, 'products');
+    expect(changes.single.recordId, product.id);
+    expect(changes.single.operation, 'UPSERT');
+
+    product.name = 'Updated';
+    await product.save();
+    changes = await Db.pendingSyncChanges();
+    expect(changes, hasLength(1));
+    expect(changes.single.operation, 'UPSERT');
+
+    await product.delete();
+    changes = await Db.pendingSyncChanges();
+    expect(changes, hasLength(1));
+    expect(changes.single.operation, 'DELETE');
+  });
+
+  test('remote-applied writes can be excluded from the local outbox', () async {
+    await Db.withoutOutbox(() async {
+      await Db.products.put('remote-product', _product('remote-product'));
+    });
+    expect(await Db.pendingSyncChanges(), isEmpty);
+    expect(Db.products.containsKey('remote-product'), isTrue);
+  });
+
+  test('separate database files do not share shop records', () async {
+    await Db.products.put('shop-a-product', _product('shop-a-product'));
+    Db.close();
+    openDatabaseFile('${dir.path}/shop-b.db');
+    expect(Db.products.isEmpty, isTrue);
+    await Db.products.put('shop-b-product', _product('shop-b-product'));
+    Db.close();
+    openDatabaseFile(path);
+    expect(Db.products.keys, ['shop-a-product']);
+  });
+
   test('every record type survives closing and reopening the database',
       () async {
     final user = User()
