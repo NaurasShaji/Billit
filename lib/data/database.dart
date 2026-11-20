@@ -75,11 +75,11 @@ class Db {
   static Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100}) =>
       instance.pendingSyncChanges(limit: limit);
 
-  static Future<void> acknowledgeSyncChange(int id) =>
-      instance.acknowledgeSyncChange(id);
+  static Future<void> acknowledgeSyncChange(int id, int revision) =>
+      instance.acknowledgeSyncChange(id, revision);
 
-  static Future<void> recordSyncFailure(int id, String error) =>
-      instance.recordSyncFailure(id, error);
+  static Future<void> recordSyncFailure(int id, int revision, String error) =>
+      instance.recordSyncFailure(id, revision, error);
 
   static Future<R> withoutOutbox<R>(Future<R> Function() action) =>
       instance.withoutOutbox(action);
@@ -167,7 +167,7 @@ class AppDatabase {
 
   Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100}) async {
     final rows = db.select(
-      'SELECT id, table_name, record_id, operation, changed_at, attempts '
+      'SELECT id, table_name, record_id, operation, changed_at, attempts, revision '
       'FROM local_sync_outbox ORDER BY id LIMIT ?',
       [limit.clamp(1, 500)],
     );
@@ -179,19 +179,20 @@ class AppDatabase {
       changedAt: DateTime.fromMillisecondsSinceEpoch(
         (row['changed_at'] as num).toInt(), isUtc: true),
       attempts: (row['attempts'] as num).toInt(),
+      revision: (row['revision'] as num).toInt(),
     )).toList();
   }
 
-  Future<void> acknowledgeSyncChange(int id) async {
-    db.execute('DELETE FROM local_sync_outbox WHERE id = ?', [id]);
+  Future<void> acknowledgeSyncChange(int id, int revision) async {
+    db.execute('DELETE FROM local_sync_outbox WHERE id = ? AND revision = ?', [id, revision]);
     await connection.flush();
   }
 
-  Future<void> recordSyncFailure(int id, String error) async {
+  Future<void> recordSyncFailure(int id, int revision, String error) async {
     db.execute(
       'UPDATE local_sync_outbox SET attempts = attempts + 1, last_error = ? '
-      'WHERE id = ?',
-      [error.length > 1000 ? error.substring(0, 1000) : error, id],
+      'WHERE id = ? AND revision = ?',
+      [error.length > 1000 ? error.substring(0, 1000) : error, id, revision],
     );
     await connection.flush();
   }
@@ -278,6 +279,7 @@ class SyncOutboxChange {
   final String operation;
   final DateTime changedAt;
   final int attempts;
+  final int revision;
 }
 
 abstract class _Store {
