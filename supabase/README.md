@@ -1,6 +1,6 @@
 # Billit Supabase integration
 
-This branch contains the cloud-authentication and account-provisioning foundation. It is intentionally separate from `main`.
+This branch contains cloud authentication, account provisioning, tenant-isolated local storage and the first manual two-way synchronization implementation. It is intentionally separate from `main`.
 
 ## Architecture
 
@@ -29,11 +29,16 @@ This branch contains the cloud-authentication and account-provisioning foundatio
 - Trusted `manage-account` Edge Function creates Auth users; the service-role key stays server-side.
 - Worker permission defaults: billing and inventory enabled; reports, expenses and payroll disabled.
 - Home navigation is permission-aware.
+- Each cloud shop has its own SQLite file on native platforms or IndexedDB namespace on web. The original `billit.db` remains separate.
+- SQLite schema v2 includes a durable coalescing outbox, deletion tombstones, retry metadata and revision-safe acknowledgements.
+- Manual two-way sync covers products, sales and sale items, expenses and employees.
+- Remote writes are applied without re-enqueuing them; pull is paginated and skips records with pending local changes.
+- Shop admins can explicitly import existing device data into an empty shop after a count preview and confirmation. Sale references are validated and the original local records are retained.
 - SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON, protected membership identity fields and explicit Data API grants behind RLS.
 
 ## Important limitation: business-data sync is not implemented
 
-Cloud authentication and account provisioning are implemented, but SQLite-to-Supabase synchronization, per-shop local database isolation, conflict handling, retry queues and tombstones are not implemented yet.
+Cloud authentication, tenant-local database separation, a durable outbox, manual two-way synchronization and guarded local-data import are implemented. This is not production-ready yet: background retry scheduling, incremental pull cursors, fully deterministic simultaneous-edit conflict resolution, all settings/ancillary data sync and live-project integration tests remain outstanding.
 
 For that reason, when Supabase is configured, Billit deliberately blocks access to the normal POS screens after cloud sign-in. This prevents one shop from accidentally seeing another shop's unsynchronized local SQLite data. **Do not remove this guard or use cloud accounts for live billing until tenant-isolated storage and synchronization are completed and tested.**
 
@@ -46,6 +51,7 @@ Apply these files in this exact order to a new Supabase project:
 3. `migrations/202611200003_security_hardening.sql`
 4. `migrations/202611200004_data_api_grants.sql`
 5. `migrations/202611200005_permission_policy_alignment.sql`
+6. `migrations/202611200006_worker_sync_permissions.sql`
 
 The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies.
 
@@ -93,10 +99,10 @@ Without these defines, the app uses its existing local-only authentication path.
 
 ## Remaining engineering work before production use
 
-- Per-shop local SQLite isolation and safe first-run migration of existing local data.
-- Initial upload of existing products, sales, expenses and employees.
-- Two-way sync with an outbox, idempotency, conflict resolution and retry handling.
-- Sync status UI, offline recovery and deletion tombstones.
-- Automated Flutter tests and SQL/RLS integration tests against a real Supabase project.
+- Automatic/background sync scheduling, retry backoff and connectivity recovery.
+- Incremental pull cursors and robust conflict resolution for simultaneous edits across devices.
+- Synchronization of all shop settings and remaining ancillary records.
+- Full SQL/RLS integration tests against a real Supabase project.
+- End-to-end verification of shop setup, data import, worker permissions and offline/multi-device workflows.
 
 Do not use production business data until these items are completed and tested.
