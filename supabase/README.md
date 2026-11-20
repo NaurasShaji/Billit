@@ -28,7 +28,7 @@ This branch contains the cloud-authentication and account-provisioning foundatio
 - Trusted `manage-account` Edge Function creates Auth users; the service-role key stays server-side.
 - Worker permission defaults: billing and inventory enabled; reports, expenses and payroll disabled.
 - Home navigation is permission-aware.
-- SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON and protected membership identity fields.
+- SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON, protected membership identity fields and explicit Data API grants behind RLS.
 
 ## Important limitation: business-data sync is not implemented
 
@@ -43,6 +43,7 @@ Apply these files in this exact order to a new Supabase project:
 1. `migrations/202611200001_initial_multi_tenant_schema.sql`
 2. `migrations/202611200002_auth_profiles_and_worker_permissions.sql`
 3. `migrations/202611200003_security_hardening.sql`
+4. `migrations/202611200004_data_api_grants.sql`
 
 The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies.
 
@@ -94,7 +95,7 @@ Without these defines, the app uses its existing local-only authentication path.
 - Initial upload of existing products, sales, expenses and employees.
 - Two-way sync with an outbox, idempotency, conflict resolution and retry handling.
 - Sync status UI, offline recovery and deletion tombstones.
-- Full account/member listing, deactivation and permission editing UI.
+- Automated Flutter tests and SQL/RLS integration tests against a real Supabase project.
 - Automated Flutter tests and SQL/RLS integration tests against a real Supabase project.
 
 Do not use production business data until these items are completed and tested.
