@@ -1,6 +1,6 @@
 import 'package:sqlite3/common.dart';
 
-const int schemaVersion = 1;
+const int schemaVersion = 2;
 
 /// Key/value tables. Values are stored as JSON text.
 const List<String> keyValueTables = [
@@ -100,6 +100,52 @@ final List<String> _schemaV1 = [
     'CREATE TABLE $table (key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)',
 ];
 
+
+final List<String> _schemaV2 = [
+  '''CREATE TABLE local_sync_control (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    suppress_outbox INTEGER NOT NULL DEFAULT 0 CHECK (suppress_outbox IN (0, 1))
+  )''',
+  'INSERT INTO local_sync_control (id, suppress_outbox) VALUES (1, 0)',
+  '''CREATE TABLE local_sync_outbox (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    table_name TEXT NOT NULL CHECK (table_name IN ('products', 'sales', 'expenses', 'employees')),
+    record_id TEXT NOT NULL,
+    operation TEXT NOT NULL CHECK (operation IN ('UPSERT', 'DELETE')),
+    changed_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    UNIQUE (table_name, record_id)
+  )''',
+  'CREATE INDEX local_sync_outbox_order ON local_sync_outbox (id)',
+  for (final table in ['products', 'sales', 'expenses', 'employees']) ...[
+    '''CREATE TRIGGER sync_\${table}_insert AFTER INSERT ON \$table
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('\$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      ON CONFLICT (table_name, record_id) DO UPDATE SET
+        operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
+    END''',
+    '''CREATE TRIGGER sync_\${table}_update AFTER UPDATE ON \$table
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('\$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      ON CONFLICT (table_name, record_id) DO UPDATE SET
+        operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
+    END''',
+    '''CREATE TRIGGER sync_\${table}_delete AFTER DELETE ON \$table
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('\$table', OLD.id, 'DELETE', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      ON CONFLICT (table_name, record_id) DO UPDATE SET
+        operation = 'DELETE', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
+    END''',
+  ],
+];
+
 /// Creates or upgrades the schema. `PRAGMA user_version` tracks the version.
 void migrateSchema(CommonDatabase db) {
   db.execute('PRAGMA foreign_keys = ON');
@@ -112,7 +158,7 @@ void migrateSchema(CommonDatabase db) {
         db.execute(statement);
       }
     }
-    db.execute('PRAGMA user_version = $schemaVersion');
+    if (current < 2) {\n      for (final statement in _schemaV2) {\n        db.execute(statement);\n      }\n    }\n    db.execute('PRAGMA user_version = $schemaVersion');
     db.execute('COMMIT');
   } catch (_) {
     db.execute('ROLLBACK');
