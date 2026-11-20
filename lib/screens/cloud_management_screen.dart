@@ -41,12 +41,16 @@ class _CloudManagementScreenState extends State<CloudManagementScreen> {
     setState(() => _saving = true);
     try {
       if (auth.isPlatformOwner) {
-        await CloudAccountService.createShop(
+        final result = await CloudAccountService.createShop(
           shopName: _shopName.text.trim(),
           adminEmail: _email.text.trim(),
           adminPassword: _password.text,
           adminName: _name.text.trim(),
         );
+        final shop = result['shop'];
+        if (shop is Map && shop['id'] != null) {
+          await auth.switchShop(shop['id'].toString());
+        }
       } else {
         final shopId = auth.currentShopId;
         if (shopId == null) throw Exception('No active shop is selected.');
