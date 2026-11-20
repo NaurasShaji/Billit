@@ -9,9 +9,11 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'data/database.dart';
 import 'data/legacy_hive_import.dart';
+import 'services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseService.initialize();
   await Db.open();
   try {
     await importLegacyHiveData();
