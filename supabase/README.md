@@ -1,45 +1,100 @@
-# Supabase setup for Billit
+# Billit Supabase integration
 
-This branch starts the Supabase integration from a clean copy of `main`.
+This branch contains the cloud-authentication and account-provisioning foundation. It is intentionally separate from `main`.
 
 ## Architecture
 
-- SQLite remains the local database and offline source of truth.
-- Supabase is the shared cloud and synchronization target.
-- One Supabase project serves all shops.
-- Every shop-owned record is scoped by `shop_id`.
-- Supabase Auth identifies users; the local Billit username/password table is not a cloud identity provider.
-- PostgreSQL Row Level Security (RLS) is mandatory. Never ship a service-role key in a Flutter app.
+- One Supabase project serves multiple shops.
+- Supabase Auth is the cloud identity provider.
+- `profiles` stores platform-owner identity; `shop_memberships` maps users to shops and roles.
+- Every business table is scoped by `shop_id` and protected by PostgreSQL Row Level Security (RLS).
+- Platform owner manages shops and shop administrators.
+- Shop administrators create workers and set feature permissions.
+- SQLite remains the local database for the existing offline app.
+- Never include the Supabase service-role key in Flutter or any client build.
 
-## First migration
+## Implemented in this branch
 
-Apply both migrations in numeric order to a new Supabase project using the Supabase SQL Editor or Supabase CLI:\n1. `migrations/202611200001_initial_multi_tenant_schema.sql`\n2. `migrations/202611200002_auth_profiles_and_worker_permissions.sql`
+- Optional Supabase Flutter initialization using build-time URL and publishable key.
+- Email/password sign-in through Supabase Auth when cloud configuration is present.
+- Local username/password login remains available when Supabase is not configured.
+- No default demo admin/worker accounts are seeded in cloud-configured builds.
+- Supabase password reset email flow and Android/iOS callback registration.
+- Profile and shop-membership lookup after sign-in.
+- Platform-owner shop selection support.
+- Account Management screen:
+  - Platform owner creates a shop and its first shop-admin account.
+  - Shop admin creates worker accounts with feature permissions.
+- Trusted `manage-account` Edge Function creates Auth users; the service-role key stays server-side.
+- Worker permission defaults: billing and inventory enabled; reports, expenses and payroll disabled.
+- Home navigation is permission-aware.
+- SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON and protected membership identity fields.
 
-The migration creates:
-- Profiles and platform-owner flag
-- Shops and shop memberships
-- Products, sales, sale items, expenses and employees
-- Shop settings and audit logs
-- Per-shop RLS policies and role helper functions
+## Important limitation: business-data sync is not implemented
 
-## Roles
+Cloud authentication and account provisioning are implemented, but SQLite-to-Supabase synchronization, per-shop local database isolation, conflict handling, retry queues and tombstones are not implemented yet.
 
-- Platform owner: centralized control over shops and user membership.
-- Shop admin: manages their shop and its workers.
-- Worker: feature-scoped access controlled by the `permissions` JSONB on their shop membership. Defaults allow billing and inventory access, while reports, expenses and payroll are disabled. Workers can create sales when billing is enabled; product and other business-data mutations remain admin-only.
+For that reason, when Supabase is configured, Billit deliberately blocks access to the normal POS screens after cloud sign-in. This prevents one shop from accidentally seeing another shop's unsynchronized local SQLite data. **Do not remove this guard or use cloud accounts for live billing until tenant-isolated storage and synchronization are completed and tested.**
 
-The platform-owner flag must only be assigned from a trusted administrative context. Never expose an update path that lets a normal user set it. The Auth trigger creates a non-privileged profile automatically; bootstrap the first owner by creating their Auth account, then setting `profiles.is_platform_owner = true` for that user's UUID in the SQL editor.
+## SQL migrations
 
-## Important setup note
+Apply these files in this exact order to a new Supabase project:
 
-The SQL migration intentionally does not create a public sign-up flow or automatically trust user metadata. The next implementation step is a trusted account-provisioning flow that creates Auth users, profile rows, shop memberships and audit events. The first platform owner must be bootstrapped manually in the Supabase dashboard/SQL editor.
+1. `migrations/202611200001_initial_multi_tenant_schema.sql`
+2. `migrations/202611200002_auth_profiles_and_worker_permissions.sql`
+3. `migrations/202611200003_security_hardening.sql`
 
-## Not implemented yet
+The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies.
 
-- Flutter Supabase client dependency and optional client initialization are now added. Supply `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` at build time; without them, the app remains in local mode.
-- The sign-in screen has been redesigned, but it still authenticates against the existing local SQLite accounts. Cloud login and trusted account provisioning
-- SQLite initial upload
-- Background/two-way sync, retry queue and tombstone handling
-- Conflict resolution and sync UI
+## Edge Function
 
-Do not connect production data until these are implemented and tested.
+Deploy the account-provisioning function from the repository root:
+
+```bash
+supabase functions deploy manage-account
+```
+
+The function uses the platform-provided `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` environment variables. It verifies the caller's JWT and checks platform-owner/shop-admin privileges before provisioning accounts. Do not expose the service-role key to Flutter.
+
+## First platform owner
+
+The first platform owner is bootstrapped manually:
+
+1. Create the owner's email/password account under Supabase Authentication > Users.
+2. Copy that user's Auth UUID.
+3. In the SQL Editor, set `profiles.is_platform_owner = true` for that UUID.
+4. The owner can then sign in to Billit and create the first shop and its administrator.
+
+The Auth trigger creates a non-privileged profile for each new Auth user. Never set platform-owner status from client metadata or a public sign-up flow.
+
+## Authentication redirect
+
+Android and iOS are registered for this callback:
+
+`com.naurasshaji.billit://login-callback`
+
+Add that exact URL under Supabase Authentication > URL Configuration > Redirect URLs. For web builds, configure the deployed Billit web URL as the Site URL/allowed redirect as appropriate.
+
+## Flutter build configuration
+
+Use the project's URL and publishable key (not the secret/service-role key):
+
+```bash
+flutter pub get
+flutter build apk --release \
+  --dart-define=SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+```
+
+Without these defines, the app uses its existing local-only authentication path.
+
+## Remaining engineering work before production use
+
+- Per-shop local SQLite isolation and safe first-run migration of existing local data.
+- Initial upload of existing products, sales, expenses and employees.
+- Two-way sync with an outbox, idempotency, conflict resolution and retry handling.
+- Sync status UI, offline recovery and deletion tombstones.
+- Full account/member listing, deactivation and permission editing UI.
+- Automated Flutter tests and SQL/RLS integration tests against a real Supabase project.
+
+Do not use production business data until these items are completed and tested.
