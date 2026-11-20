@@ -96,7 +96,7 @@ class AuthService extends ChangeNotifier {
         if (user == null) return false;
         await _loadCloudIdentity(user.id);
         return true;
-      } on AuthException catch (error) {
+      } on supabase.AuthException catch (error) {
         debugPrint('Supabase sign-in failed: ${error.message}');
         return false;
       } catch (error) {
