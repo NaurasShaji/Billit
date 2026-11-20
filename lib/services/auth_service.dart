@@ -301,7 +301,9 @@ class AuthService extends ChangeNotifier {
   Future<void> changePassword(String newPassword,
       {String? targetUserId, String? currentPassword}) async {
     if (currentUser == null) throw Exception('User not logged in');
-    if (!isAdmin) throw Exception('Permission denied: administrator access required');
+    if (!isAdmin && !(isCloudAuth && targetUserId == null)) {
+      throw Exception('Permission denied: administrator access required');
+    }
     if (newPassword.length < 6) {
       throw Exception('Password must be at least 6 characters long');
     }
