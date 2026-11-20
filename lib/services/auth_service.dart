@@ -146,8 +146,10 @@ class AuthService extends ChangeNotifier {
         'id': shop['id'].toString(),
         'name': shop['name'].toString(),
       }).toList();
-      final selected = shopChoices.where((shop) => shop['id'] == preferredShopId).firstOrNull
-          ?? (shopChoices.isEmpty ? null : shopChoices.first);
+      final preferred = shopChoices.where((shop) => shop['id'] == preferredShopId);
+      final selected = preferred.isNotEmpty
+          ? preferred.first
+          : (shopChoices.isEmpty ? null : shopChoices.first);
       if (selected != null) {
         shopId = selected['id'];
         shopName = selected['name'];
@@ -172,8 +174,10 @@ class AuthService extends ChangeNotifier {
           'name': shop['name']?.toString() ?? 'Shop',
         };
       }).toList();
-      final selectedShop = shopChoices.where((shop) => shop['id'] == preferredShopId).firstOrNull
-          ?? (shopChoices.isEmpty ? null : shopChoices.first);
+      final preferred = shopChoices.where((shop) => shop['id'] == preferredShopId);
+      final selectedShop = preferred.isNotEmpty
+          ? preferred.first
+          : (shopChoices.isEmpty ? null : shopChoices.first);
       if (selectedShop != null) {
         final membership = activeMemberships.firstWhere(
           (item) => item['shop_id'].toString() == selectedShop['id'],
