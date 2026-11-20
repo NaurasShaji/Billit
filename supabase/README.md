@@ -31,7 +31,7 @@ This branch contains cloud authentication, account provisioning, tenant-isolated
 - Home navigation is permission-aware.
 - Each cloud shop has its own SQLite file on native platforms or IndexedDB namespace on web. The original `billit.db` remains separate.
 - SQLite schema v2 includes a durable coalescing outbox, deletion tombstones, retry metadata and revision-safe acknowledgements.
-- Manual two-way sync covers products, sales and sale items, expenses and employees.
+- Manual two-way sync covers products, sales and sale items, expenses and employees. Billing-only workers can sync stock decrements from sales but cannot edit product master fields; a database trigger enforces this.
 - Remote writes are applied without re-enqueuing them; pull is paginated and skips records with pending local changes.
 - Shop admins can explicitly import existing device data into an empty shop after a count preview and confirmation. Sale references are validated and the original local records are retained.
 - SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON, protected membership identity fields and explicit Data API grants behind RLS.
@@ -53,6 +53,7 @@ Apply these files in this exact order to a new Supabase project:
 4. `migrations/202611200004_data_api_grants.sql`
 5. `migrations/202611200005_permission_policy_alignment.sql`
 6. `migrations/202611200006_worker_sync_permissions.sql`
+7. `migrations/202611200007_billing_stock_sync.sql`
 7. `migrations/202611200007_billing_stock_sync.sql`
 
 The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies.
