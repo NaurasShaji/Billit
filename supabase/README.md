@@ -55,8 +55,9 @@ Apply these files in this exact order to a new Supabase project:
 6. `migrations/202611200006_worker_sync_permissions.sql`
 7. `migrations/202611200007_billing_stock_sync.sql`
 8. `migrations/202611200008_restrict_helper_function_execution.sql`
+9. `migrations/202611200009_atomic_sale_snapshot_sync.sql`
 
-The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The final migration revokes default PUBLIC/anon execution on the security-definer authorization helpers and grants execution only to authenticated and service-role sessions.
+The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The helper-function migration revokes default PUBLIC/anon execution on the security-definer authorization helpers. The final migration adds an authenticated, RLS-respecting RPC that writes a sale and replaces its line items in one database transaction, avoiding partially uploaded sales.
 
 ## Edge Function
 
