@@ -260,10 +260,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   controller: _newPasswordController,
                   obscureText: _obscureNewPassword,
                   decoration: InputDecoration(
-                    labelText: 'New Password',
+                    labelText: authService.isCloudAuth ? 'New Password' : 'New Password',
                     border: const OutlineInputBorder(),
-                    hintText:
-                        'Enter new password (min 6 characters, letters & numbers only)',
+                    hintText: authService.isCloudAuth
+                        ? 'At least 8 characters'
+                        : 'Enter new password (min 6 characters, letters & numbers only)',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () => setState(
@@ -326,8 +327,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _changePassword(authService),
                     icon: const Icon(Icons.lock_reset),
-                    label: Text(
-                        'Change ${_selectedChangeUserType == UserType.admin ? 'Admin' : 'Worker'} Password'),
+                    label: Text(authService.isCloudAuth
+                        ? 'Update my password'
+                        : 'Change ${_selectedChangeUserType == UserType.admin ? 'Admin' : 'Worker'} Password'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _selectedChangeUserType == UserType.admin
                           ? Colors.orange[600]
