@@ -56,6 +56,8 @@ class CloudSyncService {
     return completed;
   }
 
+  static double? _finite(double value) => value.isFinite ? value : null;
+
   static Future<void> _pushOne(String shopId, SyncOutboxChange change) async {
     final client = SupabaseService.client;
     final table = change.tableName;
@@ -74,16 +76,16 @@ class CloudSyncService {
           'shop_id': shopId,
           'id': product.id,
           'name': product.name,
-          'selling_price': product.sellingPrice,
-          'cost_price': product.costPrice,
-          'stock': product.stock,
+          'selling_price': _finite(product.sellingPrice),
+          'cost_price': _finite(product.costPrice),
+          'stock': _finite(product.stock),
           'unit': product.unit.name,
           'category': product.category,
           'sub_category': product.subCategory,
           'active': product.active,
           'barcode': product.barcode,
           'hsn_code': product.hsnCode,
-          'gst_rate': product.gstRate,
+          'gst_rate': product.gstRate == null ? null : _finite(product.gstRate!),
           'deleted_at': null,
         }, onConflict: 'shop_id,id');
         break;
@@ -94,19 +96,19 @@ class CloudSyncService {
           'shop_id': shopId,
           'id': sale.id,
           'date': sale.date.toUtc().toIso8601String(),
-          'total_amount': sale.totalAmount,
-          'total_cost': sale.totalCost,
-          'profit': sale.profit,
+          'total_amount': _finite(sale.totalAmount),
+          'total_cost': _finite(sale.totalCost),
+          'profit': _finite(sale.profit),
           'payment': sale.payment.name,
           'customer_name': sale.customerName,
           'customer_phone': sale.customerPhone,
-          'discount': sale.discount,
+          'discount': _finite(sale.discount),
           'gst_enabled': sale.gstEnabled,
-          'gst_rate': sale.gstRate,
-          'taxable_amount': sale.taxableAmount,
-          'cgst_amount': sale.cgstAmount,
-          'sgst_amount': sale.sgstAmount,
-          'igst_amount': sale.igstAmount,
+          'gst_rate': _finite(sale.gstRate),
+          'taxable_amount': _finite(sale.taxableAmount),
+          'cgst_amount': _finite(sale.cgstAmount),
+          'sgst_amount': _finite(sale.sgstAmount),
+          'igst_amount': _finite(sale.igstAmount),
           'customer_gstin': sale.customerGstin,
           'interstate_sale': sale.interstateSale,
           'gst_inclusive': sale.gstInclusive,
@@ -132,7 +134,7 @@ class CloudSyncService {
           'id': expense.id,
           'date': expense.date.toUtc().toIso8601String(),
           'category': expense.category,
-          'amount': expense.amount,
+          'amount': _finite(expense.amount),
           'description': expense.description,
           'deleted_at': null,
         }, onConflict: 'shop_id,id');
@@ -145,7 +147,7 @@ class CloudSyncService {
           'id': employee.id,
           'name': employee.name,
           'type': employee.type,
-          'wage': employee.wage,
+          'wage': _finite(employee.wage),
           'attendance': employee.attendance,
           'salary_paid': employee.salaryPaid,
           'deleted_at': null,
@@ -166,17 +168,17 @@ class CloudSyncService {
         'sale_id': saleId,
         'position': position,
         'product_id': item.productId,
-        'qty': item.qty,
-        'selling_price': item.sellingPrice,
-        'cost_price': item.costPrice,
-        'subtotal': item.subtotal,
+        'qty': _finite(item.qty),
+        'selling_price': _finite(item.sellingPrice),
+        'cost_price': _finite(item.costPrice),
+        'subtotal': _finite(item.subtotal),
         'unit_label': item.unitLabel,
         'hsn_code': item.hsnCode,
-        'gst_rate': item.gstRate,
-        'taxable_amount': item.taxableAmount,
-        'cgst_amount': item.cgstAmount,
-        'sgst_amount': item.sgstAmount,
-        'igst_amount': item.igstAmount,
+        'gst_rate': item.gstRate == null ? null : _finite(item.gstRate!),
+        'taxable_amount': _finite(item.taxableAmount),
+        'cgst_amount': _finite(item.cgstAmount),
+        'sgst_amount': _finite(item.sgstAmount),
+        'igst_amount': _finite(item.igstAmount),
       };
 
   static bool _canRead(
