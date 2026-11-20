@@ -73,8 +73,8 @@ class Db {
     _instance = AppDatabase(await openAppDatabase());
   }
 
-  static Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100}) =>
-      instance.pendingSyncChanges(limit: limit);
+  static Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100, int afterId = 0}) =>
+      instance.pendingSyncChanges(limit: limit, afterId: afterId);
 
   static bool hasPendingSyncChange(String tableName, String recordId) =>
       instance.hasPendingSyncChange(tableName, recordId);
@@ -169,11 +169,11 @@ class AppDatabase {
   final Map<String, CommonPreparedStatement> _statements = {};
   bool _inTransaction = false;
 
-  Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100}) async {
+  Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100, int afterId = 0}) async {
     final rows = db.select(
       'SELECT id, table_name, record_id, operation, changed_at, attempts, revision '
-      'FROM local_sync_outbox ORDER BY id LIMIT ?',
-      [limit.clamp(1, 500)],
+      'FROM local_sync_outbox WHERE id > ? ORDER BY id LIMIT ?',
+      [afterId, limit.clamp(1, 500)],
     );
     return rows.map((row) => SyncOutboxChange(
       id: (row['id'] as num).toInt(),
