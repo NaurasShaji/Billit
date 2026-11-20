@@ -508,9 +508,11 @@ class CloudSyncService {
           .lte('updated_at', highWater.toUtc().toIso8601String());
       final filtered = timestamp == null
           ? base
-          : base.or(
-              'updated_at.gt.$timestamp,and(updated_at.eq.$timestamp,id.gt.$afterId)',
-            );
+          : afterId.isEmpty
+              ? base.gte('updated_at', timestamp)
+              : base.or(
+                  'updated_at.gt.$timestamp,and(updated_at.eq.$timestamp,id.gt.$afterId)',
+                );
       final page = await filtered
           .order('updated_at')
           .order('id')
