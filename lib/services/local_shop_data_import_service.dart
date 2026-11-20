@@ -10,9 +10,14 @@ import 'supabase_service.dart';
 class LocalShopDataImportService {
   LocalShopDataImportService._();
 
-  static Future<LocalShopDataImportPreview> preview() async {
-    await Db.openLocalDatabase();
+  static Future<LocalShopDataImportPreview> preview({
+    required String shopId,
+  }) async {
+    if (Db.activeDatabaseKey != 'shop:$shopId') {
+      throw StateError('The selected shop database is not active.');
+    }
     try {
+      await Db.openLocalDatabase();
       return LocalShopDataImportPreview(
         products: Db.products.length,
         sales: Db.sales.length,
@@ -20,8 +25,7 @@ class LocalShopDataImportService {
         employees: Db.employees.length,
       );
     } finally {
-      // The caller must pass the shop id to import; preview is read-only and
-      // intentionally leaves the original database open.
+      await Db.openTenantDatabase(shopId);
     }
   }
 
