@@ -212,6 +212,14 @@ class AuthService extends ChangeNotifier {
       throw StateError('Your account is not assigned to an active shop. Contact your shop administrator.');
     }
 
+    // Cloud business data lives in a physically separate local database per
+    // shop. The original local database is never copied into a tenant silently.
+    if (shopId != null) {
+      await Db.openTenantDatabase(shopId);
+    } else {
+      await Db.openLocalDatabase();
+    }
+
     final authUser = client.auth.currentUser;
     final displayName = profile['display_name']?.toString().trim();
     final email = authUser?.email ?? '';
@@ -275,6 +283,9 @@ class AuthService extends ChangeNotifier {
       await Db.session.delete(_sessionUserIdKey);
     }
     isPasswordRecovery = false;
+    if (SupabaseService.isConfigured) {
+      await Db.openLocalDatabase();
+    }
     _clearIdentity();
   }
 
