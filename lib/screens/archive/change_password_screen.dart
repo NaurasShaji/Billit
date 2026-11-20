@@ -50,7 +50,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (value.length < (cloudAuth ? 8 : 6)) {
       return 'Password must be at least ${cloudAuth ? 8 : 6} characters long';
     }
-    if (!cloudAuth && !RegExp(r'^[a-zA-Z0-9]+
+    if (!cloudAuth && !RegExp(r'^[a-zA-Z0-9]+$').hasMatch(value)) {
+      return 'Password can only contain letters and numbers (no special characters)';
     }
     return null;
   }
