@@ -96,6 +96,23 @@ void main() {
     expect(changes.single.operation, 'DELETE');
   });
 
+  test('stale acknowledgement cannot clear a newer edit', () async {
+    final product = _product('revision-product', name: 'First');
+    await Db.products.put(product.id, product);
+    final first = (await Db.pendingSyncChanges()).single;
+
+    product.name = 'Second';
+    await product.save();
+    final second = (await Db.pendingSyncChanges()).single;
+    expect(second.revision, greaterThan(first.revision));
+
+    await Db.acknowledgeSyncChange(first.id, first.revision);
+    expect(Db.hasPendingSyncChange('products', product.id), isTrue);
+
+    await Db.acknowledgeSyncChange(second.id, second.revision);
+    expect(Db.hasPendingSyncChange('products', product.id), isFalse);
+  });
+
   test('remote-applied writes can be excluded from the local outbox', () async {
     await Db.withoutOutbox(() async {
       await Db.products.put('remote-product', _product('remote-product'));
