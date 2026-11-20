@@ -89,24 +89,178 @@ class CloudSyncService {
 
   static double? _finite(double value) => value.isFinite ? value : null;
 
-  static Future<void> _pushOne(String shopId, SyncOutboxChange change, {required Map<String, dynamic> permissions, required bool isAdmin}) async {
+  static String _baselineKey(String table, String id) =>
+      'sync_baseline_${table}_${id}';
+
+  static Future<void> _saveBaseline(
+    String table,
+    String id,
+    Object? updatedAt,
+  ) async {
+    if (updatedAt == null) {
+      throw StateError('Cloud did not return updated_at for $table/$id.');
+    }
+    await Db.meta.put(_baselineKey(table, id), updatedAt.toString());
+  }
+
+  static Future<Map<String, dynamic>?> _readCloudVersion(
+    String table,
+    String shopId,
+    String id,
+  ) async {
+    final row = await SupabaseService.client
+        .from(table)
+        .select('updated_at,deleted_at')
+        .eq('shop_id', shopId)
+        .eq('id', id)
+        .maybeSingle();
+    return row == null ? null : Map<String, dynamic>.from(row);
+  }
+
+  /// Insert new rows or compare-and-swap existing rows. The updated_at
+  /// predicate makes the final write conditional, closing the race between
+  /// checking a version and writing it.
+  static Future<void> _writeVersionedRow(
+    String table,
+    String shopId,
+    String id,
+    Map<String, dynamic> payload, {
+    bool allowInsert = true,
+  }) async {
+    final client = SupabaseService.client;
+    final current = await _readCloudVersion(table, shopId, id);
+    final baseline = Db.meta.get(_baselineKey(table, id))?.toString();
+
+    if (current == null) {
+      if (baseline != null) {
+        throw StateError('SYNC_CONFLICT: $table/$id was removed from cloud.');
+      }
+      if (!allowInsert) {
+        throw StateError('Cloud record $table/$id is missing; an administrator must sync it first.');
+      }
+      final inserted = await client
+          .from(table)
+          .insert(payload)
+          .select('updated_at')
+          .single();
+      await _saveBaseline(table, id, inserted['updated_at']);
+      return;
+    }
+
+    if (baseline == null ||
+        baseline != current['updated_at']?.toString() ||
+        current['deleted_at'] != null) {
+      throw StateError(
+        'SYNC_CONFLICT: $table/$id changed in cloud since this device last synchronized. Local changes were kept; cloud data was not overwritten.',
+      );
+    }
+
+    final updatePayload = Map<String, dynamic>.from(payload)
+      ..remove('shop_id')
+      ..remove('id');
+    final rows = await client
+        .from(table)
+        .update(updatePayload)
+        .eq('shop_id', shopId)
+        .eq('id', id)
+        .eq('updated_at', current['updated_at'])
+        .select('updated_at');
+    if (rows.isEmpty) {
+      throw StateError(
+        'SYNC_CONFLICT: $table/$id changed during upload. Local changes were kept.',
+      );
+    }
+    await _saveBaseline(table, id, rows.first['updated_at']);
+  }
+
+  static Future<void> _deleteVersionedRow(
+    String table,
+    String shopId,
+    String id,
+  ) async {
+    final current = await _readCloudVersion(table, shopId, id);
+    final baseline = Db.meta.get(_baselineKey(table, id))?.toString();
+    if (current == null) {
+      if (baseline == null) return; // A local create/delete never reached cloud.
+      throw StateError('SYNC_CONFLICT: cloud record $table/$id no longer exists.');
+    }
+    if (baseline == null || baseline != current['updated_at']?.toString()) {
+      throw StateError(
+        'SYNC_CONFLICT: $table/$id changed in cloud; refusing to delete the newer version.',
+      );
+    }
+    if (current['deleted_at'] != null) {
+      await _saveBaseline(table, id, current['updated_at']);
+      return;
+    }
+    final rows = await SupabaseService.client
+        .from(table)
+        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('shop_id', shopId)
+        .eq('id', id)
+        .eq('updated_at', current['updated_at'])
+        .select('updated_at');
+    if (rows.isEmpty) {
+      throw StateError('SYNC_CONFLICT: $table/$id changed during delete.');
+    }
+    await _saveBaseline(table, id, rows.first['updated_at']);
+  }
+
+  static Future<void> _writeShopSettings(String shopId) async {
+    final client = SupabaseService.client;
+    final current = await client
+        .from('shop_settings')
+        .select('updated_at')
+        .eq('shop_id', shopId)
+        .maybeSingle();
+    const id = 'shop';
+    final baseline = Db.meta.get(_baselineKey('shop_settings', id))?.toString();
+    if (current == null) {
+      if (baseline != null) {
+        throw StateError('SYNC_CONFLICT: cloud shop settings were removed.');
+      }
+      final inserted = await client
+          .from('shop_settings')
+          .insert({'shop_id': shopId, 'settings': Db.settings.toMap()})
+          .select('updated_at')
+          .single();
+      await _saveBaseline('shop_settings', id, inserted['updated_at']);
+      return;
+    }
+    if (baseline == null || baseline != current['updated_at']?.toString()) {
+      throw StateError(
+        'SYNC_CONFLICT: shop settings changed in cloud. Local settings were kept.',
+      );
+    }
+    final rows = await client
+        .from('shop_settings')
+        .update({'settings': Db.settings.toMap()})
+        .eq('shop_id', shopId)
+        .eq('updated_at', current['updated_at'])
+        .select('updated_at');
+    if (rows.isEmpty) {
+      throw StateError('SYNC_CONFLICT: shop settings changed during upload.');
+    }
+    await _saveBaseline('shop_settings', id, rows.first['updated_at']);
+  }
+
+  static Future<void> _pushOne(
+    String shopId,
+    SyncOutboxChange change, {
+    required Map<String, dynamic> permissions,
+    required bool isAdmin,
+  }) async {
     final client = SupabaseService.client;
     final table = change.tableName;
     if (table == 'shop_settings') {
-      if (!isAdmin) throw StateError('Only a shop administrator can sync shop settings.');
-      await client.from('shop_settings').upsert({
-        'shop_id': shopId,
-        'settings': Db.settings.toMap(),
-      }, onConflict: 'shop_id');
+      if (!isAdmin) {
+        throw StateError('Only a shop administrator can sync shop settings.');
+      }
+      await _writeShopSettings(shopId);
       return;
     }
     if (change.operation == 'DELETE') {
-      final rows = await client.from(table).update({
-        'deleted_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('shop_id', shopId).eq('id', change.recordId).select('id');
-      if (rows.isEmpty) {
-        throw StateError('Delete was not accepted for $table/${change.recordId}. Check the account permissions.');
-      }
+      await _deleteVersionedRow(table, shopId, change.recordId);
       return;
     }
 
@@ -117,18 +271,17 @@ class CloudSyncService {
           throw StateError('Queued products record ${change.recordId} is missing locally.');
         }
         if (!isAdmin && permissions['inventory'] != true) {
-          // Billing-only workers may sync stock changes caused by sales, but
-          // cannot insert products or change product master data.
-          final rows = await client.from('products').update({
-            'stock': _finite(product.stock),
-          }).eq('shop_id', shopId).eq('id', product.id).select('id');
-          if (rows.isEmpty) {
-            throw StateError(
-              'Product ${product.id} is missing from cloud inventory. An administrator must sync the catalogue first.',
-            );
-          }
+          // Billing-only workers may synchronize stock changes, but only
+          // against the exact cloud version previously pulled to this device.
+          await _writeVersionedRow(
+            'products',
+            shopId,
+            product.id,
+            {'stock': _finite(product.stock)},
+            allowInsert: false,
+          );
         } else {
-          await client.from('products').upsert({
+          await _writeVersionedRow('products', shopId, product.id, {
             'shop_id': shopId,
             'id': product.id,
             'name': product.name,
@@ -143,7 +296,7 @@ class CloudSyncService {
             'hsn_code': product.hsnCode,
             'gst_rate': product.gstRate == null ? null : _finite(product.gstRate!),
             'deleted_at': null,
-          }, onConflict: 'shop_id,id');
+          });
         }
         break;
       case 'sales':
@@ -151,8 +304,10 @@ class CloudSyncService {
         if (sale == null) {
           throw StateError('Queued sales record ${change.recordId} is missing locally.');
         }
-        await client.rpc('sync_sale_snapshot', params: {
+        final expected = Db.meta.get(_baselineKey('sales', sale.id))?.toString();
+        final updatedAt = await client.rpc('sync_sale_snapshot', params: {
           'p_shop_id': shopId,
+          'p_expected_updated_at': expected,
           'p_sale': {
             'id': sale.id,
             'date': sale.date.toUtc().toIso8601String(),
@@ -178,13 +333,14 @@ class CloudSyncService {
               _saleItemRow(i, sale.items[i]),
           ],
         });
+        await _saveBaseline('sales', sale.id, updatedAt);
         break;
       case 'expenses':
         final expense = Db.expenses.get(change.recordId);
         if (expense == null) {
           throw StateError('Queued expenses record ${change.recordId} is missing locally.');
         }
-        await client.from('expenses').upsert({
+        await _writeVersionedRow('expenses', shopId, expense.id, {
           'shop_id': shopId,
           'id': expense.id,
           'date': expense.date.toUtc().toIso8601String(),
@@ -192,14 +348,14 @@ class CloudSyncService {
           'amount': _finite(expense.amount),
           'description': expense.description,
           'deleted_at': null,
-        }, onConflict: 'shop_id,id');
+        });
         break;
       case 'employees':
         final employee = Db.employees.get(change.recordId);
         if (employee == null) {
           throw StateError('Queued employees record ${change.recordId} is missing locally.');
         }
-        await client.from('employees').upsert({
+        await _writeVersionedRow('employees', shopId, employee.id, {
           'shop_id': shopId,
           'id': employee.id,
           'name': employee.name,
@@ -208,7 +364,7 @@ class CloudSyncService {
           'attendance': employee.attendance,
           'salary_paid': employee.salaryPaid,
           'deleted_at': null,
-        }, onConflict: 'shop_id,id');
+        });
         break;
       default:
         throw StateError('Unsupported sync table: $table');
