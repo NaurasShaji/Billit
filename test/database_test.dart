@@ -96,6 +96,27 @@ void main() {
     expect(changes.single.operation, 'DELETE');
   });
 
+  test('outbox cursor pagination advances through pending records', () async {
+    for (final id in ['cursor-a', 'cursor-b', 'cursor-c']) {
+      await Db.products.put(id, _product(id));
+    }
+
+    final firstPage = await Db.pendingSyncChanges(limit: 1);
+    expect(firstPage, hasLength(1));
+    final secondPage = await Db.pendingSyncChanges(
+      limit: 1,
+      afterId: firstPage.single.id,
+    );
+    expect(secondPage, hasLength(1));
+    expect(secondPage.single.id, greaterThan(firstPage.single.id));
+    final thirdPage = await Db.pendingSyncChanges(
+      limit: 1,
+      afterId: secondPage.single.id,
+    );
+    expect(thirdPage, hasLength(1));
+    expect(thirdPage.single.id, greaterThan(secondPage.single.id));
+  });
+
   test('stale acknowledgement cannot clear a newer edit', () async {
     final product = _product('revision-product', name: 'First');
     await Db.products.put(product.id, product);
