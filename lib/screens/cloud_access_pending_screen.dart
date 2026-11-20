@@ -58,11 +58,11 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
         builder: (dialogContext) => AlertDialog(
           title: const Text('Import existing Billit data?'),
           content: Text(
-            'Copy the current device database into \${auth.currentShopName ?? 'this shop'}?\n\n'
-            'Products: \${preview.products}\n'
-            'Sales: \${preview.sales}\n'
-            'Expenses: \${preview.expenses}\n'
-            'Employees: \${preview.employees}\n\n'
+            'Copy the current device database into ${auth.currentShopName ?? 'this shop'}?\n\n'
+            'Products: ${preview.products}\n'
+            'Sales: ${preview.sales}\n'
+            'Expenses: ${preview.expenses}\n'
+            'Employees: ${preview.employees}\n\n'
             'The original local database will remain untouched. This import is one-time and will be blocked if this shop already has cloud or local records.',
           ),
           actions: [
@@ -85,7 +85,7 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
       auth.refreshDatabaseBindings();
       if (!mounted) return;
       setState(() => _importMessage =
-          'Imported \${result.products} products, \${result.sales} sales, \${result.expenses} expenses and \${result.employees} employees into this shop. The original device database was not changed. Cloud upload is pending.');
+          'Imported ${result.products} products, ${result.sales} sales, ${result.expenses} expenses and ${result.employees} employees into this shop. The original device database was not changed. Cloud upload is pending.');
     } catch (error) {
       if (!mounted) return;
       setState(() => _importMessage = 'Import failed: $error');
