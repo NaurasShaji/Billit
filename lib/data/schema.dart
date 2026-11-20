@@ -1,6 +1,6 @@
 import 'package:sqlite3/common.dart';
 
-const int schemaVersion = 2;
+const int schemaVersion = 3;
 
 /// Key/value tables. Values are stored as JSON text.
 const List<String> keyValueTables = [
