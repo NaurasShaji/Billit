@@ -36,11 +36,11 @@ This branch contains cloud authentication, account provisioning, tenant-isolated
 - Shop admins can explicitly import existing device data into an empty shop after a count preview and confirmation. Sale references are validated and the original local records are retained.
 - SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON, protected membership identity fields and explicit Data API grants behind RLS.
 
-## Important limitation: business-data sync is not implemented
+## Important limitation: sync is not production-ready
 
 Cloud authentication, tenant-local database separation, a durable outbox, manual two-way synchronization and guarded local-data import are implemented. This is not production-ready yet: background retry scheduling, incremental pull cursors, fully deterministic simultaneous-edit conflict resolution, all settings/ancillary data sync and live-project integration tests remain outstanding.
 
-For that reason, when Supabase is configured, Billit deliberately blocks access to the normal POS screens after cloud sign-in. This prevents one shop from accidentally seeing another shop's unsynchronized local SQLite data. **Do not remove this guard or use cloud accounts for live billing until tenant-isolated storage and synchronization are completed and tested.**
+For that reason, when Supabase is configured, Billit deliberately blocks access to the normal POS screens after cloud sign-in. The local tenant files and manual sync path exist, but retry scheduling, concurrent-edit resolution, full settings sync and live RLS validation are incomplete. **Do not remove this guard or use cloud accounts for live billing until those remaining controls are completed and tested.**
 
 ## SQL migrations
 
