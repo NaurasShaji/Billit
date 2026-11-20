@@ -54,8 +54,9 @@ Apply these files in this exact order to a new Supabase project:
 5. `migrations/202611200005_permission_policy_alignment.sql`
 6. `migrations/202611200006_worker_sync_permissions.sql`
 7. `migrations/202611200007_billing_stock_sync.sql`
+8. `migrations/202611200008_restrict_helper_function_execution.sql`
 
-The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies.
+The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The final migration revokes default PUBLIC/anon execution on the security-definer authorization helpers and grants execution only to authenticated and service-role sessions.
 
 ## Edge Function
 
