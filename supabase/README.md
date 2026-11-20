@@ -30,8 +30,8 @@ This branch contains cloud authentication, account provisioning, tenant-isolated
 - Worker permission defaults: billing and inventory enabled; reports, expenses and payroll disabled.
 - Home navigation is permission-aware.
 - Each cloud shop has its own SQLite file on native platforms or IndexedDB namespace on web. The original `billit.db` remains separate.
-- SQLite schema v2 includes a durable coalescing outbox, deletion tombstones, retry metadata and revision-safe acknowledgements.
-- Manual two-way sync covers products, sales and sale items, expenses and employees. Billing-only workers can sync stock decrements from sales but cannot edit product master fields; a database trigger enforces this.
+- SQLite schema v3 includes a durable coalescing outbox, deletion tombstones, revision-safe acknowledgements, persistent retry deadlines with exponential backoff, and a single coalesced outbox entry for shop settings.
+- Manual two-way sync covers products, sales and sale items, expenses, employees and administrator-managed shop settings. Billing-only workers can sync stock decrements from sales but cannot edit product master fields; a database trigger enforces this.
 - Remote writes are applied without re-enqueuing them; pulls use immutable primary-key keyset pagination (including a dedicated line-item page RPC) and skip records with pending local changes.
 - Shop admins can explicitly import existing device data into an empty shop after a count preview and confirmation. Sale references are validated and the original local records are retained.
 - SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON, protected membership identity fields and explicit Data API grants behind RLS.
@@ -39,9 +39,9 @@ This branch contains cloud authentication, account provisioning, tenant-isolated
 
 ## Important limitation: sync is not production-ready
 
-Cloud authentication, tenant-local database separation, a durable outbox, manual two-way synchronization and guarded local-data import are implemented. This is not production-ready yet: background retry scheduling, incremental pull cursors, fully deterministic simultaneous-edit conflict resolution, all settings/ancillary data sync and live-project integration tests remain outstanding.
+Cloud authentication, tenant-local database separation, a durable outbox, manual two-way synchronization and guarded local-data import are implemented. This is not production-ready yet: automatic/background retry scheduling, incremental pull cursors, atomic multi-device conflict detection/resolution, settings conflict handling, remaining ancillary data sync and live-project integration tests remain outstanding.
 
-For that reason, when Supabase is configured, Billit deliberately blocks access to the normal POS screens after cloud sign-in. The local tenant files and manual sync path exist, but retry scheduling, concurrent-edit resolution, full settings sync and live RLS validation are incomplete. **Do not remove this guard or use cloud accounts for live billing until those remaining controls are completed and tested.**
+For that reason, when Supabase is configured, Billit deliberately blocks access to the normal POS screens after cloud sign-in. The local tenant files and manual sync path exist, but automatic retry scheduling, incremental pulls, concurrent-edit resolution, and live RLS validation are incomplete. Shop settings are now included in the manual sync path, but settings conflict resolution is not yet implemented. **Do not remove this guard or use cloud accounts for live billing until those remaining controls are completed and tested.**
 
 ## SQL migrations
 
