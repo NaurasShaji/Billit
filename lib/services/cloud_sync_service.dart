@@ -212,7 +212,8 @@ class CloudSyncService {
           .select()
           .eq('shop_id', shopId)
           .order('updated_at')
-          .order('id')
+          .order(table == 'sale_items' ? 'sale_id' : 'id')
+          .order(table == 'sale_items' ? 'position' : 'id')
           .range(offset, offset + _pageSize - 1);
       rows.addAll(page.map((row) => Map<String, dynamic>.from(row)));
       if (page.length < _pageSize) break;
