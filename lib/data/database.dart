@@ -85,6 +85,9 @@ class Db {
   static Future<void> recordSyncFailure(int id, int revision, String error) =>
       instance.recordSyncFailure(id, revision, error);
 
+  static Future<void> discardSyncChange(String tableName, String recordId) =>
+      instance.discardSyncChange(tableName, recordId);
+
   static Future<R> withoutOutbox<R>(Future<R> Function() action) =>
       instance.withoutOutbox(action);
 
@@ -198,6 +201,14 @@ class AppDatabase {
 
   Future<void> acknowledgeSyncChange(int id, int revision) async {
     db.execute('DELETE FROM local_sync_outbox WHERE id = ? AND revision = ?', [id, revision]);
+    await connection.flush();
+  }
+
+  Future<void> discardSyncChange(String tableName, String recordId) async {
+    db.execute(
+      'DELETE FROM local_sync_outbox WHERE table_name = ? AND record_id = ?',
+      [tableName, recordId],
+    );
     await connection.flush();
   }
 
