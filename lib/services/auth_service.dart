@@ -301,6 +301,8 @@ class AuthService extends ChangeNotifier {
   bool get isWorker => currentUser?.userType == UserType.worker;
   bool get isLoggedIn => currentUser != null;
 
+  void refreshDatabaseBindings() => notifyListeners();
+
   bool hasPermission(String key) {
     if (isAdmin) return true;
     if (!isCloudAuth) {
