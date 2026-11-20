@@ -47,6 +47,32 @@ class CloudAccessPendingScreen extends StatelessWidget {
                       : 'Workspace: ${auth.currentShopName}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+                if (auth.isPlatformOwner && auth.availableShops.length > 1) ...[
+                  const SizedBox(height: 12),
+                  DropdownButton<String>(
+                    value: auth.currentShopId,
+                    hint: const Text('Select shop'),
+                    items: [
+                      for (final shop in auth.availableShops)
+                        DropdownMenuItem(
+                          value: shop['id'],
+                          child: Text(shop['name'] ?? 'Shop'),
+                        ),
+                    ],
+                    onChanged: (shopId) async {
+                      if (shopId == null || shopId == auth.currentShopId) return;
+                      try {
+                        await context.read<AuthService>().switchShop(shopId);
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Could not switch shop: $error')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
                 const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.all(16),
