@@ -78,6 +78,18 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+      if (auth.isCloudAuth)
+        _SettingsSection(
+          heading: 'Account & Security',
+          items: [
+            _SettingsItem(
+              icon: Icons.lock_outline_rounded,
+              title: 'Change Password',
+              subtitle: 'Update your cloud account password',
+              onTap: () => _open(context, const ChangePasswordScreen()),
+            ),
+          ],
+        ),
       if (isAdmin && !auth.isCloudAuth)
         _SettingsSection(
           heading: 'Account & Security',
