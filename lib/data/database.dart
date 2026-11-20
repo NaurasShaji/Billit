@@ -172,8 +172,8 @@ class AppDatabase {
   Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100, int afterId = 0}) async {
     final rows = db.select(
       'SELECT id, table_name, record_id, operation, changed_at, attempts, revision, next_attempt_at '
-      'FROM local_sync_outbox WHERE id > ? ORDER BY id LIMIT ?',
-      [afterId, limit.clamp(1, 500)],
+      'FROM local_sync_outbox WHERE id > ? AND next_attempt_at <= ? ORDER BY id LIMIT ?',
+      [afterId, DateTime.now().millisecondsSinceEpoch, limit.clamp(1, 500)],
     );
     return rows.map((row) => SyncOutboxChange(
       id: (row['id'] as num).toInt(),
@@ -183,7 +183,8 @@ class AppDatabase {
       changedAt: DateTime.fromMillisecondsSinceEpoch(
         (row['changed_at'] as num).toInt(), isUtc: true),
       attempts: (row['attempts'] as num).toInt(),
-      revision: (row['revision'] as num).toInt(),\n      nextAttemptAt: (row['next_attempt_at'] as num).toInt(),
+      revision: (row['revision'] as num).toInt(),
+      nextAttemptAt: (row['next_attempt_at'] as num).toInt(),
     )).toList();
   }
 
