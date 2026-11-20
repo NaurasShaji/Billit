@@ -12,6 +12,21 @@ class CloudSyncService {
 
   static bool _running = false;
   static const int _pageSize = 500;
+  static const Set<String> _deviceOnlySettings = {
+    'printer_connection_type',
+    'usb_printer_vendor_id',
+    'usb_printer_product_id',
+    'usb_printer_name',
+    'window_width',
+    'window_height',
+    'window_maximized',
+  };
+
+  static Map<String, dynamic> _shopSettingsSnapshot() {
+    final values = Db.settings.toMap();
+    values.removeWhere((key, _) => _deviceOnlySettings.contains(key));
+    return values;
+  }
 
   static Map<String, dynamic>? get pendingConflict {
     final value = Db.meta.get('sync_conflict_pending');
@@ -274,7 +289,7 @@ class CloudSyncService {
       }
       final inserted = await client
           .from('shop_settings')
-          .insert({'shop_id': shopId, 'settings': Db.settings.toMap()})
+          .insert({'shop_id': shopId, 'settings': _shopSettingsSnapshot()})
           .select('updated_at')
           .single();
       await _saveBaseline('shop_settings', id, inserted['updated_at']);
@@ -287,7 +302,7 @@ class CloudSyncService {
     }
     final rows = await client
         .from('shop_settings')
-        .update({'settings': Db.settings.toMap()})
+        .update({'settings': _shopSettingsSnapshot()})
         .eq('shop_id', shopId)
         .eq('updated_at', current['updated_at'])
         .select('updated_at');
@@ -575,7 +590,10 @@ class CloudSyncService {
       if (settingsRows.isNotEmpty) {
         final raw = settingsRows.first['settings'];
         remoteSettingsUpdatedAt = settingsRows.first['updated_at'];
-        if (raw is Map) remoteSettings = Map<String, dynamic>.from(raw);
+        if (raw is Map) {
+          remoteSettings = Map<String, dynamic>.from(raw)
+            ..removeWhere((key, _) => _deviceOnlySettings.contains(key));
+        }
       }
     }
 
@@ -679,8 +697,12 @@ class CloudSyncService {
 
       if (remoteSettings != null &&
           !Db.hasPendingSyncChange('shop_settings', 'shop')) {
+        final deviceValues = <String, dynamic>{
+          for (final key in _deviceOnlySettings)
+            if (Db.settings.containsKey(key)) key: Db.settings.get(key),
+        };
         await Db.settings.clear();
-        await Db.settings.putAll(remoteSettings);
+        await Db.settings.putAll({...remoteSettings, ...deviceValues});
         applied++;
       }
 
