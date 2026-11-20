@@ -62,16 +62,21 @@ class CloudSyncService {
     final client = SupabaseService.client;
     final table = change.tableName;
     if (change.operation == 'DELETE') {
-      await client.from(table).update({
+      final rows = await client.from(table).update({
         'deleted_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('shop_id', shopId).eq('id', change.recordId);
+      }).eq('shop_id', shopId).eq('id', change.recordId).select('id');
+      if (rows.isEmpty) {
+        throw StateError('Delete was not accepted for $table/${change.recordId}. Check the account permissions.');
+      }
       return;
     }
 
     switch (table) {
       case 'products':
         final product = Db.products.get(change.recordId);
-        if (product == null) return;
+        if (product == null) {
+          throw StateError('Queued products record ${change.recordId} is missing locally.');
+        }
         if (!isAdmin && permissions['inventory'] != true) {
           // Billing-only workers may sync stock changes caused by sales, but
           // cannot insert products or change product master data.
@@ -104,7 +109,9 @@ class CloudSyncService {
         break;
       case 'sales':
         final sale = Db.sales.get(change.recordId);
-        if (sale == null) return;
+        if (sale == null) {
+          throw StateError('Queued sales record ${change.recordId} is missing locally.');
+        }
         await client.from('sales').upsert({
           'shop_id': shopId,
           'id': sale.id,
@@ -141,7 +148,9 @@ class CloudSyncService {
         break;
       case 'expenses':
         final expense = Db.expenses.get(change.recordId);
-        if (expense == null) return;
+        if (expense == null) {
+          throw StateError('Queued expenses record ${change.recordId} is missing locally.');
+        }
         await client.from('expenses').upsert({
           'shop_id': shopId,
           'id': expense.id,
@@ -154,7 +163,9 @@ class CloudSyncService {
         break;
       case 'employees':
         final employee = Db.employees.get(change.recordId);
-        if (employee == null) return;
+        if (employee == null) {
+          throw StateError('Queued employees record ${change.recordId} is missing locally.');
+        }
         await client.from('employees').upsert({
           'shop_id': shopId,
           'id': employee.id,
