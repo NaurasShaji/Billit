@@ -411,4 +411,36 @@ void main() {
     reopen();
     expect(Db.products.keys, ['p1']);
   });
+
+  test('shop settings changes are captured as one durable sync item', () async {
+    await Db.settings.put('business_name', 'North Shop');
+    await Db.settings.put('business_phone', '9876543210');
+    var changes = await Db.pendingSyncChanges();
+    expect(changes.where((e) => e.tableName == 'shop_settings'), hasLength(1));
+    expect(changes.single.recordId, 'shop');
+
+    await Db.withoutOutbox(() async {
+      await Db.settings.put('business_name', 'Remote Shop');
+    });
+    changes = await Db.pendingSyncChanges();
+    expect(changes.where((e) => e.tableName == 'shop_settings'), hasLength(1));
+    expect(Db.settings.get('business_name'), 'Remote Shop');
+  });
+
+  test('failed sync items receive a persistent retry delay', () async {
+    await Db.products.put('retry-product', _product('retry-product'));
+    final change = (await Db.pendingSyncChanges()).single;
+    await Db.recordSyncFailure(change.id, change.revision, 'temporary network error');
+
+    expect(await Db.pendingSyncChanges(), isEmpty);
+    final row = Db.instance.db.select(
+      'SELECT attempts, next_attempt_at, last_error FROM local_sync_outbox WHERE id = ?',
+      [change.id],
+    ).single;
+    expect(row['attempts'], 1);
+    expect((row['next_attempt_at'] as num).toInt(),
+        greaterThan(DateTime.now().millisecondsSinceEpoch));
+    expect(row['last_error'], 'temporary network error');
+  });
+
 }
