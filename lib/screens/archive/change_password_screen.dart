@@ -260,7 +260,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   controller: _newPasswordController,
                   obscureText: _obscureNewPassword,
                   decoration: InputDecoration(
-                    labelText: authService.isCloudAuth ? 'New Password' : 'New Password',
+                    labelText: 'New Password',
                     border: const OutlineInputBorder(),
                     hintText: authService.isCloudAuth
                         ? 'At least 8 characters'
@@ -408,9 +408,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _selectedChangeUserType == UserType.admin
-                              ? 'Admin password changes require current password verification.'
-                              : 'Worker password changes do not require current password.',
+                          authService.isCloudAuth
+                              ? 'Your cloud account password is updated securely through Supabase Auth.'
+                              : _selectedChangeUserType == UserType.admin
+                                  ? 'Admin password changes require current password verification.'
+                                  : 'Worker password changes do not require current password.',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 13,
