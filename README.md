@@ -118,7 +118,7 @@ assets/         App icons and other bundled assets
 
 ## Data and backups
 
-The app stores business data locally in a SQLite database (`billit.db` in the app's support directory; IndexedDB on the web). Installations that used the earlier Hive storage are copied into SQLite automatically on the first launch after updating; the old Hive files are left in place. Export backups regularly and store them somewhere safe. Google Drive backup requires signing in to a Google account and an available Google Sign-In configuration for the target platform.
+The local-only app stores business data in `billit.db` (SQLite in the app's support directory; IndexedDB on the web). The `Supabase` development branch opens a separate local database per cloud shop and retains `billit.db` as the original device database for explicit import. Installations that used the earlier Hive storage are copied into SQLite automatically on the first launch after updating; the old Hive files are left in place. Export backups regularly and store them somewhere safe. Google Drive backup requires signing in to a Google account and an available Google Sign-In configuration for the target platform.
 
 ## Android launcher icon
 
