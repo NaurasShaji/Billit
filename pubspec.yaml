@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
   provider: ^6.1.2
+  # Supabase Auth and cloud data client. Compatible with the project's Dart 3.6 baseline.
+  supabase_flutter: ^2.15.4
   # sqlite3 3.x bundles SQLite on every native platform; web needs web/sqlite3.wasm of the same version.
   sqlite3: 3.7.1
   path: ^1.9.0
