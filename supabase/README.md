@@ -36,8 +36,8 @@ The SQL migration intentionally does not create a public sign-up flow or automat
 
 ## Not implemented yet
 
-- Flutter Supabase client initialization
-- Cloud login and account provisioning
+- Flutter Supabase client dependency and optional client initialization are now added. Supply `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` at build time; without them, the app remains in local mode.
+- The sign-in screen has been redesigned, but it still authenticates against the existing local SQLite accounts. Cloud login and trusted account provisioning
 - SQLite initial upload
 - Background/two-way sync, retry queue and tombstone handling
 - Conflict resolution and sync UI
