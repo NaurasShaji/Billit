@@ -170,13 +170,13 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
                   child: const Column(
                     children: [
                       Text(
-                        'Cloud data synchronization is not enabled yet.',
+                        'Cloud POS access is still locked.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Billit has authenticated your account and loaded its shop permissions, but business records are still stored in local SQLite. The app is blocking the POS screens so one shop cannot accidentally see another shop’s local data.',
+                        'Billit has authenticated your account, opened an isolated local database for this shop and added manual cloud synchronization. POS access remains blocked until the Supabase migrations are applied and synchronization is verified against your actual project.',
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: 8),
