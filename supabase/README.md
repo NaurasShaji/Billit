@@ -45,6 +45,7 @@ Apply these files in this exact order to a new Supabase project:
 2. `migrations/202611200002_auth_profiles_and_worker_permissions.sql`
 3. `migrations/202611200003_security_hardening.sql`
 4. `migrations/202611200004_data_api_grants.sql`
+5. `migrations/202611200005_permission_policy_alignment.sql`
 
 The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies.
 
