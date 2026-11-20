@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: billit-one-time-android-build
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   android-release:
