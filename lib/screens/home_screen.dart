@@ -20,12 +20,38 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
-  late AuthService _authService; // Declare AuthService
+  late final PageController _pageController;
+  late AuthService _authService;
 
   @override
   void initState() {
     super.initState();
-    _authService = context.read<AuthService>(); // Initialize AuthService
+    _authService = context.read<AuthService>();
+    _pageController = PageController(initialPage: _index);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _selectTab(int index) {
+    if (index < 0) return;
+    setState(() => _index = index);
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _handlePageChanged(int index) {
+    if (_index != index) {
+      setState(() => _index = index);
+    }
   }
 
   void _showHelpFaqDialog() {
@@ -102,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
         category: 'Account & Data',
         question: 'How do I change my password?',
         answer:
-            'Open Archive > Account & Settings > Change Password. Password changes are managed by the admin account.',
+            'Open Settings > Account & Security > Change Password. Password changes are managed by the admin account.',
       ),
       (
         category: 'Account & Data',
@@ -606,9 +632,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<Widget> tabs = [
       DashboardTab(
         showFinancials: isAdmin,
-        onOpenBilling: () => setState(() => _index = 1),
-        onOpenProducts: () => setState(() => _index = 2),
-        onOpenReports: () => setState(() => _index = 3),
+        onOpenBilling: () => _selectTab(1),
+        onOpenProducts: () => _selectTab(2),
+        onOpenReports: () => _selectTab(3),
       ),
       const BillingTab(),
       const ProductsTab(),
@@ -618,8 +644,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Ensure _index is within bounds for worker
     if (!isAdmin && _index >= tabs.length) {
-      _index =
-          0; // Default to Billing tab for worker if current index is out of bounds
+      _index = 0;
+      if (_pageController.hasClients && _pageController.page != _index) {
+        _pageController.jumpToPage(_index);
+      }
     }
 
     return Scaffold(
@@ -747,7 +775,17 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             );
           }
-          return IndexedStack(index: _index, children: tabs);
+          return PageView(
+            controller: _pageController,
+            onPageChanged: _handlePageChanged,
+            children: [
+              for (final tab in tabs)
+                KeepAlive(
+                  keepAlive: true,
+                  child: tab,
+                ),
+            ],
+          );
         },
       ),
       bottomNavigationBar: MediaQuery.sizeOf(context).width <
@@ -782,7 +820,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: settings
                     .get('navigation_style', defaultValue: 'classic')
                     .toString(),
-                onSelect: (i) => setState(() => _index = i),
+                onSelect: _selectTab,
               ),
             )
           : null,
