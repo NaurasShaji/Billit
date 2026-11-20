@@ -245,24 +245,54 @@ class CloudSyncService {
     }
   }
 
+  /// Pulls with immutable primary-key ordering rather than offset pagination.
+  /// updated_at is mutable; ordering by it while other devices write can shift
+  /// rows between pages and cause records to be skipped.
   static Future<List<Map<String, dynamic>>> _fetchAll(
     String table,
     String shopId,
   ) async {
     final rows = <Map<String, dynamic>>[];
-    var offset = 0;
+    if (table == 'sale_items') {
+      var afterSaleId = '';
+      var afterPosition = -1;
+      while (true) {
+        final response = await SupabaseService.client.rpc(
+          'sync_sale_items_page',
+          params: {
+            'p_shop_id': shopId,
+            'p_after_sale_id': afterSaleId,
+            'p_after_position': afterPosition,
+            'p_page_size': _pageSize,
+          },
+        );
+        final page = (response as List)
+            .map((row) => Map<String, dynamic>.from(row as Map))
+            .toList();
+        rows.addAll(page);
+        if (page.length < _pageSize) break;
+        final last = page.last;
+        afterSaleId = last['sale_id'].toString();
+        afterPosition = (last['position'] as num).toInt();
+      }
+      return rows;
+    }
+
+    var afterId = '';
     while (true) {
       final page = await SupabaseService.client
           .from(table)
           .select()
           .eq('shop_id', shopId)
-          .order('updated_at')
-          .order(table == 'sale_items' ? 'sale_id' : 'id')
-          .order(table == 'sale_items' ? 'position' : 'id')
-          .range(offset, offset + _pageSize - 1);
-      rows.addAll(page.map((row) => Map<String, dynamic>.from(row)));
-      if (page.length < _pageSize) break;
-      offset += _pageSize;
+          .gt('id', afterId)
+          .order('id')
+          .limit(_pageSize);
+      final mapped = page
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+      rows.addAll(mapped);
+      if (mapped.length < _pageSize) break;
+      afterId = mapped.last['id'].toString();
     }
     return rows;
   }
