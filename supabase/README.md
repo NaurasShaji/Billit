@@ -58,7 +58,7 @@ Apply these files in this exact order to a new Supabase project:
 9. `migrations/202611200009_atomic_sale_snapshot_sync.sql`
 10. `migrations/202611200010_keyset_sale_item_pull.sql`
 
-The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The helper-function migration revokes default PUBLIC/anon execution on the security-definer authorization helpers. The sale-sync migration adds an authenticated, RLS-respecting RPC that writes a sale and replaces its line items in one database transaction, avoiding partially uploaded sales. The final migration adds RLS-respecting keyset pagination for sale-item downloads.
+The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The helper-function migration revokes default PUBLIC/anon execution on the security-definer authorization helpers. The sale-sync migration adds an authenticated, RLS-respecting RPC that writes a sale and replaces its line items in one database transaction, avoiding partially uploaded sales. The keyset-pagination migration adds RLS-respecting sale-item paging. Migration 011 provides a database-server timestamp watermark so concurrent writes are deferred safely to the next incremental pull.
 
 ## Edge Function
 
@@ -104,9 +104,9 @@ Without these defines, the app uses its existing local-only authentication path.
 
 ## Remaining engineering work before production use
 
-- Automatic/background sync scheduling, retry backoff and connectivity recovery.
-- Incremental pull cursors and robust conflict resolution for simultaneous edits across devices.
-- Synchronization of all shop settings and remaining ancillary records.
+- OS-level background scheduling while the app is closed.
+- Robust conflict detection and explicit conflict resolution for simultaneous edits across devices.
+- Synchronization of remaining ancillary records beyond shop settings.
 - Full SQL/RLS integration tests against a real Supabase project.
 - End-to-end verification of shop setup, data import, worker permissions and offline/multi-device workflows.
 
