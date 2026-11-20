@@ -114,6 +114,7 @@ final List<String> _schemaV2 = [
     operation TEXT NOT NULL CHECK (operation IN ('UPSERT', 'DELETE')),
     changed_at INTEGER NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
+    revision INTEGER NOT NULL DEFAULT 1,
     last_error TEXT,
     UNIQUE (table_name, record_id)
   )''',
@@ -123,9 +124,9 @@ final List<String> _schemaV2 = [
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
     BEGIN
       INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
-      VALUES ('$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      VALUES ('$table', NEW.id, 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
       ON CONFLICT (table_name, record_id) DO UPDATE SET
-        operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
+        operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1, last_error = NULL;
     END''',
     '''CREATE TRIGGER sync_${table}_update AFTER UPDATE ON $table
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
