@@ -92,7 +92,7 @@ class CloudSyncService {
   static Future<void> _pushOne(String shopId, SyncOutboxChange change, {required Map<String, dynamic> permissions, required bool isAdmin}) async {
     final client = SupabaseService.client;
     final table = change.tableName;
-    if (table == 'shop_settings') {\n      if (!isAdmin) throw StateError('Only a shop administrator can sync shop settings.');\n      await client.from('shop_settings').upsert({\n        'shop_id': shopId,\n        'settings': Db.settings.toMap(),\n      }, onConflict: 'shop_id');\n      return;\n    }\n    if (table == 'shop_settings') {
+    if (table == 'shop_settings') {
       if (!isAdmin) throw StateError('Only a shop administrator can sync shop settings.');
       await client.from('shop_settings').upsert({
         'shop_id': shopId,
@@ -343,19 +343,6 @@ class CloudSyncService {
       }
     }
 
-    Map<String, dynamic>? remoteSettings;
-    if (isAdmin) {
-      final settingsRows = await SupabaseService.client
-          .from('shop_settings')
-          .select('settings')
-          .eq('shop_id', shopId)
-          .limit(1);
-      if (settingsRows.isNotEmpty) {
-        final raw = settingsRows.first['settings'];
-        if (raw is Map) remoteSettings = Map<String, dynamic>.from(raw);
-      }
-    }
-
     // Check the outbox per record rather than using a capped snapshot:
     // a large offline backlog must never be overwritten by a cloud pull.
     bool isLocallyDirty(String table, String id) =>
@@ -451,13 +438,6 @@ class CloudSyncService {
             'description': row['description'] ?? '',
           }));
         }
-        applied++;
-      }
-
-      if (remoteSettings != null &&
-          !Db.hasPendingSyncChange('shop_settings', 'shop')) {
-        await Db.settings.clear();
-        await Db.settings.putAll(remoteSettings);
         applied++;
       }
 
