@@ -32,7 +32,7 @@ This branch contains cloud authentication, account provisioning, tenant-isolated
 - Each cloud shop has its own SQLite file on native platforms or IndexedDB namespace on web. The original `billit.db` remains separate.
 - SQLite schema v2 includes a durable coalescing outbox, deletion tombstones, retry metadata and revision-safe acknowledgements.
 - Manual two-way sync covers products, sales and sale items, expenses and employees. Billing-only workers can sync stock decrements from sales but cannot edit product master fields; a database trigger enforces this.
-- Remote writes are applied without re-enqueuing them; pull is paginated and skips records with pending local changes.
+- Remote writes are applied without re-enqueuing them; pulls use immutable primary-key keyset pagination (including a dedicated line-item page RPC) and skip records with pending local changes.
 - Shop admins can explicitly import existing device data into an empty shop after a count preview and confirmation. Sale references are validated and the original local records are retained.
 - SQL security hardening: shop-scoped sale-item/product references, constrained permission JSON, protected membership identity fields and explicit Data API grants behind RLS.
 - Billing-only workers can synchronize stock changes from sales, but a database trigger prevents them from editing product master fields.
@@ -56,8 +56,9 @@ Apply these files in this exact order to a new Supabase project:
 7. `migrations/202611200007_billing_stock_sync.sql`
 8. `migrations/202611200008_restrict_helper_function_execution.sql`
 9. `migrations/202611200009_atomic_sale_snapshot_sync.sql`
+10. `migrations/202611200010_keyset_sale_item_pull.sql`
 
-The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The helper-function migration revokes default PUBLIC/anon execution on the security-definer authorization helpers. The final migration adds an authenticated, RLS-respecting RPC that writes a sale and replaces its line items in one database transaction, avoiding partially uploaded sales.
+The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The helper-function migration revokes default PUBLIC/anon execution on the security-definer authorization helpers. The sale-sync migration adds an authenticated, RLS-respecting RPC that writes a sale and replaces its line items in one database transaction, avoiding partially uploaded sales. The final migration adds RLS-respecting keyset pagination for sale-item downloads.
 
 ## Edge Function
 
