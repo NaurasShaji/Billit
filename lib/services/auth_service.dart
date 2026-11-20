@@ -6,7 +6,20 @@ import '../data/database.dart';
 import 'supabase_service.dart';
 
 class AuthService extends ChangeNotifier {
+  AuthService() {
+    if (SupabaseService.isConfigured) {
+      _authSubscription = SupabaseService.client.auth.onAuthStateChange.listen((state) {
+        if (state.event == AuthChangeEvent.passwordRecovery) {
+          isPasswordRecovery = true;
+          notifyListeners();
+        }
+      });
+    }
+  }
+
   User? currentUser;
+  bool isPasswordRecovery = false;
+  StreamSubscription<AuthState>? _authSubscription;
 
   /// Selected tenant for the current cloud session.
   String? currentShopId;
@@ -237,13 +250,36 @@ class AuthService extends ChangeNotifier {
     );
   }
 
+  Future<void> completePasswordRecovery(String newPassword) async {
+    if (!SupabaseService.isConfigured || !isPasswordRecovery) {
+      throw StateError('No password recovery session is active.');
+    }
+    if (newPassword.length < 8) {
+      throw Exception('Password must be at least 8 characters long');
+    }
+    await SupabaseService.client.auth.updateUser(
+      supabase.UserAttributes(password: newPassword),
+    );
+    isPasswordRecovery = false;
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId != null) await _loadCloudIdentity(userId);
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     if (SupabaseService.isConfigured) {
       await SupabaseService.client.auth.signOut();
     } else {
       await Db.session.delete(_sessionUserIdKey);
     }
+    isPasswordRecovery = false;
     _clearIdentity();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   bool get isAdmin => _isPlatformOwner || currentUser?.userType == UserType.admin;
@@ -321,7 +357,10 @@ class AuthService extends ChangeNotifier {
     if (!isCloudAuth) {
       throw Exception('Use the local security-question recovery for this installation.');
     }
-    await SupabaseService.client.auth.resetPasswordForEmail(email.trim());
+    await SupabaseService.client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: kIsWeb ? null : 'com.naurasshaji.billit://login-callback',
+    );
   }
 
   Future<void> updateAdminSecurityQuestion({
