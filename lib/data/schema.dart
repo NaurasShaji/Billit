@@ -147,6 +147,53 @@ final List<String> _schemaV2 = [
   ],
 ];
 
+final List<String> _schemaV3 = [
+  'DROP INDEX IF EXISTS local_sync_outbox_order',
+  'ALTER TABLE local_sync_outbox RENAME TO local_sync_outbox_v2',
+  ```CREATE TABLE local_sync_outbox (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    table_name TEXT NOT NULL CHECK (table_name IN ('products', 'sales', 'expenses', 'employees', 'shop_settings')),
+    record_id TEXT NOT NULL,
+    operation TEXT NOT NULL CHECK (operation IN ('UPSERT', 'DELETE')),
+    changed_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    revision INTEGER NOT NULL DEFAULT 1,
+    last_error TEXT,
+    next_attempt_at INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (table_name, record_id)
+  )```,
+  'INSERT INTO local_sync_outbox (id, table_name, record_id, operation, changed_at, attempts, revision, last_error) SELECT id, table_name, record_id, operation, changed_at, attempts, revision, last_error FROM local_sync_outbox_v2',
+  'DROP TABLE local_sync_outbox_v2',
+  'CREATE INDEX local_sync_outbox_order ON local_sync_outbox (id)',
+  ```CREATE TRIGGER sync_app_settings_insert AFTER INSERT ON app_settings
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('shop_settings', 'shop', 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END```,
+  ```CREATE TRIGGER sync_app_settings_update AFTER UPDATE ON app_settings
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('shop_settings', 'shop', 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END```,
+  ```CREATE TRIGGER sync_app_settings_delete AFTER DELETE ON app_settings
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('shop_settings', 'shop', 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END```,
+];
+
 /// Creates or upgrades the schema. `PRAGMA user_version` tracks the version.
 void migrateSchema(CommonDatabase db) {
   db.execute('PRAGMA foreign_keys = ON');
@@ -164,7 +211,11 @@ void migrateSchema(CommonDatabase db) {
         db.execute(statement);
       }
     }
-    if (current < 3) {\n      for (final statement in _schemaV3) {\n        db.execute(statement);\n      }\n    }\n    db.execute('PRAGMA user_version = $schemaVersion');
+    if (current < 3) {
+      for (final statement in _schemaV3) {
+        db.execute(statement);
+      }
+    }\n    db.execute('PRAGMA user_version = $schemaVersion');
     db.execute('COMMIT');
   } catch (_) {
     db.execute('ROLLBACK');
