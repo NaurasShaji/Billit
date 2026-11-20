@@ -143,8 +143,10 @@ class _LoginScreenState extends State<LoginScreen> {
               textInputAction: TextInputAction.next,
               autofillHints: const [AutofillHints.username, AutofillHints.email],
               decoration: const InputDecoration(
-                labelText: 'Email or username',
-                hintText: 'Enter your email or username',
+                labelText: context.read<AuthService>().isCloudAuth ? 'Email address' : 'Username',
+                hintText: context.read<AuthService>().isCloudAuth
+                    ? 'Enter your account email'
+                    : 'Enter your username',
                 prefixIcon: Icon(Icons.person_outline_rounded),
               ),
               validator: (value) => value == null || value.trim().isEmpty
@@ -298,6 +300,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _showPasswordRecovery() async {
     final auth = context.read<AuthService>();
+
+    if (auth.isCloudAuth) {
+      final email = _usernameController.text.trim();
+      if (email.isEmpty || !email.contains('@')) {
+        _showMessage('Enter your account email first.');
+        return;
+      }
+      try {
+        await auth.sendPasswordReset(email);
+        _showMessage('Password reset email sent. Check your inbox.');
+      } catch (error) {
+        _showMessage('Could not send reset email: $error');
+      }
+      return;
+    }
+
     String question;
     try {
       question = auth.getAdminSecurityQuestion();
