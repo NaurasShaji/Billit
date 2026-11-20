@@ -1,9 +1,6 @@
 name: One-time Billit Android build
 
 on:
-  push:
-    branches:
-      - Supabase
   workflow_dispatch:
 
 permissions:
