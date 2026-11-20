@@ -45,6 +45,52 @@ class CloudAccountService {
     return _readResponse(response);
   }
 
+  static Future<List<Map<String, dynamic>>> listMembers(String shopId) async {
+    final response = await SupabaseService.client.functions.invoke(
+      'manage-account',
+      body: {'action': 'list_members', 'shop_id': shopId},
+    );
+    final data = _readResponse(response);
+    final members = data['members'];
+    if (members is! List) return [];
+    return members
+        .whereType<Map>()
+        .map((member) => Map<String, dynamic>.from(member))
+        .toList();
+  }
+
+  static Future<void> updateWorkerPermissions({
+    required String shopId,
+    required String userId,
+    required Map<String, bool> permissions,
+  }) async {
+    final response = await SupabaseService.client.functions.invoke(
+      'manage-account',
+      body: {
+        'action': 'update_worker_permissions',
+        'shop_id': shopId,
+        'user_id': userId,
+        'permissions': permissions,
+      },
+    );
+    _readResponse(response);
+  }
+
+  static Future<void> disableWorker({
+    required String shopId,
+    required String userId,
+  }) async {
+    final response = await SupabaseService.client.functions.invoke(
+      'manage-account',
+      body: {
+        'action': 'disable_worker',
+        'shop_id': shopId,
+        'user_id': userId,
+      },
+    );
+    _readResponse(response);
+  }
+
   static Map<String, dynamic> _readResponse(FunctionResponse response) {
     final data = response.data;
     if (response.status < 200 || response.status >= 300) {
