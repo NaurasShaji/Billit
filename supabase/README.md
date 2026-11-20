@@ -57,8 +57,10 @@ Apply these files in this exact order to a new Supabase project:
 8. `migrations/202611200008_restrict_helper_function_execution.sql`
 9. `migrations/202611200009_atomic_sale_snapshot_sync.sql`
 10. `migrations/202611200010_keyset_sale_item_pull.sql`
+11. `migrations/202611200011_incremental_sync_watermark.sql`
+12. `migrations/202611200012_compare_and_swap_sale_sync.sql`
 
-The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The helper-function migration revokes default PUBLIC/anon execution on the security-definer authorization helpers. The sale-sync migration adds an authenticated, RLS-respecting RPC that writes a sale and replaces its line items in one database transaction, avoiding partially uploaded sales. The keyset-pagination migration adds RLS-respecting sale-item paging. Migration 011 provides a database-server timestamp watermark so concurrent writes are deferred safely to the next incremental pull.
+The migrations create profiles, shops, memberships, products, sales, sale items, expenses, employees, shop settings, audit logs, helper functions and RLS policies. The helper-function migration revokes default PUBLIC/anon execution on the security-definer authorization helpers. The sale-sync migration adds an authenticated, RLS-respecting RPC that writes a sale and replaces its line items in one database transaction, avoiding partially uploaded sales. The keyset-pagination migration adds RLS-respecting sale-item paging. Migration 011 provides a database-server timestamp watermark so concurrent writes are deferred safely to the next incremental pull. Migration 012 replaces the sale snapshot RPC with a compare-and-swap version check so concurrent edits cannot silently overwrite each other.
 
 ## Edge Function
 
@@ -105,7 +107,7 @@ Without these defines, the app uses its existing local-only authentication path.
 ## Remaining engineering work before production use
 
 - OS-level background scheduling while the app is closed.
-- Robust conflict detection and explicit conflict resolution for simultaneous edits across devices.
+- Live multi-device conflict testing for every synchronized table and role.
 - Synchronization of remaining ancillary records beyond shop settings.
 - Full SQL/RLS integration tests against a real Supabase project.
 - End-to-end verification of shop setup, data import, worker permissions and offline/multi-device workflows.
