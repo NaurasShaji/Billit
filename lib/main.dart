@@ -488,36 +488,45 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
             create: (_) => AuthService()..restoreSessionIfAny())
       ],
-      child: ValueListenableBuilder<KeyValueStore>(
-        valueListenable: Db.settings.listenable(),
-        builder: (context, settings, _) {
-          final modeName =
-              settings.get('theme_mode', defaultValue: 'system').toString();
-          final mode = modeName == 'dark'
-              ? ThemeMode.dark
-              : modeName == 'light'
-                  ? ThemeMode.light
-                  : ThemeMode.system;
-          return MaterialApp(
-            title: settings.get('app_name', defaultValue: 'Billit').toString(),
-            theme: _buildAppTheme(settings, Brightness.light),
-            darkTheme: _buildAppTheme(settings, Brightness.dark),
-            themeMode: mode,
-            debugShowCheckedModeBanner: false,
-            builder: (context, child) {
-              final scale =
-                  (settings.get('text_scale', defaultValue: 1.0) as num)
-                      .toDouble()
-                      .clamp(0.9, 1.2)
-                      .toDouble();
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(scale),
-                ),
-                child: child ?? const SizedBox.shrink(),
+      // AuthService notifies after opening a tenant-specific database. Rebuild
+      // the settings listener against that database rather than retaining the
+      // old local database's ValueListenable.
+      child: Consumer<AuthService>(
+        builder: (context, auth, _) {
+          final settings = Db.settings;
+          return ValueListenableBuilder<KeyValueStore>(
+            key: ValueKey(Db.activeDatabaseKey),
+            valueListenable: settings.listenable(),
+            builder: (context, settings, _) {
+              final modeName =
+                  settings.get('theme_mode', defaultValue: 'system').toString();
+              final mode = modeName == 'dark'
+                  ? ThemeMode.dark
+                  : modeName == 'light'
+                      ? ThemeMode.light
+                      : ThemeMode.system;
+              return MaterialApp(
+                title: settings.get('app_name', defaultValue: 'Billit').toString(),
+                theme: _buildAppTheme(settings, Brightness.light),
+                darkTheme: _buildAppTheme(settings, Brightness.dark),
+                themeMode: mode,
+                debugShowCheckedModeBanner: false,
+                builder: (context, child) {
+                  final scale =
+                      (settings.get('text_scale', defaultValue: 1.0) as num)
+                          .toDouble()
+                          .clamp(0.9, 1.2)
+                          .toDouble();
+                  return MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      textScaler: TextScaler.linear(scale),
+                    ),
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
+                home: const AppWrapper(),
               );
             },
-            home: const AppWrapper(),
           );
         },
       ),
