@@ -1,6 +1,6 @@
 import 'package:sqlite3/common.dart';
 
-const int schemaVersion = 3;
+const int schemaVersion = 4;
 
 /// Key/value tables. Values are stored as JSON text.
 const List<String> keyValueTables = [
@@ -228,6 +228,48 @@ final List<String> _schemaV3 = [
     END''',
 ];
 
+final List<String> _schemaV4 = [
+  'DROP TRIGGER IF EXISTS sync_app_settings_insert',
+  'DROP TRIGGER IF EXISTS sync_app_settings_update',
+  'DROP TRIGGER IF EXISTS sync_app_settings_delete',
+  '''CREATE TRIGGER sync_app_settings_insert AFTER INSERT ON app_settings
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+      AND NEW.key NOT IN ('printer_connection_type', 'usb_printer_vendor_id',
+        'usb_printer_product_id', 'usb_printer_name', 'window_width',
+        'window_height', 'window_maximized')
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('shop_settings', 'shop', 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END''',
+  '''CREATE TRIGGER sync_app_settings_update AFTER UPDATE ON app_settings
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+      AND NEW.key NOT IN ('printer_connection_type', 'usb_printer_vendor_id',
+        'usb_printer_product_id', 'usb_printer_name', 'window_width',
+        'window_height', 'window_maximized')
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('shop_settings', 'shop', 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END''',
+  '''CREATE TRIGGER sync_app_settings_delete AFTER DELETE ON app_settings
+    WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
+      AND OLD.key NOT IN ('printer_connection_type', 'usb_printer_vendor_id',
+        'usb_printer_product_id', 'usb_printer_name', 'window_width',
+        'window_height', 'window_maximized')
+    BEGIN
+      INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
+      VALUES ('shop_settings', 'shop', 'UPSERT', CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))
+      ON CONFLICT (table_name, record_id) DO UPDATE SET operation = 'UPSERT',
+        changed_at = excluded.changed_at, attempts = 0, revision = local_sync_outbox.revision + 1,
+        last_error = NULL, next_attempt_at = 0;
+    END''',
+];
+
 /// Creates or upgrades the schema. `PRAGMA user_version` tracks the version.
 void migrateSchema(CommonDatabase db) {
   db.execute('PRAGMA foreign_keys = ON');
@@ -247,6 +289,11 @@ void migrateSchema(CommonDatabase db) {
     }
     if (current < 3) {
       for (final statement in _schemaV3) {
+        db.execute(statement);
+      }
+    }
+    if (current < 4) {
+      for (final statement in _schemaV4) {
         db.execute(statement);
       }
     }
