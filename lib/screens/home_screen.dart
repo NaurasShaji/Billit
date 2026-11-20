@@ -9,6 +9,7 @@ import 'tabs/products_tab.dart';
 import 'tabs/reports_tab.dart';
 import 'tabs/archive_tab.dart';
 import 'settings_screen.dart';
+import 'cloud_management_screen.dart';
 import '../widgets/responsive_page.dart';
 import '../data/database.dart';
 
@@ -599,8 +600,102 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showShopPicker() async {
+    final auth = context.read<AuthService>();
+    final selectedId = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 14),
+              child: Text(
+                'Switch shop',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
+            for (final shop in auth.availableShops)
+              ListTile(
+                leading: const Icon(Icons.storefront_outlined),
+                title: Text(shop['name'] ?? 'Shop'),
+                trailing: shop['id'] == auth.currentShopId
+                    ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => Navigator.pop(sheetContext, shop['id']),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selectedId == null || selectedId == auth.currentShopId) return;
+    try {
+      await auth.switchShop(selectedId);
+      if (mounted) setState(() => _index = 0);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not switch shop: $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_authService.isCloudAuth &&
+        _authService.isPlatformOwner &&
+        _authService.currentShopId == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Billit Platform Console')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.store_mall_directory_outlined,
+                      size: 56, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No shops yet',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Create the first shop and its administrator account to start using Billit.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 22),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CloudManagementScreen(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_business_outlined),
+                    label: const Text('Create first shop'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () => context.read<AuthService>().logout(),
+                    child: const Text('Sign out'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final bool isAdmin = _authService.isAdmin;
     final visibleKeys = <String>[
       'overview',
@@ -709,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w600)),
-                      Text(labels[_index],
+                      Text(_authService.currentShopName ?? labels[_index],
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12)),
@@ -721,6 +816,12 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         actions: [
+          if (_authService.isPlatformOwner && _authService.availableShops.length > 1)
+            IconButton(
+              tooltip: 'Switch shop',
+              icon: const Icon(Icons.storefront_outlined),
+              onPressed: _showShopPicker,
+            ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
