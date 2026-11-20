@@ -33,6 +33,8 @@ class AuthService extends ChangeNotifier {
 
   bool get isCloudAuth => SupabaseService.isConfigured;
   bool get isPlatformOwner => _isPlatformOwner;
+  Map<String, dynamic> get cloudPermissions =>
+      Map<String, dynamic>.unmodifiable(_permissions);
   bool _isPlatformOwner = false;
 
   /// Local demo accounts are retained only for builds without Supabase
