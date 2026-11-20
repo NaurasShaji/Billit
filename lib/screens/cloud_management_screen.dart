@@ -19,6 +19,7 @@ class _CloudManagementScreenState extends State<CloudManagementScreen> {
   final _password = TextEditingController();
   bool _saving = false;
   bool _showPassword = false;
+  late Future<List<Map<String, dynamic>>> _membersFuture;
   final Map<String, bool> _permissions = {
     'billing': true,
     'inventory': true,
@@ -26,6 +27,16 @@ class _CloudManagementScreenState extends State<CloudManagementScreen> {
     'expenses': false,
     'payroll': false,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthService>();
+    final shopId = auth.currentShopId;
+    _membersFuture = shopId == null
+        ? Future.value([])
+        : CloudAccountService.listMembers(shopId);
+  }
 
   @override
   void dispose() {
@@ -50,6 +61,7 @@ class _CloudManagementScreenState extends State<CloudManagementScreen> {
         final shop = result['shop'];
         if (shop is Map && shop['id'] != null) {
           await auth.switchShop(shop['id'].toString());
+          _membersFuture = CloudAccountService.listMembers(shop['id'].toString());
         }
       } else {
         final shopId = auth.currentShopId;
@@ -61,6 +73,7 @@ class _CloudManagementScreenState extends State<CloudManagementScreen> {
           displayName: _name.text.trim(),
           permissions: Map<String, bool>.from(_permissions),
         );
+        _membersFuture = CloudAccountService.listMembers(shopId);
       }
       if (!mounted) return;
       _name.clear();
@@ -246,11 +259,183 @@ class _CloudManagementScreenState extends State<CloudManagementScreen> {
                   ],
                 ),
               ),
+              if (auth.currentShopId != null) ...[
+                const SizedBox(height: 28),
+                Text(
+                  'Shop members',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _membersFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return Text('Could not load members: ${snapshot.error}');
+                    }
+                    final members = snapshot.data ?? [];
+                    if (members.isEmpty) return const Text('No members found.');
+                    return Column(
+                      children: [
+                        for (final member in members)
+                          _buildMemberCard(context, auth, member),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildMemberCard(
+    BuildContext context,
+    AuthService auth,
+    Map<String, dynamic> member,
+  ) {
+    final isWorker = member['role'] == 'worker';
+    final active = member['is_active'] == true;
+    final permissionsRaw = member['permissions'];
+    final permissions = permissionsRaw is Map
+        ? Map<String, dynamic>.from(permissionsRaw)
+        : <String, dynamic>{};
+    final displayName = member['display_name']?.toString().trim() ?? '';
+    final email = member['email']?.toString() ?? '';
+    final userId = member['user_id']?.toString() ?? '';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  child: Icon(isWorker ? Icons.person_outline : Icons.admin_panel_settings_outlined),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName.isEmpty ? email : displayName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      if (displayName.isNotEmpty)
+                        Text(email, style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        isWorker ? 'Worker' : 'Shop administrator',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+                if (!active)
+                  const Chip(label: Text('Disabled'))
+                else if (isWorker)
+                  IconButton(
+                    tooltip: 'Disable worker',
+                    onPressed: () => _disableMember(auth, userId),
+                    icon: const Icon(Icons.person_off_outlined),
+                  ),
+              ],
+            ),
+            if (isWorker && active) ...[
+              const Divider(height: 22),
+              for (final key in _permissions.keys)
+                SwitchListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(_permissionLabel(key)),
+                  value: permissions[key] == true,
+                  onChanged: (value) => _updatePermission(
+                    auth,
+                    userId,
+                    {..._permissionsFrom(permissions), key: value},
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, bool> _permissionsFrom(Map<String, dynamic> source) => {
+        for (final key in _permissions.keys) key: source[key] == true,
+      };
+
+  Future<void> _updatePermission(
+    AuthService auth,
+    String userId,
+    Map<String, bool> permissions,
+  ) async {
+    final shopId = auth.currentShopId;
+    if (shopId == null) return;
+    try {
+      await CloudAccountService.updateWorkerPermissions(
+        shopId: shopId,
+        userId: userId,
+        permissions: permissions,
+      );
+      if (!mounted) return;
+      setState(() {
+        _membersFuture = CloudAccountService.listMembers(shopId);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update permissions: $error')),
+      );
+    }
+  }
+
+  Future<void> _disableMember(AuthService auth, String userId) async {
+    final shopId = auth.currentShopId;
+    if (shopId == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Disable worker?'),
+        content: const Text('This worker will no longer be able to sign in to this shop.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Disable'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await CloudAccountService.disableWorker(shopId: shopId, userId: userId);
+      if (!mounted) return;
+      setState(() {
+        _membersFuture = CloudAccountService.listMembers(shopId);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not disable worker: $error')),
+      );
+    }
   }
 
   String _permissionLabel(String key) {
