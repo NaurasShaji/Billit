@@ -118,6 +118,10 @@ assets/         App icons and other bundled assets
 
 ## Data and backups
 
+- In local-only mode, business data is stored in `billit.db`; Google Drive backup remains available for that mode.
+- In Supabase-configured mode, each shop's business data is synchronized to the central Supabase project. Google Drive backup is intentionally skipped.
+- Cloud synchronization is not itself a backup. Configure and verify Supabase's database backup/PITR options for the project and its subscription plan. Per-shop cloud export/restore is not implemented in this branch yet.
+
 The local-only app stores business data in `billit.db` (SQLite in the app's support directory; IndexedDB on the web). The `Supabase` development branch opens a separate local database per cloud shop and retains `billit.db` as the original device database for explicit import. See `supabase/README.md` for the cloud architecture and migration order. Installations that used the earlier Hive storage are copied into SQLite automatically on the first launch after updating; the old Hive files are left in place. Export backups regularly and store them somewhere safe. Google Drive backup requires signing in to a Google account and an available Google Sign-In configuration for the target platform.
 
 ## Android launcher icon
