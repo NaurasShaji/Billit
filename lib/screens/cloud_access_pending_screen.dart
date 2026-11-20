@@ -182,7 +182,7 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Do not enter production sales or inventory until synchronization and tenant-specific local storage are completed.',
+                        'Do not enter production sales or inventory until cloud sync, offline recovery and multi-device conflict handling have been tested.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
