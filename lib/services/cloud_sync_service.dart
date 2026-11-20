@@ -255,46 +255,40 @@ class CloudSyncService {
     }
   }
 
-  /// Pulls with immutable primary-key ordering rather than offset pagination.
-  /// updated_at is mutable; ordering by it while other devices write can shift
-  /// rows between pages and cause records to be skipped.
-  static Future<List<Map<String, dynamic>>> _fetchAll(
+  /// Fetches only records changed since the persisted cursor. The server
+  /// watermark bounds this pull: concurrent writes receive a later
+  /// updated_at and are intentionally deferred to the next sync. A small
+  /// overlap protects against timestamp precision/transport edge cases;
+  /// applying duplicate rows is idempotent.
+  static Future<List<Map<String, dynamic>>> _fetchChanged(
     String table,
     String shopId,
+    DateTime highWater,
   ) async {
     final rows = <Map<String, dynamic>>[];
-    if (table == 'sale_items') {
-      var afterSaleId = '';
-      var afterPosition = -1;
-      while (true) {
-        final response = await SupabaseService.client.rpc(
-          'sync_sale_items_page',
-          params: {
-            'p_shop_id': shopId,
-            'p_after_sale_id': afterSaleId,
-            'p_after_position': afterPosition,
-            'p_page_size': _pageSize,
-          },
-        );
-        final page = (response as List)
-            .map((row) => Map<String, dynamic>.from(row as Map))
-            .toList();
-        rows.addAll(page);
-        if (page.length < _pageSize) break;
-        final last = page.last;
-        afterSaleId = last['sale_id'].toString();
-        afterPosition = (last['position'] as num).toInt();
-      }
-      return rows;
+    final saved = Db.meta.get('sync_cursor_$table');
+    DateTime? afterAt;
+    var afterId = '';
+    if (saved is Map && saved['updated_at'] is String) {
+      afterAt = DateTime.parse(saved['updated_at'] as String)
+          .toUtc()
+          .subtract(const Duration(seconds: 5));
     }
 
-    var afterId = '';
     while (true) {
-      final page = await SupabaseService.client
+      final timestamp = afterAt?.toIso8601String();
+      final base = SupabaseService.client
           .from(table)
           .select()
           .eq('shop_id', shopId)
-          .gt('id', afterId)
+          .lte('updated_at', highWater.toUtc().toIso8601String());
+      final filtered = timestamp == null
+          ? base
+          : base.or(
+              'updated_at.gt.$timestamp,and(updated_at.eq.$timestamp,id.gt.$afterId)',
+            );
+      final page = await filtered
+          .order('updated_at')
           .order('id')
           .limit(_pageSize);
       final mapped = page
@@ -302,7 +296,31 @@ class CloudSyncService {
           .toList();
       rows.addAll(mapped);
       if (mapped.length < _pageSize) break;
-      afterId = mapped.last['id'].toString();
+      final last = mapped.last;
+      afterAt = DateTime.parse(last['updated_at'].toString()).toUtc();
+      afterId = last['id'].toString();
+    }
+    return rows;
+  }
+
+  /// A sale row is the versioned parent for its complete line-item snapshot.
+  /// Fetch all items for changed sales (not just changed item rows), because
+  /// the local Sale model stores the whole snapshot as one object.
+  static Future<List<Map<String, dynamic>>> _fetchItemsForSales(
+    String shopId,
+    List<String> saleIds,
+  ) async {
+    final rows = <Map<String, dynamic>>[];
+    for (var offset = 0; offset < saleIds.length; offset += 100) {
+      final ids = saleIds.skip(offset).take(100).toList();
+      final page = await SupabaseService.client
+          .from('sale_items')
+          .select()
+          .eq('shop_id', shopId)
+          .inFilter('sale_id', ids)
+          .order('sale_id')
+          .order('position');
+      rows.addAll(page.map((row) => Map<String, dynamic>.from(row)));
     }
     return rows;
   }
@@ -315,15 +333,22 @@ class CloudSyncService {
     final tables = ['products', 'sales', 'expenses', 'employees']
         .where((table) => _canRead(table, permissions, isAdmin))
         .toList();
+    // Obtain one database-server watermark for the complete pull cycle.
+    final rawWatermark = await SupabaseService.client.rpc('sync_pull_watermark');
+    final highWater = DateTime.parse(rawWatermark.toString()).toUtc();
     final remote = <String, List<Map<String, dynamic>>>{};
     for (final table in tables) {
-      remote[table] = await _fetchAll(table, shopId);
+      remote[table] = await _fetchChanged(table, shopId, highWater);
     }
 
-    List<Map<String, dynamic>> remoteItems = [];
-    if (tables.contains('sales')) {
-      remoteItems = await _fetchAll('sale_items', shopId);
-    }
+    final changedSaleIds = (remote['sales'] ?? const <Map<String, dynamic>>[])
+        .where((row) => row['deleted_at'] == null)
+        .map((row) => row['id'].toString())
+        .toSet()
+        .toList();
+    final remoteItems = tables.contains('sales') && changedSaleIds.isNotEmpty
+        ? await _fetchItemsForSales(shopId, changedSaleIds)
+        : <Map<String, dynamic>>[];
     final itemsBySale = <String, List<Map<String, dynamic>>>{};
     for (final item in remoteItems) {
       final saleId = item['sale_id'].toString();
@@ -466,6 +491,14 @@ class CloudSyncService {
         applied++;
       }
     });
+
+    // Commit cursors only after every fetched row has been applied. If the app
+    // exits earlier, the same bounded window is replayed safely next time.
+    for (final table in tables) {
+      await Db.meta.put('sync_cursor_$table', {
+        'updated_at': highWater.toIso8601String(),
+      });
+    }
     return applied;
   }
 }
