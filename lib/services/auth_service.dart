@@ -11,6 +11,7 @@ class AuthService extends ChangeNotifier {
   /// Selected tenant for the current cloud session.
   String? currentShopId;
   String? currentShopName;
+  List<Map<String, String>> availableShops = const [];
   Map<String, dynamic> _permissions = const {};
 
   static const String _sessionUserIdKey = 'user_id';
@@ -114,7 +115,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadCloudIdentity(String authUserId) async {
+  Future<void> _loadCloudIdentity(String authUserId, {String? preferredShopId}) async {
     final client = SupabaseService.client;
 
     final profile = await client
@@ -134,15 +135,22 @@ class AuthService extends ChangeNotifier {
     String role = 'worker';
     Map<String, dynamic> permissions = const {};
 
+    List<Map<String, String>> shopChoices = [];
     if (_isPlatformOwner) {
       final shops = await client
           .from('shops')
           .select('id, name')
           .eq('is_active', true)
           .order('name');
-      if (shops.isNotEmpty) {
-        shopId = shops.first['id'] as String;
-        shopName = shops.first['name'] as String;
+      shopChoices = shops.map((shop) => {
+        'id': shop['id'].toString(),
+        'name': shop['name'].toString(),
+      }).toList();
+      final selected = shopChoices.where((shop) => shop['id'] == preferredShopId).firstOrNull
+          ?? (shopChoices.isEmpty ? null : shopChoices.first);
+      if (selected != null) {
+        shopId = selected['id'];
+        shopName = selected['name'];
         role = 'shop_admin';
       }
     } else {
@@ -157,8 +165,19 @@ class AuthService extends ChangeNotifier {
         return shop is Map && shop['is_active'] == true;
       }).toList();
 
-      if (activeMemberships.isNotEmpty) {
-        final membership = activeMemberships.first;
+      shopChoices = activeMemberships.map((membership) {
+        final shop = membership['shops'] as Map;
+        return {
+          'id': membership['shop_id'].toString(),
+          'name': shop['name']?.toString() ?? 'Shop',
+        };
+      }).toList();
+      final selectedShop = shopChoices.where((shop) => shop['id'] == preferredShopId).firstOrNull
+          ?? (shopChoices.isEmpty ? null : shopChoices.first);
+      if (selectedShop != null) {
+        final membership = activeMemberships.firstWhere(
+          (item) => item['shop_id'].toString() == selectedShop['id'],
+        );
         final shop = membership['shops'] as Map;
         shopId = membership['shop_id'] as String;
         shopName = shop['name']?.toString();
@@ -170,12 +189,8 @@ class AuthService extends ChangeNotifier {
       }
     }
 
-    if (shopId == null) {
-      throw StateError(
-        _isPlatformOwner
-            ? 'No active shop exists yet. Create a shop in the Supabase dashboard before signing in.'
-            : 'Your account is not assigned to an active shop. Contact your shop administrator.',
-      );
+    if (shopId == null && !_isPlatformOwner) {
+      throw StateError('Your account is not assigned to an active shop. Contact your shop administrator.');
     }
 
     final authUser = client.auth.currentUser;
@@ -192,6 +207,7 @@ class AuthService extends ChangeNotifier {
     currentUser = localUser;
     currentShopId = shopId;
     currentShopName = shopName;
+    availableShops = shopChoices;
     _permissions = permissions;
     await Db.session.delete(_sessionUserIdKey);
     notifyListeners();
@@ -201,9 +217,20 @@ class AuthService extends ChangeNotifier {
     currentUser = null;
     currentShopId = null;
     currentShopName = null;
+    availableShops = const [];
     _permissions = const {};
     _isPlatformOwner = false;
     notifyListeners();
+  }
+
+  Future<void> switchShop(String shopId) async {
+    if (!SupabaseService.isConfigured || SupabaseService.client.auth.currentUser == null) {
+      throw StateError('No cloud session is active.');
+    }
+    await _loadCloudIdentity(
+      SupabaseService.client.auth.currentUser!.id,
+      preferredShopId: shopId,
+    );
   }
 
   Future<void> logout() async {
