@@ -2,11 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
+import '../services/cloud_sync_service.dart';
 import 'cloud_management_screen.dart';
 import 'archive/change_password_screen.dart';
 
-class CloudAccessPendingScreen extends StatelessWidget {
+class CloudAccessPendingScreen extends StatefulWidget {
   const CloudAccessPendingScreen({super.key});
+
+  @override
+  State<CloudAccessPendingScreen> createState() => _CloudAccessPendingScreenState();
+}
+
+class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
+  bool _syncing = false;
+  String? _syncMessage;
+
+  Future<void> _sync(AuthService auth) async {
+    final shopId = auth.currentShopId;
+    if (shopId == null || _syncing) return;
+    setState(() { _syncing = true; _syncMessage = null; });
+    try {
+      final result = await CloudSyncService.syncShop(
+        shopId: shopId,
+        permissions: auth.cloudPermissions,
+        isAdmin: auth.isAdmin,
+      );
+      if (!mounted) return;
+      setState(() => _syncMessage =
+          'Sync completed: ${result.pushed} local changes uploaded, ${result.pulled} cloud records downloaded.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _syncMessage = 'Sync failed: $error');
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +132,25 @@ class CloudAccessPendingScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (auth.currentShopId != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _syncing ? null : () => _sync(auth),
+                      icon: _syncing
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.sync_rounded),
+                      label: Text(_syncing ? 'Syncing shop data…' : 'Sync shop data'),
+                    ),
+                  ),
+                  if (_syncMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(_syncMessage!, textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ],
                 if (auth.isAdmin) ...[
                   const SizedBox(height: 20),
                   SizedBox(
