@@ -201,10 +201,20 @@ class AppDatabase {
   }
 
   Future<void> recordSyncFailure(int id, int revision, String error) async {
+    final rows = db.select(
+      'SELECT attempts FROM local_sync_outbox WHERE id = ? AND revision = ?',
+      [id, revision],
+    );
+    if (rows.isEmpty) return;
+    final attempts = (rows.first['attempts'] as num).toInt() + 1;
+    final delaySeconds = 1 << attempts.clamp(0, 10).toInt();
+    final nextAttempt = DateTime.now().millisecondsSinceEpoch +
+        delaySeconds * 1000;
     db.execute(
-      'UPDATE local_sync_outbox SET attempts = attempts + 1, last_error = ? '
-      'WHERE id = ? AND revision = ?',
-      [error.length > 1000 ? error.substring(0, 1000) : error, id, revision],
+      'UPDATE local_sync_outbox SET attempts = ?, last_error = ?, '
+      'next_attempt_at = ? WHERE id = ? AND revision = ?',
+      [attempts, error.length > 1000 ? error.substring(0, 1000) : error,
+       nextAttempt, id, revision],
     );
     await connection.flush();
   }
