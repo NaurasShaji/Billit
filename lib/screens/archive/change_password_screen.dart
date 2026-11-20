@@ -108,7 +108,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
 
     // Only admins can access password management
-    if (!authService.isAdmin) {
+    if (!authService.isAdmin && !authService.isCloudAuth) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Change Password'),
