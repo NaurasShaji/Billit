@@ -76,6 +76,9 @@ class Db {
   static Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100}) =>
       instance.pendingSyncChanges(limit: limit);
 
+  static bool hasPendingSyncChange(String tableName, String recordId) =>
+      instance.hasPendingSyncChange(tableName, recordId);
+
   static Future<void> acknowledgeSyncChange(int id, int revision) =>
       instance.acknowledgeSyncChange(id, revision);
 
@@ -182,6 +185,14 @@ class AppDatabase {
       attempts: (row['attempts'] as num).toInt(),
       revision: (row['revision'] as num).toInt(),
     )).toList();
+  }
+
+  bool hasPendingSyncChange(String tableName, String recordId) {
+    final rows = db.select(
+      'SELECT 1 FROM local_sync_outbox WHERE table_name = ? AND record_id = ? LIMIT 1',
+      [tableName, recordId],
+    );
+    return rows.isNotEmpty;
   }
 
   Future<void> acknowledgeSyncChange(int id, int revision) async {
