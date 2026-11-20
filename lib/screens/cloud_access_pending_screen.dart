@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
 import '../services/cloud_sync_service.dart';
+import '../services/local_shop_data_import_service.dart';
 import 'cloud_management_screen.dart';
 import 'archive/change_password_screen.dart';
 
@@ -16,6 +17,8 @@ class CloudAccessPendingScreen extends StatefulWidget {
 class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
   bool _syncing = false;
   String? _syncMessage;
+  bool _importing = false;
+  String? _importMessage;
 
   Future<void> _sync(AuthService auth) async {
     final shopId = auth.currentShopId;
@@ -35,6 +38,59 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
       setState(() => _syncMessage = 'Sync failed: $error');
     } finally {
       if (mounted) setState(() => _syncing = false);
+    }
+  }
+
+  Future<void> _importLocalData(AuthService auth) async {
+    final shopId = auth.currentShopId;
+    if (shopId == null || _importing || !auth.isAdmin) return;
+    setState(() { _importing = true; _importMessage = null; });
+    try {
+      final preview = await LocalShopDataImportService.preview(shopId: shopId);
+      if (!mounted) return;
+      if (preview.total == 0) {
+        setState(() => _importMessage =
+            'No existing local business records were found on this device.');
+        return;
+      }
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Import existing Billit data?'),
+          content: Text(
+            'Copy the current device database into \${auth.currentShopName ?? 'this shop'}?\n\n'
+            'Products: \${preview.products}\n'
+            'Sales: \${preview.sales}\n'
+            'Expenses: \${preview.expenses}\n'
+            'Employees: \${preview.employees}\n\n'
+            'The original local database will remain untouched. This import is one-time and will be blocked if this shop already has cloud or local records.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Import data'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      final result = await LocalShopDataImportService.importIntoShop(
+        shopId: shopId,
+        isAdmin: auth.isAdmin,
+      );
+      auth.refreshDatabaseBindings();
+      if (!mounted) return;
+      setState(() => _importMessage =
+          'Imported \${result.products} products, \${result.sales} sales, \${result.expenses} expenses and \${result.employees} employees into this shop. The original device database was not changed. Cloud upload is pending.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _importMessage = 'Import failed: $error');
+    } finally {
+      if (mounted) setState(() => _importing = false);
     }
   }
 
@@ -132,6 +188,27 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen> {
                     ],
                   ),
                 ),
+                if (auth.isAdmin && auth.currentShopId != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _importing ? null : () => _importLocalData(auth),
+                      icon: _importing
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.move_to_inbox_outlined),
+                      label: Text(_importing
+                          ? 'Importing device data…'
+                          : 'Import existing device data'),
+                    ),
+                  ),
+                  if (_importMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(_importMessage!, textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ],
                 if (auth.currentShopId != null) ...[
                   const SizedBox(height: 12),
                   SizedBox(
