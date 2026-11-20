@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../models/models.dart';
 import '../data/database.dart';
@@ -242,7 +242,7 @@ class AuthService extends ChangeNotifier {
         throw Exception('Changing another cloud user password requires the secure account-management function.');
       }
       await SupabaseService.client.auth.updateUser(
-        UserAttributes(password: newPassword),
+        supabase.UserAttributes(password: newPassword),
       );
       return;
     }
