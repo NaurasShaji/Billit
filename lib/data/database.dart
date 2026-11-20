@@ -44,7 +44,45 @@ class Db {
   /// migration and local-only use. Shop IDs are validated before becoming a
   /// filename/database name.
   static Future<void> openTenantDatabase(String shopId) async {
-    if (shopId.trim().isEmpty || !RegExp(r'^[a-zA-Z0-9-]+
+    if (shopId.trim().isEmpty ||
+        !RegExp(r'^[a-zA-Z0-9-]+$').hasMatch(shopId)) {
+      throw ArgumentError.value(shopId, 'shopId', 'Invalid shop identifier');
+    }
+    final key = 'shop:$shopId';
+    if (_instance != null && _activeDatabaseKey == key) return;
+    _instance?.close();
+    _instance = null;
+    _activeDatabaseKey = key;
+    try {
+      _instance = AppDatabase(
+        await openAppDatabase(databaseName: 'billit_shop_$shopId'),
+      );
+    } catch (_) {
+      _activeDatabaseKey = 'local';
+      rethrow;
+    }
+  }
+
+  /// Returns to the original local database without copying or deleting data.
+  static Future<void> openLocalDatabase() async {
+    if (_instance != null && _activeDatabaseKey == 'local') return;
+    _instance?.close();
+    _instance = null;
+    _activeDatabaseKey = 'local';
+    _instance = AppDatabase(await openAppDatabase());
+  }
+
+  static Future<List<SyncOutboxChange>> pendingSyncChanges({int limit = 100}) =>
+      instance.pendingSyncChanges(limit: limit);
+
+  static Future<void> acknowledgeSyncChange(int id) =>
+      instance.acknowledgeSyncChange(id);
+
+  static Future<void> recordSyncFailure(int id, String error) =>
+      instance.recordSyncFailure(id, error);
+
+  static Future<R> withoutOutbox<R>(Future<R> Function() action) =>
+      instance.withoutOutbox(action);
 
   /// Uses an already opened connection, e.g. an in-memory database in tests.
   static void openWith(SqliteConnection connection) {
