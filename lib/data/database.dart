@@ -59,6 +59,7 @@ class Db {
       );
     } catch (_) {
       _activeDatabaseKey = 'local';
+      _instance = AppDatabase(await openAppDatabase());
       rethrow;
     }
   }
@@ -271,6 +272,7 @@ class SyncOutboxChange {
     required this.operation,
     required this.changedAt,
     required this.attempts,
+    required this.revision,
   });
 
   final int id;
