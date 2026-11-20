@@ -602,52 +602,67 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isAdmin = _authService.isAdmin;
-
-    final List<String> labels = isAdmin
-        ? ['Overview', 'Billing', 'Inventory', 'Reports', 'Archive']
-        : ['Overview', 'Billing', 'Inventory', 'Reports'];
-
+    final visibleKeys = <String>[
+      'overview',
+      if (_authService.hasPermission('billing')) 'billing',
+      if (_authService.hasPermission('inventory')) 'inventory',
+      if (_authService.hasPermission('reports')) 'reports',
+      if (isAdmin) 'archive',
+    ];
+    const labelsByKey = <String, String>{
+      'overview': 'Overview',
+      'billing': 'Billing',
+      'inventory': 'Inventory',
+      'reports': 'Reports',
+      'archive': 'Archive',
+    };
+    final labels = visibleKeys.map((key) => labelsByKey[key]!).toList();
     final settingsBox = Db.settings;
     final navigationIconStyle = settingsBox
         .get('navigation_icon_style', defaultValue: 'outlined')
         .toString();
-
-    final List<IconData> defaultIcons = _navigationIcons(
-      isAdmin: isAdmin,
-      style: navigationIconStyle,
-    );
-    final navigationKeys = isAdmin
-        ? ['overview', 'billing', 'inventory', 'reports', 'archive']
-        : ['overview', 'billing', 'inventory', 'reports'];
     final rawOverrides = settingsBox
         .get('navigation_icon_overrides', defaultValue: <String, String>{});
     final navigationOverrides =
         rawOverrides is Map ? rawOverrides : <String, String>{};
-    final List<IconData> icons = _applyCustomNavigationIcons(
-      defaultIcons,
-      navigationKeys,
-      navigationOverrides,
-    );
+    final icons = visibleKeys.map((key) {
+      final fallback = switch (key) {
+        'overview' => Icons.dashboard_outlined,
+        'billing' => Icons.receipt_long_outlined,
+        'inventory' => Icons.inventory_2_outlined,
+        'reports' => Icons.bar_chart_outlined,
+        'archive' => Icons.archive_outlined,
+        _ => Icons.circle_outlined,
+      };
+      final choice = navigationOverrides[key]?.toString() ?? key;
+      return _iconFromChoice(choice, fallback);
+    }).toList();
 
-    final List<Widget> tabs = [
+    void openVisibleTab(String key) {
+      final index = visibleKeys.indexOf(key);
+      if (index >= 0) _selectTab(index);
+    }
+
+    final tabs = <Widget>[
       DashboardTab(
         showFinancials: isAdmin,
-        onOpenBilling: () => _selectTab(1),
-        onOpenProducts: () => _selectTab(2),
-        onOpenReports: () => _selectTab(3),
+        onOpenBilling: () => openVisibleTab('billing'),
+        onOpenProducts: () => openVisibleTab('inventory'),
+        onOpenReports: () => openVisibleTab('reports'),
       ),
-      const BillingTab(),
-      const ProductsTab(),
-      const ReportsTab(),
-      if (isAdmin) const ArchiveTab(),
+      for (final key in visibleKeys.skip(1))
+        switch (key) {
+          'billing' => const BillingTab(),
+          'inventory' => const ProductsTab(),
+          'reports' => const ReportsTab(),
+          'archive' => const ArchiveTab(),
+          _ => const SizedBox.shrink(),
+        },
     ];
 
-    // Ensure _index is within bounds for worker
-    if (!isAdmin && _index >= tabs.length) {
+    if (_index >= tabs.length) {
       _index = 0;
-      if (_pageController.hasClients && _pageController.page != _index) {
-        _pageController.jumpToPage(_index);
-      }
+      if (_pageController.hasClients) _pageController.jumpToPage(0);
     }
 
     return Scaffold(
@@ -745,8 +760,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     defaultValue: <String, String>{});
                 final overrides = raw is Map ? raw : <String, String>{};
                 final railIcons = _applyCustomNavigationIcons(
-                  _navigationIcons(isAdmin: isAdmin, style: iconStyle),
-                  navigationKeys,
+                  icons,
+                  visibleKeys,
                   overrides,
                 );
                 return Row(
@@ -795,21 +810,8 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, settings, _) => _buildBottomNavigation(
                 labels: labels,
                 icons: _applyCustomNavigationIcons(
-                  _navigationIcons(
-                    isAdmin: isAdmin,
-                    style: settings
-                        .get('navigation_icon_style', defaultValue: 'outlined')
-                        .toString(),
-                  ),
-                  isAdmin
-                      ? [
-                          'overview',
-                          'billing',
-                          'inventory',
-                          'reports',
-                          'archive'
-                        ]
-                      : ['overview', 'billing', 'inventory', 'reports'],
+                  icons,
+                  visibleKeys,
                   settings.get('navigation_icon_overrides',
                           defaultValue: <String, String>{}) is Map
                       ? settings.get('navigation_icon_overrides',
