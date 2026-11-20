@@ -31,10 +31,13 @@ Future<void> _startApp() async {
   await prepareAppData();
   final settings = Db.settings;
 
-  // Initialize Drive sync service and attempt auto sign-in
-  final driveSync = DriveSyncService.instance;
-  await driveSync.init();
-  await driveSync.tryAutoSignIn();
+  // Google Drive backup belongs to local-only installs. Cloud accounts must
+  // not accidentally sync one shop's local database into another shop's Drive.
+  if (!SupabaseService.isConfigured) {
+    final driveSync = DriveSyncService.instance;
+    await driveSync.init();
+    await driveSync.tryAutoSignIn();
+  }
 
   // Desktop window: title, minimum size and remembered size (no-op elsewhere).
   await DesktopWindowService.instance.init(
