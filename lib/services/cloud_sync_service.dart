@@ -37,12 +37,41 @@ class CloudSyncService {
     }
   }
 
+  static bool _canWrite(
+    SyncOutboxChange change,
+    Map<String, dynamic> permissions,
+    bool isAdmin,
+  ) {
+    if (isAdmin) return true;
+    bool has(String key) => permissions[key] == true;
+    switch (change.tableName) {
+      case 'products':
+        return has('inventory') ||
+            (has('billing') && change.operation == 'UPSERT');
+      case 'sales':
+        return has('billing');
+      case 'expenses':
+        return has('expenses');
+      case 'employees':
+        return has('payroll') && change.operation != 'DELETE';
+      default:
+        return false;
+    }
+  }
+
   static Future<int> _pushPending(String shopId, {required Map<String, dynamic> permissions, required bool isAdmin}) async {
     var completed = 0;
+    var afterId = 0;
     while (true) {
-      final batch = await Db.pendingSyncChanges(limit: 50);
+      final batch = await Db.pendingSyncChanges(limit: 50, afterId: afterId);
       if (batch.isEmpty) break;
       for (final change in batch) {
+        afterId = change.id;
+        // A shop-local database may contain pending edits made by another
+        // account on this device. Leave changes outside this user's grants
+        // queued for an administrator/authorized worker instead of failing
+        // the entire sync or retrying the same first page forever.
+        if (!_canWrite(change, permissions, isAdmin)) continue;
         try {
           await _pushOne(shopId, change, permissions: permissions, isAdmin: isAdmin);
           await Db.acknowledgeSyncChange(change.id, change.revision);
