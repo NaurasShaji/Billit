@@ -48,7 +48,8 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen>
   }
 
   void _runAutomaticSync() {
-    if (!mounted || _syncing || _importing) return;
+    if (!mounted || _syncing || _importing ||
+        CloudSyncService.pendingConflict != null) return;
     final auth = context.read<AuthService>();
     if (auth.currentShopId == null) return;
     unawaited(_sync(auth, showStatus: false));
@@ -74,7 +75,9 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen>
       }
     } catch (error) {
       if (!mounted) return;
-      if (showStatus) setState(() => _syncMessage = 'Sync failed: $error');
+      if (showStatus || CloudSyncService.pendingConflict != null) {
+        setState(() => _syncMessage = 'Sync failed: $error');
+      }
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
