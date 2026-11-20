@@ -414,7 +414,7 @@ void main() {
 
   test('sync schema migrations are applied through version 3', () {
     final version = Db.instance.db.select('PRAGMA user_version').single.values.first;
-    expect(version, 3);
+    expect(version, 4);
     final columns = Db.instance.db.select('PRAGMA table_info(local_sync_outbox)');
     expect(columns.any((row) => row['name'] == 'next_attempt_at'), isTrue);
   });
@@ -442,6 +442,18 @@ void main() {
     expect(Db.hasPendingSyncChange('products', 'conflict-a'), isFalse);
     expect(Db.hasPendingSyncChange('products', 'conflict-b'), isTrue);
     expect(Db.products.containsKey('conflict-a'), isTrue);
+  });
+
+  test('printer and desktop preferences stay device-local', () async {
+    await Db.settings.put('printer_connection_type', 'usb');
+    await Db.settings.put('usb_printer_vendor_id', '1234');
+    await Db.settings.put('window_width', 1280);
+    expect(await Db.pendingSyncChanges(), isEmpty);
+
+    await Db.settings.put('business_name', 'Shared Shop');
+    final changes = await Db.pendingSyncChanges();
+    expect(changes, hasLength(1));
+    expect(changes.single.tableName, 'shop_settings');
   });
 
   test('failed sync items receive a persistent retry delay', () async {
