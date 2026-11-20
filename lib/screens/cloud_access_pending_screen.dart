@@ -80,6 +80,54 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen>
     }
   }
 
+  Future<void> _resolveConflict(AuthService auth, {required bool keepLocal}) async {
+    if (_syncing) return;
+    if (keepLocal) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Keep this device\'s version?'),
+          content: const Text(
+            'This will upload this device\'s pending version over the newer cloud version. The cloud version will be replaced.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Replace cloud version'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
+    setState(() {
+      _syncing = true;
+      _syncMessage = null;
+    });
+    try {
+      await CloudSyncService.resolvePendingConflict(keepLocal: keepLocal);
+      if (!mounted) return;
+      setState(() {
+        _syncing = false;
+        _syncMessage = keepLocal
+            ? 'Conflict resolved: this device\'s version will be uploaded.'
+            : 'Conflict resolved: the cloud version will replace this device\'s copy.';
+      });
+      await _sync(auth);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _syncing = false;
+        _syncMessage = 'Could not resolve conflict: $error';
+      });
+    }
+  }
+
   Future<void> _importLocalData(AuthService auth) async {
     final shopId = auth.currentShopId;
     if (shopId == null || _importing || !auth.isAdmin) return;
@@ -138,6 +186,7 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen>
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final colors = Theme.of(context).colorScheme;
+    final conflict = CloudSyncService.pendingConflict;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Billit Cloud'),
@@ -266,6 +315,48 @@ class _CloudAccessPendingScreenState extends State<CloudAccessPendingScreen>
                     const SizedBox(height: 8),
                     Text(_syncMessage!, textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                  if (conflict != null) ...[
+                    const SizedBox(height: 12),
+                    Card(
+                      color: colors.errorContainer.withValues(alpha: 0.55),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sync conflict: ${conflict['table']}/${conflict['id']}',
+                              style: const TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              conflict['message']?.toString() ??
+                                  'This record changed on another device.',
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                OutlinedButton(
+                                  onPressed: _syncing
+                                      ? null
+                                      : () => _resolveConflict(auth, keepLocal: false),
+                                  child: const Text('Use cloud version'),
+                                ),
+                                FilledButton(
+                                  onPressed: _syncing
+                                      ? null
+                                      : () => _resolveConflict(auth, keepLocal: true),
+                                  child: const Text('Keep this device'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ],
                 if (auth.isAdmin) ...[
