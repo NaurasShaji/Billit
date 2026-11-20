@@ -412,6 +412,13 @@ void main() {
     expect(Db.products.keys, ['p1']);
   });
 
+  test('sync schema migrations are applied through version 3', () {
+    final version = Db.instance.db.select('PRAGMA user_version').single.values.first;
+    expect(version, 3);
+    final columns = Db.instance.db.select('PRAGMA table_info(local_sync_outbox)');
+    expect(columns.any((row) => row['name'] == 'next_attempt_at'), isTrue);
+  });
+
   test('shop settings changes are captured as one durable sync item', () async {
     await Db.settings.put('business_name', 'North Shop');
     await Db.settings.put('business_phone', '9876543210');
