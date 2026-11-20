@@ -29,7 +29,7 @@ class CloudSyncService {
     var pushed = 0;
     var pulled = 0;
     try {
-      pushed = await _pushPending(shopId);
+      pushed = await _pushPending(shopId, permissions: permissions, isAdmin: isAdmin);
       pulled = await _pullRemote(shopId, permissions, isAdmin);
       return CloudSyncSummary(pushed: pushed, pulled: pulled);
     } finally {
@@ -37,14 +37,14 @@ class CloudSyncService {
     }
   }
 
-  static Future<int> _pushPending(String shopId) async {
+  static Future<int> _pushPending(String shopId, {required Map<String, dynamic> permissions, required bool isAdmin}) async {
     var completed = 0;
     while (true) {
       final batch = await Db.pendingSyncChanges(limit: 50);
       if (batch.isEmpty) break;
       for (final change in batch) {
         try {
-          await _pushOne(shopId, change);
+          await _pushOne(shopId, change, permissions: permissions, isAdmin: isAdmin);
           await Db.acknowledgeSyncChange(change.id, change.revision);
           completed++;
         } catch (error) {
@@ -58,7 +58,7 @@ class CloudSyncService {
 
   static double? _finite(double value) => value.isFinite ? value : null;
 
-  static Future<void> _pushOne(String shopId, SyncOutboxChange change) async {
+  static Future<void> _pushOne(String shopId, SyncOutboxChange change, {required Map<String, dynamic> permissions, required bool isAdmin}) async {
     final client = SupabaseService.client;
     final table = change.tableName;
     if (change.operation == 'DELETE') {
@@ -72,22 +72,35 @@ class CloudSyncService {
       case 'products':
         final product = Db.products.get(change.recordId);
         if (product == null) return;
-        await client.from('products').upsert({
-          'shop_id': shopId,
-          'id': product.id,
-          'name': product.name,
-          'selling_price': _finite(product.sellingPrice),
-          'cost_price': _finite(product.costPrice),
-          'stock': _finite(product.stock),
-          'unit': product.unit.name,
-          'category': product.category,
-          'sub_category': product.subCategory,
-          'active': product.active,
-          'barcode': product.barcode,
-          'hsn_code': product.hsnCode,
-          'gst_rate': product.gstRate == null ? null : _finite(product.gstRate!),
-          'deleted_at': null,
-        }, onConflict: 'shop_id,id');
+        if (!isAdmin && permissions['inventory'] != true) {
+          // Billing-only workers may sync stock changes caused by sales, but
+          // cannot insert products or change product master data.
+          final rows = await client.from('products').update({
+            'stock': _finite(product.stock),
+          }).eq('shop_id', shopId).eq('id', product.id).select('id');
+          if (rows.isEmpty) {
+            throw StateError(
+              'Product ${product.id} is missing from cloud inventory. An administrator must sync the catalogue first.',
+            );
+          }
+        } else {
+          await client.from('products').upsert({
+            'shop_id': shopId,
+            'id': product.id,
+            'name': product.name,
+            'selling_price': _finite(product.sellingPrice),
+            'cost_price': _finite(product.costPrice),
+            'stock': _finite(product.stock),
+            'unit': product.unit.name,
+            'category': product.category,
+            'sub_category': product.subCategory,
+            'active': product.active,
+            'barcode': product.barcode,
+            'hsn_code': product.hsnCode,
+            'gst_rate': product.gstRate == null ? null : _finite(product.gstRate!),
+            'deleted_at': null,
+          }, onConflict: 'shop_id,id');
+        }
         break;
       case 'sales':
         final sale = Db.sales.get(change.recordId);
