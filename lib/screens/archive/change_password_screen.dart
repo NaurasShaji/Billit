@@ -182,7 +182,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         child: Text(
                           authService.isCloudAuth
                               ? 'Your Cloud Account Password'
-                              : 'Admin Password Management',
+                              : authService.isCloudAuth ? 'Update Your Account Password' : 'Admin Password Management',
                           style: TextStyle(
                             color: Colors.blue.shade700.adaptive(context),
                             fontSize: 16,
@@ -376,7 +376,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '• Minimum 6 characters long\n• Only letters (a-z, A-Z) and numbers (0-9) allowed',
+                        authService.isCloudAuth
+                            ? '• Minimum 8 characters long'
+                            : '• Minimum 6 characters long\n• Only letters (a-z, A-Z) and numbers (0-9) allowed',
                         style: TextStyle(
                           color: Colors.blue.shade700.adaptive(context),
                           fontSize: 12,
