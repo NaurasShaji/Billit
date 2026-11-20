@@ -119,27 +119,27 @@ final List<String> _schemaV2 = [
   )''',
   'CREATE INDEX local_sync_outbox_order ON local_sync_outbox (id)',
   for (final table in ['products', 'sales', 'expenses', 'employees']) ...[
-    '''CREATE TRIGGER sync_\${table}_insert AFTER INSERT ON \$table
+    '''CREATE TRIGGER sync_${table}_insert AFTER INSERT ON $table
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
     BEGIN
       INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
-      VALUES ('\$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      VALUES ('$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
       ON CONFLICT (table_name, record_id) DO UPDATE SET
         operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
     END''',
-    '''CREATE TRIGGER sync_\${table}_update AFTER UPDATE ON \$table
+    '''CREATE TRIGGER sync_${table}_update AFTER UPDATE ON $table
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
     BEGIN
       INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
-      VALUES ('\$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      VALUES ('$table', NEW.id, 'UPSERT', CAST(strftime('%s','now') AS INTEGER) * 1000)
       ON CONFLICT (table_name, record_id) DO UPDATE SET
         operation = 'UPSERT', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
     END''',
-    '''CREATE TRIGGER sync_\${table}_delete AFTER DELETE ON \$table
+    '''CREATE TRIGGER sync_${table}_delete AFTER DELETE ON $table
     WHEN (SELECT suppress_outbox FROM local_sync_control WHERE id = 1) = 0
     BEGIN
       INSERT INTO local_sync_outbox (table_name, record_id, operation, changed_at)
-      VALUES ('\$table', OLD.id, 'DELETE', CAST(strftime('%s','now') AS INTEGER) * 1000)
+      VALUES ('$table', OLD.id, 'DELETE', CAST(strftime('%s','now') AS INTEGER) * 1000)
       ON CONFLICT (table_name, record_id) DO UPDATE SET
         operation = 'DELETE', changed_at = excluded.changed_at, attempts = 0, last_error = NULL;
     END''',
@@ -158,7 +158,12 @@ void migrateSchema(CommonDatabase db) {
         db.execute(statement);
       }
     }
-    if (current < 2) {\n      for (final statement in _schemaV2) {\n        db.execute(statement);\n      }\n    }\n    db.execute('PRAGMA user_version = $schemaVersion');
+    if (current < 2) {
+      for (final statement in _schemaV2) {
+        db.execute(statement);
+      }
+    }
+    db.execute('PRAGMA user_version = $schemaVersion');
     db.execute('COMMIT');
   } catch (_) {
     db.execute('ROLLBACK');
