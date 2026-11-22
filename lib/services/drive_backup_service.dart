@@ -190,11 +190,29 @@ class DriveBackupService {
       ..parents = <String>[folderId]
       ..mimeType = 'application/json';
 
-    await api.files.create(
+    final uploaded = await api.files.create(
       fileMetadata,
       uploadMedia: media,
-      $fields: 'id',
+      $fields: 'id,size',
     );
+    final uploadedId = uploaded.id;
+    if (uploadedId == null || uploadedId.isEmpty) {
+      throw StateError('Google Drive did not confirm the backup upload.');
+    }
+
+    // Verify the server-side file exists and has the complete expected size.
+    final stored = await api.files.get(
+      uploadedId,
+      $fields: 'id,name,size,mimeType',
+    ) as drive.File;
+    final storedSize = int.tryParse(stored.size ?? '');
+    if (stored.id != uploadedId ||
+        stored.name != filename ||
+        storedSize != mediaBytes.length) {
+      throw StateError(
+        'Google Drive backup verification failed. The uploaded file may be incomplete.',
+      );
+    }
   }
 
   Future<List<DriveFileEntry>> listBackups({int pageSize = 20}) async {
