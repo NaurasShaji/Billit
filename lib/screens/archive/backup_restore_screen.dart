@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/models.dart';
+import '../../services/auth_service.dart';
 import '../../services/drive_backup_service.dart';
 import '../../services/backup_integrity.dart';
 import '../../utils/theme_colors.dart';
@@ -132,6 +134,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       BackupIntegrity.validate(data);
       await _importAllBoxesFromJson(data);
       if (!mounted) return;
+      // Restored account records may differ from the currently signed-in user.
+      // Force a fresh login against the restored credentials.
+      context.read<AuthService>().logout();
       await _refreshDriveBackups();
       _showSuccessSnackbar(
         'Data restored. A pre-restore safety backup was saved to Google Drive.',
