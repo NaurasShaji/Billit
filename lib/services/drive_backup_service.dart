@@ -106,7 +106,9 @@ class DriveBackupService {
       await WindowsGoogleDriveAuth.instance.signOut();
       return;
     }
-    await _googleSignIn.disconnect();
+    // Sign out without revoking the app's Drive permission, allowing the
+    // user to sign in again or choose a different Google account later.
+    await _googleSignIn.signOut();
   }
 
   Future<bool> isSignedIn() async {
