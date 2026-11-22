@@ -100,7 +100,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
           .uploadJson(filename: filename, json: payload);
 
       if (!mounted) return true;
-      await _refreshDriveBackups();
+      try {
+        await _refreshDriveBackups();
+      } catch (_) {
+        // The upload was already verified; a failed list refresh must not
+        // report the completed backup as failed.
+      }
       _showSuccessSnackbar('Backup uploaded and verified on Google Drive');
       return true;
     } catch (e) {
@@ -137,7 +142,11 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       // Restored account records may differ from the currently signed-in user.
       // Force a fresh login against the restored credentials.
       context.read<AuthService>().logout();
-      await _refreshDriveBackups();
+      try {
+        await _refreshDriveBackups();
+      } catch (_) {
+        // Restore has committed; listing backups is a separate operation.
+      }
       _showSuccessSnackbar(
         'Data restored. A pre-restore safety backup was saved to Google Drive. Sign in again to continue.',
       );
