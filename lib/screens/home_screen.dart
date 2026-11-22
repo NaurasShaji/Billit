@@ -778,13 +778,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return PageView(
             controller: _pageController,
             onPageChanged: _handlePageChanged,
-            children: [
-              for (final tab in tabs)
-                KeepAlive(
-                  keepAlive: true,
-                  child: tab,
-                ),
-            ],
+            children: tabs,
           );
         },
       ),
