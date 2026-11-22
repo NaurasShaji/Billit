@@ -97,12 +97,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       await DriveBackupService.instance
           .uploadJson(filename: filename, json: payload);
 
-      if (!mounted) return;
+      if (!mounted) return true;
       await _refreshDriveBackups();
       _showSuccessSnackbar('Backup uploaded and verified on Google Drive');
       return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       _showErrorSnackbar('Backup failed: $e');
       return false;
     } finally {
@@ -1251,6 +1251,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     await salesBox.clear();
     await expensesBox.clear();
     await employeesBox.clear();
+    await appSettingsBox.clear();
 
     for (final u in (data['users'] as List? ?? const [])) {
       final user = User()
