@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/models.dart';
+import '../../services/auth_service.dart';
 import '../../services/drive_backup_service.dart';
+import '../../services/backup_integrity.dart';
 import '../../utils/theme_colors.dart';
 import '../../data/database.dart';
 
@@ -86,22 +89,29 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     });
   }
 
-  Future<void> _backupNow() async {
-    if (_isBackingUp) return;
+  Future<bool> _backupNow({String? filenamePrefix}) async {
+    if (_isBackingUp || _isRestoring || _isSigningIn) return false;
     setState(() => _isBackingUp = true);
     try {
-      final payload = await _exportAllBoxesToJson();
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final filename = 'floral_backup_$timestamp.json';
+      final payload = BackupIntegrity.seal(await _exportAllBoxesToJson());
+      final timestamp = DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
+      final filename = '${filenamePrefix ?? 'billit_backup_'}$timestamp.json';
       await DriveBackupService.instance
           .uploadJson(filename: filename, json: payload);
 
-      if (!mounted) return;
-      await _refreshDriveBackups();
-      _showSuccessSnackbar('Backup uploaded successfully to Google Drive');
+      if (!mounted) return true;
+      try {
+        await _refreshDriveBackups();
+      } catch (_) {
+        // The upload was already verified; a failed list refresh must not
+        // report the completed backup as failed.
+      }
+      _showSuccessSnackbar('Backup uploaded and verified on Google Drive');
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       _showErrorSnackbar('Backup failed: $e');
+      return false;
     } finally {
       if (mounted) setState(() => _isBackingUp = false);
     }
@@ -111,13 +121,36 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     final confirmed = await _showRestoreConfirmationDialog(entry.name);
     if (!confirmed) return;
 
-    if (_isRestoring) return;
+    if (_isRestoring || _isBackingUp || _isSigningIn) return;
     setState(() => _isRestoring = true);
     try {
+      // Preserve the current database before replacing it. Abort if this safety
+      // upload fails so a failed restore cannot leave the user without a copy.
+      final safetyPayload =
+          BackupIntegrity.seal(await _exportAllBoxesToJson());
+      final safetyTimestamp =
+          DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
+      await DriveBackupService.instance.uploadJson(
+        filename: 'billit_pre_restore_$safetyTimestamp.json',
+        json: safetyPayload,
+      );
+
       final data = await DriveBackupService.instance.downloadJson(entry.id);
+      BackupIntegrity.validate(data);
       await _importAllBoxesFromJson(data);
       if (!mounted) return;
-      _showSuccessSnackbar('Data restored successfully from ${entry.name}');
+      // Restored account records may differ from the currently signed-in user.
+      // Force a fresh login against the restored credentials.
+      context.read<AuthService>().logout();
+      try {
+        await _refreshDriveBackups();
+      } catch (_) {
+        // Restore has committed; listing backups is a separate operation.
+      }
+      _showSuccessSnackbar(
+        'Data restored. A pre-restore safety backup was saved to Google Drive. Sign in again to continue.',
+      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
       _showErrorSnackbar('Restore failed: $e');
@@ -167,7 +200,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'This cannot be undone. Create a backup first.',
+                    'Billit will save a safety backup before restoring. If that backup cannot be verified, the restore will be cancelled.',
                     style: TextStyle(color: Colors.red, fontSize: 13),
                   ),
                 ],
@@ -310,10 +343,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       final dueAt = last.add(Duration(days: _autoBackupDays));
       if (now.isBefore(dueAt)) return;
     }
-    try {
-      await _backupNow();
-    } finally {
-      session.put('lastAutoBackupAt', now.toIso8601String());
+    final succeeded = await _backupNow();
+    if (succeeded) {
+      await session.put('lastAutoBackupAt', DateTime.now().toIso8601String());
     }
   }
 
@@ -1119,8 +1151,8 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
 
     return {
       'meta': {
-        'app': 'floral_billing_refined',
-        'version': '0.2.0',
+        'app': 'billit',
+        'version': '0.2.1',
         'exportedAt': DateTime.now().toIso8601String(),
       },
       'users': usersBox.values
@@ -1129,11 +1161,15 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                 'username': u.username,
                 'password': u.password,
                 'userType': u.userType.name,
+                'securityQuestion': u.securityQuestion,
+                'securityAnswer': u.securityAnswer,
               })
           .toList(),
-      'appSettings': appSettingsBox
-          .toMap()
-          .map((key, value) => MapEntry(key.toString(), value)),
+      // Preserve DateTime, byte arrays and non-finite doubles across JSON.
+      'appSettingsEncoding': 'billit-tagged-json-v1',
+      'appSettings': appSettingsBox.toMap().map(
+        (key, value) => MapEntry(key.toString(), encodeStoredValue(value)),
+      ),
       'products': productsBox.values
           .map((p) => {
                 'id': p.id,
@@ -1213,8 +1249,10 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
 
   /// Replaces all data with the backup's. Runs in one transaction, so a
   /// backup that fails to import leaves the current data as it was.
-  Future<void> _importAllBoxesFromJson(Map<String, dynamic> data) =>
-      Db.transaction(() => _replaceAllData(data));
+  Future<void> _importAllBoxesFromJson(Map<String, dynamic> data) {
+    BackupIntegrity.validate(data);
+    return Db.transaction(() => _replaceAllData(data));
+  }
 
   Future<void> _replaceAllData(Map<String, dynamic> data) async {
     final usersBox = Db.users;
@@ -1223,12 +1261,16 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     final expensesBox = Db.expenses;
     final employeesBox = Db.employees;
     final appSettingsBox = Db.settings;
+    // Legacy backups did not contain security-question fields. Preserve the
+    // current values for matching accounts when restoring those old files.
+    final existingUsers = usersBox.toMap();
 
     await usersBox.clear();
     await productsBox.clear();
     await salesBox.clear();
     await expensesBox.clear();
     await employeesBox.clear();
+    await appSettingsBox.clear();
 
     for (final u in (data['users'] as List? ?? const [])) {
       final user = User()
@@ -1237,7 +1279,12 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
         ..password = u['password'] as String
         ..userType = (u['userType'] as String) == 'admin'
             ? UserType.admin
-            : UserType.worker;
+            : UserType.worker
+        ..securityQuestion = u['securityQuestion'] as String? ??
+            existingUsers[u['id']]?.securityQuestion ??
+            'What is the name of your favourite pet?'
+        ..securityAnswer = u['securityAnswer'] as String? ??
+            existingUsers[u['id']]?.securityAnswer ?? 'Buddy';
       await usersBox.put(user.id, user);
     }
 
@@ -1329,7 +1376,16 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
 
     final savedSettings = data['appSettings'];
     if (savedSettings is Map) {
-      await appSettingsBox.putAll(Map<String, dynamic>.from(savedSettings));
+      final values = Map<String, dynamic>.from(savedSettings);
+      if (data['appSettingsEncoding'] == 'billit-tagged-json-v1') {
+        await appSettingsBox.putAll({
+          for (final entry in values.entries)
+            entry.key: decodeStoredValue(entry.value as String),
+        });
+      } else {
+        // Backward compatibility with older untagged JSON backups.
+        await appSettingsBox.putAll(values);
+      }
     }
   }
 }
