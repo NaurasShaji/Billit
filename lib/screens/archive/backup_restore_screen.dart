@@ -88,7 +88,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
   }
 
   Future<bool> _backupNow({String? filenamePrefix}) async {
-    if (_isBackingUp) return false;
+    if (_isBackingUp || _isRestoring || _isSigningIn) return false;
     setState(() => _isBackingUp = true);
     try {
       final payload = BackupIntegrity.seal(await _exportAllBoxesToJson());
@@ -114,7 +114,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     final confirmed = await _showRestoreConfirmationDialog(entry.name);
     if (!confirmed) return;
 
-    if (_isRestoring) return;
+    if (_isRestoring || _isBackingUp || _isSigningIn) return;
     setState(() => _isRestoring = true);
     try {
       // Preserve the current database before replacing it. Abort if this safety
@@ -1136,7 +1136,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
 
     return {
       'meta': {
-        'app': 'floral_billing_refined',
+        'app': 'billit',
         'version': '0.2.1',
         'exportedAt': DateTime.now().toIso8601String(),
       },
