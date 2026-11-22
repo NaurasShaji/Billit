@@ -649,8 +649,7 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _loading = true);
 
     final auth = context.read<AuthService>();
-    final success = await auth.login(
-      _selectedRole == UserType.worker ? 'worker' : 'admin',
+    final success = await auth.loginAsRole(
       _passwordController.text,
       userType: _selectedRole,
     );
