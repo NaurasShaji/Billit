@@ -66,6 +66,26 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Signs in using the selected role without requiring a username.
+  /// The account is resolved from the stored user records, so customised
+  /// usernames continue to work after the username field is removed.
+  Future<bool> loginAsRole(String password,
+      {required UserType userType}) async {
+    try {
+      final user = Db.users.values.firstWhere(
+        (candidate) => candidate.userType == userType,
+      );
+      if (user.password != User.hash(password)) return false;
+
+      currentUser = user;
+      await Db.session.put(_sessionUserIdKey, user.id);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void logout() {
     currentUser = null;
     final session = Db.session;
