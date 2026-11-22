@@ -139,8 +139,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       context.read<AuthService>().logout();
       await _refreshDriveBackups();
       _showSuccessSnackbar(
-        'Data restored. A pre-restore safety backup was saved to Google Drive.',
+        'Data restored. A pre-restore safety backup was saved to Google Drive. Sign in again to continue.',
       );
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
       _showErrorSnackbar('Restore failed: $e');
