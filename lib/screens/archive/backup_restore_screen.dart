@@ -1261,6 +1261,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     final expensesBox = Db.expenses;
     final employeesBox = Db.employees;
     final appSettingsBox = Db.settings;
+    // Legacy backups did not contain security-question fields. Preserve the
+    // current values for matching accounts when restoring those old files.
+    final existingUsers = usersBox.toMap();
 
     await usersBox.clear();
     await productsBox.clear();
@@ -1278,8 +1281,10 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
             ? UserType.admin
             : UserType.worker
         ..securityQuestion = u['securityQuestion'] as String? ??
+            existingUsers[u['id']]?.securityQuestion ??
             'What is the name of your favourite pet?'
-        ..securityAnswer = u['securityAnswer'] as String? ?? 'Buddy';
+        ..securityAnswer = u['securityAnswer'] as String? ??
+            existingUsers[u['id']]?.securityAnswer ?? 'Buddy';
       await usersBox.put(user.id, user);
     }
 
