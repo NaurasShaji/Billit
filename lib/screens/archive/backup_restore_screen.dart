@@ -242,6 +242,50 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
     }
   }
 
+  Future<void> _signOutGoogleDrive() async {
+    if (_isSigningIn || _isBackingUp || _isRestoring) return;
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Change Google account?'),
+            content: const Text(
+              'This will disconnect the current Google account from Billit. '
+              'Your existing backups in Google Drive will not be deleted. '
+              'You can connect another account afterwards.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Sign out'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isSigningIn = true);
+    try {
+      await DriveBackupService.instance.signOut();
+      if (!mounted) return;
+      setState(() {
+        _driveBackups = [];
+      });
+      _showSuccessSnackbar(
+        'Google Drive account signed out. You can connect another account.',
+      );
+    } catch (e) {
+      if (mounted) _showErrorSnackbar('Could not sign out: $e');
+    } finally {
+      if (mounted) setState(() => _isSigningIn = false);
+    }
+  }
+
   Future<void> _refreshDriveBackups() async {
     final items = await DriveBackupService.instance.listBackups(pageSize: 5);
     if (!mounted) return;
@@ -513,10 +557,62 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
   Widget _buildAuthButton(ThemeData theme, bool isTablet) {
     final isSignedIn = DriveBackupService.instance.currentUser != null;
 
+    if (isSignedIn) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.panelColor,
+                foregroundColor: Colors.teal.shade700.adaptive(context),
+                padding: EdgeInsets.symmetric(vertical: isTablet ? 20 : 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+                shadowColor: Colors.transparent,
+              ),
+              icon: const Icon(Icons.check_circle, size: 24),
+              label: const Text(
+                'Connected to Google Drive',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: _isSigningIn ? null : _signOutGoogleDrive,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.65)),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: _isSigningIn
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.logout_rounded, size: 20),
+            label: Text(_isSigningIn ? 'Signing out...' : 'Change Google account'),
+          ),
+        ],
+      );
+    }
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: _isSigningIn || isSignedIn ? null : _initGoogle,
+        onPressed: _isSigningIn ? null : _initGoogle,
         style: ElevatedButton.styleFrom(
           backgroundColor: context.panelColor,
           foregroundColor: Colors.teal.shade700.adaptive(context),
@@ -536,13 +632,9 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                       AlwaysStoppedAnimation<Color>(Colors.teal.shade700),
                 ),
               )
-            : Icon(isSignedIn ? Icons.check_circle : Icons.login, size: 24),
+            : const Icon(Icons.login, size: 24),
         label: Text(
-          _isSigningIn
-              ? 'Connecting...'
-              : (isSignedIn
-                  ? 'Connected to Google Drive'
-                  : 'Connect to Google Drive'),
+          _isSigningIn ? 'Connecting...' : 'Connect to Google Drive',
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
