@@ -132,6 +132,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
       BackupIntegrity.validate(data);
       await _importAllBoxesFromJson(data);
       if (!mounted) return;
+      await _refreshDriveBackups();
       _showSuccessSnackbar(
         'Data restored. A pre-restore safety backup was saved to Google Drive.',
       );
@@ -184,7 +185,7 @@ class _BackupRestoreTabState extends State<BackupRestoreTab>
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'This cannot be undone. Create a backup first.',
+                    'Billit will save a safety backup before restoring. If that backup cannot be verified, the restore will be cancelled.',
                     style: TextStyle(color: Colors.red, fontSize: 13),
                   ),
                 ],
