@@ -52,12 +52,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final currency = NumberFormat.simpleCurrency(locale: 'en_IN');
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Add Expense'),
-        backgroundColor: theme.colorScheme.surface,
-        foregroundColor: theme.colorScheme.onSurface,
-        elevation: 0,
+        
         scrolledUnderElevation: 0,
         centerTitle: false,
       ),
@@ -69,9 +67,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               // Main Form Card
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(18),
@@ -329,9 +327,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               // Recent Expenses Section
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45)),
                 ),
                 child: Column(
                   children: [
