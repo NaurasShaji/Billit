@@ -342,7 +342,7 @@ class MonthlySalaryScreen extends StatelessWidget {
                                           backgroundColor: isPaidThisMonth
                                               ? Theme.of(context).colorScheme.outline
                                               : Colors.green.shade600,
-                                          foregroundColor: theme.colorScheme.onSurface,
+                                          foregroundColor: Colors.white,
                                           disabledBackgroundColor:
                                               Theme.of(context).colorScheme.surfaceContainerHighest,
                                           disabledForegroundColor:
@@ -422,7 +422,7 @@ class MonthlySalaryScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please enter a valid salary amount'),
-          backgroundColor: theme.colorScheme.surface,
+          backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -481,8 +481,8 @@ class MonthlySalaryScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.surface,
-              foregroundColor: theme.colorScheme.onSurface,
+              backgroundColor: Colors.green.shade600,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),
@@ -508,7 +508,7 @@ class MonthlySalaryScreen extends StatelessWidget {
           SnackBar(
             content: Text(
                 'Successfully paid ${currency.format(amount)} to ${employee.name}'),
-            backgroundColor: theme.colorScheme.surface,
+            backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
