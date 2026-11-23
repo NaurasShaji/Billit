@@ -285,8 +285,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _saveExpense,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.surface,
-                              foregroundColor: theme.colorScheme.onSurface,
+                              backgroundColor: Colors.red.shade600,
+                              foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(22),
                               ),
