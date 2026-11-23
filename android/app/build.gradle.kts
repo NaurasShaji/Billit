@@ -16,23 +16,36 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension>("android") 
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.billit"
-        // You can update these values to match your application needs.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    // Require the established release keystore. Do not silently sign release
-    // builds with the debug key when the configured keystore is missing.
+    // Codemagic exposes the selected Android keystore and credentials through
+    // these environment variables. Do not assume the keystore is in the repo.
     signingConfigs {
         create("release") {
-            storeFile = file("legacy_debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            val keystorePath = System.getenv("CM_KEYSTORE_PATH")
+            val keystorePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+            val keyAliasValue = System.getenv("CM_KEY_ALIAS")
+            val keyPasswordValue = System.getenv("CM_KEY_PASSWORD")
+
+            if (keystorePath.isNullOrBlank() ||
+                keystorePassword.isNullOrBlank() ||
+                keyAliasValue.isNullOrBlank() ||
+                keyPasswordValue.isNullOrBlank()
+            ) {
+                throw GradleException(
+                    "Android release signing is not configured. Select the Android keystore in Codemagic."
+                )
+            }
+
+            storeFile = file(keystorePath)
+            storePassword = keystorePassword
+            keyAlias = keyAliasValue
+            keyPassword = keyPasswordValue
         }
     }
 
