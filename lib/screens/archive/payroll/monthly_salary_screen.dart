@@ -15,12 +15,11 @@ class MonthlySalaryScreen extends StatelessWidget {
     final currency = NumberFormat.simpleCurrency(locale: 'en_IN');
 
     return Scaffold(
-      backgroundColor:
-          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('Monthly Salary Payments'),
-        backgroundColor: Colors.green.shade600,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         centerTitle: true,
       ),
@@ -85,21 +84,14 @@ class MonthlySalaryScreen extends StatelessWidget {
                 children: [
                   // Summary Header Card
                   Container(
-                    margin: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.08),
-                          offset: const Offset(0, 2),
-                          blurRadius: 12,
-                        ),
-                      ],
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
                           Row(
@@ -188,17 +180,10 @@ class MonthlySalaryScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.08),
-                                offset: const Offset(0, 2),
-                                blurRadius: 12,
-                              ),
-                            ],
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(16),
                             child: Column(
                               children: [
                                 // Employee Header
@@ -357,7 +342,7 @@ class MonthlySalaryScreen extends StatelessWidget {
                                           backgroundColor: isPaidThisMonth
                                               ? Theme.of(context).colorScheme.outline
                                               : Colors.green.shade600,
-                                          foregroundColor: Colors.white,
+                                          foregroundColor: theme.colorScheme.onSurface,
                                           disabledBackgroundColor:
                                               Theme.of(context).colorScheme.surfaceContainerHighest,
                                           disabledForegroundColor:
@@ -437,7 +422,7 @@ class MonthlySalaryScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please enter a valid salary amount'),
-          backgroundColor: Colors.red.shade600,
+          backgroundColor: theme.colorScheme.surface,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -496,8 +481,8 @@ class MonthlySalaryScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade600,
-              foregroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.surface,
+              foregroundColor: theme.colorScheme.onSurface,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),
@@ -523,7 +508,7 @@ class MonthlySalaryScreen extends StatelessWidget {
           SnackBar(
             content: Text(
                 'Successfully paid ${currency.format(amount)} to ${employee.name}'),
-            backgroundColor: Colors.green.shade600,
+            backgroundColor: theme.colorScheme.surface,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
