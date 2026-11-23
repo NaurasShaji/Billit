@@ -15,12 +15,10 @@ class DailyWageScreen extends StatelessWidget {
     final currency = NumberFormat.simpleCurrency(locale: 'en_IN');
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Daily Wage Payments'),
-        backgroundColor: theme.colorScheme.surface,
-        foregroundColor: theme.colorScheme.onSurface,
-        elevation: 0,
+        
         scrolledUnderElevation: 0,
         centerTitle: false,
       ),
@@ -87,9 +85,9 @@ class DailyWageScreen extends StatelessWidget {
                   Container(
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
+                      color: theme.colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45)),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -179,9 +177,9 @@ class DailyWageScreen extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
+                            color: theme.colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45)),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
