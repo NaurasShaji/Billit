@@ -340,7 +340,7 @@ class DailyWageScreen extends StatelessWidget {
                                           backgroundColor: isPaidToday
                                               ? Theme.of(context).colorScheme.outline
                                               : Colors.orange.shade600,
-                                          foregroundColor: theme.colorScheme.onSurface,
+                                          foregroundColor: Colors.white,
                                           disabledBackgroundColor:
                                               Theme.of(context).colorScheme.surfaceContainerHighest,
                                           disabledForegroundColor:
@@ -420,7 +420,7 @@ class DailyWageScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please enter a valid amount'),
-          backgroundColor: theme.colorScheme.surface,
+          backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -479,8 +479,8 @@ class DailyWageScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.surface,
-              foregroundColor: theme.colorScheme.onSurface,
+              backgroundColor: Colors.orange.shade600,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),
@@ -506,7 +506,7 @@ class DailyWageScreen extends StatelessWidget {
           SnackBar(
             content:
                 Text('Paid ${currency.format(amount)} to ${employee.name}'),
-            backgroundColor: theme.colorScheme.surface,
+            backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
