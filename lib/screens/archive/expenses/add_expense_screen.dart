@@ -52,12 +52,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final currency = NumberFormat.simpleCurrency(locale: 'en_IN');
 
     return Scaffold(
-      backgroundColor:
-          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('Add Expense'),
-        backgroundColor: Colors.red.shade600,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
@@ -71,19 +70,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                      offset: const Offset(0, 4),
-                      blurRadius: 16,
-                      spreadRadius: 0,
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(18),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -294,8 +285,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _saveExpense,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.shade600,
-                              foregroundColor: Colors.white,
+                              backgroundColor: theme.colorScheme.surface,
+                              foregroundColor: theme.colorScheme.onSurface,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(22),
                               ),
@@ -339,22 +330,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                      offset: const Offset(0, 4),
-                      blurRadius: 16,
-                      spreadRadius: 0,
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
                 ),
                 child: Column(
                   children: [
                     // Recent Expenses Header
                     Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
                           Container(
@@ -547,7 +530,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Expense saved successfully!'),
-            backgroundColor: Colors.green.shade600,
+            backgroundColor: theme.colorScheme.surface,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -612,7 +595,7 @@ class _AddExpenseCategoryScreenState extends State<AddExpenseCategoryScreen> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           children: [
             Text('Create a category',
                 style: Theme.of(context).textTheme.headlineSmall),
