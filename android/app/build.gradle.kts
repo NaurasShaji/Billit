@@ -25,29 +25,20 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension>("android") 
         versionName = flutter.versionName
     }
 
-    // A temporary CI keystore may be created by the build pipeline.
-    // If absent, use the standard debug key for an internal test APK only.
-    // Do NOT distribute a debug-signed APK as a production release.
-    val ciKeystoreFile = file("legacy_debug.keystore")
-
+    // Require the established release keystore. Do not silently sign release
+    // builds with the debug key when the configured keystore is missing.
     signingConfigs {
-        if (ciKeystoreFile.exists()) {
-            create("release") {
-                storeFile = ciKeystoreFile
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
-            }
+        create("release") {
+            storeFile = file("legacy_debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
         }
     }
 
     buildTypes {
         getByName("release") {
-            signingConfig = if (ciKeystoreFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
