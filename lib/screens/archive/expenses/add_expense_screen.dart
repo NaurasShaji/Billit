@@ -530,7 +530,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Expense saved successfully!'),
-            backgroundColor: theme.colorScheme.surface,
+            backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
