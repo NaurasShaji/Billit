@@ -30,12 +30,10 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Employee Management'),
-        backgroundColor: theme.colorScheme.surface,
-        foregroundColor: theme.colorScheme.onSurface,
-        elevation: 0,
+        
         scrolledUnderElevation: 0,
         centerTitle: false,
       ),
@@ -47,9 +45,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               // Add Employee Form Card
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(18),
@@ -215,9 +213,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               // Employee List Section
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45)),
                 ),
                 child: Column(
                   children: [
@@ -665,9 +663,7 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Employee'),
-        backgroundColor: theme.colorScheme.surface,
-        foregroundColor: theme.colorScheme.onSurface,
-      ),
+        ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
