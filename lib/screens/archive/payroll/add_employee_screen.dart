@@ -30,37 +30,29 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor:
-          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('Employee Management'),
-        backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               // Add Employee Form Card
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                      offset: const Offset(0, 4),
-                      blurRadius: 16,
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(18),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -204,8 +196,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade600,
-                              foregroundColor: Colors.white,
+                              backgroundColor: theme.colorScheme.surface,
+                              foregroundColor: theme.colorScheme.onSurface,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                               elevation: 0,
@@ -224,21 +216,14 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                      offset: const Offset(0, 4),
-                      blurRadius: 16,
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.65)),
                 ),
                 child: Column(
                   children: [
                     // Header
                     Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
                           Container(
@@ -495,7 +480,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Employee "${employee.name}" added successfully!'),
-          backgroundColor: Colors.green.shade600,
+          backgroundColor: theme.colorScheme.surface,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -578,8 +563,8 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.surface,
+                foregroundColor: theme.colorScheme.onSurface,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
@@ -598,7 +583,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Employee "${employee.name}" deleted successfully!'),
-            backgroundColor: Colors.red.shade600,
+            backgroundColor: theme.colorScheme.surface,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -680,12 +665,12 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Employee'),
-        backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           children: [
             Container(
               padding: const EdgeInsets.all(22),
@@ -777,8 +762,8 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
                             : const Icon(Icons.save_outlined),
                         label: Text(_saving ? 'Saving...' : 'Save Changes'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.blue.shade600,
-                          foregroundColor: Colors.white,
+                          backgroundColor: theme.colorScheme.surface,
+                          foregroundColor: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
