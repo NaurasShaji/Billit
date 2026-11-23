@@ -758,8 +758,8 @@ class _EditEmployeeScreenState extends State<EditEmployeeScreen> {
                             : const Icon(Icons.save_outlined),
                         label: Text(_saving ? 'Saving...' : 'Save Changes'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.surface,
-                          foregroundColor: Colors.white,
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                         ),
                       ),
                     ),
