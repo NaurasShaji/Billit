@@ -563,7 +563,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.surface,
+                backgroundColor: Colors.red.shade600,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
